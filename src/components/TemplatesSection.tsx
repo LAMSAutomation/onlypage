@@ -23,9 +23,10 @@ export default function TemplatesSection({ onSelectTemplate, onScrollTo }: Templ
   };
 
   return (
-    <section id="templates" className="py-24 bg-slate-50 relative border-b border-slate-100 overflow-hidden">
+    <section id="templates" className="py-24 bg-mesh-template relative border-b border-slate-100 overflow-hidden grid-pattern">
       {/* Background decoration blur */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-100/15 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/4 left-1/4 w-[600px] h-[400px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[300px] bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
@@ -34,7 +35,7 @@ export default function TemplatesSection({ onSelectTemplate, onScrollTo }: Templ
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
             Gallery Showroom
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <h2 className="text-fluid-h2 font-extrabold text-slate-900 tracking-tight mt-3">
             Handcrafted, lightning-fast templates
           </h2>
           <p className="text-slate-600 mt-4 text-base sm:text-lg font-medium leading-relaxed font-sans">

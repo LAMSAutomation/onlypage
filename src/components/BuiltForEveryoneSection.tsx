@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { PERSONAS } from '../data';
 import { Persona } from '../types';
-import { Check, ArrowRight, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, Sparkles, Stethoscope, GraduationCap, Palette, Briefcase, Home } from 'lucide-react';
 
 interface BuiltForEveryoneSectionProps {
   onSelectPersona: (p: Persona) => void;
@@ -33,7 +33,7 @@ export default function BuiltForEveryoneSection({ onSelectPersona, onScrollTo }:
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
             Tailormade Ecosystem
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3 font-sans">
+          <h2 className="text-fluid-h2 font-extrabold text-slate-900 tracking-tight mt-3 font-sans">
             Built for everyone who runs a business
           </h2>
           <p className="text-slate-600 mt-4 text-base sm:text-lg font-medium leading-relaxed">
@@ -61,7 +61,15 @@ export default function BuiltForEveryoneSection({ onSelectPersona, onScrollTo }:
                 {/* Card Top */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-3xl select-none">{p.emoji}</span>
+                    <span className="text-3xl select-none">
+                      {p.id === 'salon' ? <Sparkles className="text-pink-500 w-8 h-8" /> :
+                       p.id === 'doctor' ? <Stethoscope className="text-blue-500 w-8 h-8" /> :
+                       p.id === 'student' ? <GraduationCap className="text-purple-500 w-8 h-8" /> :
+                       p.id === 'creator' ? <Palette className="text-orange-500 w-8 h-8" /> :
+                       p.id === 'business' ? <Briefcase className="text-slate-600 w-8 h-8" /> :
+                       p.id === 'realestate' ? <Home className="text-emerald-500 w-8 h-8" /> :
+                       <Sparkles className="text-indigo-500 w-8 h-8" />}
+                    </span>
                     <span className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-100 uppercase">
                       {p.role}
                     </span>

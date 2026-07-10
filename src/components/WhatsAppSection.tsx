@@ -27,7 +27,7 @@ export default function WhatsAppSection({ businessName }: WhatsAppSectionProps) 
     {
       id: 'm-1',
       sender: 'bot',
-      text: `Hello there! 👋 Welcome to our WhatsApp assistant channel. How can I help you today? You can ask me about our services, timings, location, or request a booking slot!`,
+      text: `Hello! Welcome to our automated assistant channel. How can I help you today? You can ask me about our services, timings, location, or request a booking slot!`,
       timestamp: '10:42 AM'
     }
   ]);
@@ -55,20 +55,20 @@ export default function WhatsAppSection({ businessName }: WhatsAppSectionProps) 
     const q = userQuery.toLowerCase();
     
     if (q.includes('hour') || q.includes('time') || q.includes('sunday') || q.includes('open')) {
-      return `🕒 Timings for ${formattedName}: \n\n• Monday to Saturday: 10:00 AM — 8:00 PM\n• Sunday: 11:00 AM — 5:00 PM\n\nWould you like me to reserve a booking slot for this Sunday?`;
+      return `Operating Hours for ${formattedName}: \n\n• Monday to Saturday: 10:00 AM — 8:00 PM\n• Sunday: 11:00 AM — 5:00 PM\n\nWould you like me to reserve a booking slot for this Sunday?`;
     }
     if (q.includes('service') || q.includes('price') || q.includes('offer') || q.includes('cost')) {
-      return `💇‍♀️ Here are our premium offerings:\n\n1. Hair Styling & Treatments (Starting ₹499)\n2. Face Therapy & Organic Rejuvenation (Starting ₹899)\n3. Custom Nails & Artistry (Starting ₹299)\n\nLet me know which service interests you, and I can schedule it right away!`;
+      return `Our premium offerings:\n\n1. Hair Styling & Treatments (Starting ₹499)\n2. Face Therapy & Organic Rejuvenation (Starting ₹899)\n3. Custom Nails & Artistry (Starting ₹299)\n\nLet me know which service interests you, and I can schedule it right away!`;
     }
     if (q.includes('book') || q.includes('appointment') || q.includes('reserve') || q.includes('slot')) {
-      return `📅 Sure! I can block a slot for you. Could you please share:\n\n1. Your preferred date/time\n2. Your full name\n\nOnce shared, I will instantly populate this in the ${formattedName} owner CRM.`;
+      return `Sure! I can block a slot for you. Could you please share:\n\n1. Your preferred date/time\n2. Your full name\n\nOnce shared, I will instantly populate this in the ${formattedName} owner CRM.`;
     }
     if (q.includes('location') || q.includes('address') || q.includes('where') || q.includes('map')) {
-      return `📍 Address for ${formattedName}:\n\nWe are located at Plot 24, 100 Feet Road, Indiranagar, Bengaluru (Opposite Metro Pillar 140).\n\nLet me know if you need driving directions!`;
+      return `Address for ${formattedName}:\n\nWe are located at Plot 24, 100 Feet Road, Indiranagar, Bengaluru (Opposite Metro Pillar 140).\n\nLet me know if you need driving directions!`;
     }
     
     // Default reply
-    return `🤖 Thank you for your message! \n\nAs the AI Assistant for ${formattedName}, I have matched your query against our official website parameters. \n\nCould you please clarify if you'd like to check services, timings, or book an appointment?`;
+    return `Thank you for your message! \n\nAs the AI Assistant for ${formattedName}, I have matched your query against our official website parameters. \n\nCould you please clarify if you'd like to check services, timings, or book an appointment?`;
   };
 
   const handleSend = (textToSend: string) => {
@@ -160,8 +160,8 @@ export default function WhatsAppSection({ businessName }: WhatsAppSectionProps) 
                 {/* WhatsApp Chat Header */}
                 <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between relative z-20 shadow-md">
                   <div className="flex items-center space-x-2.5">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-sm text-white select-none">
-                      🤖
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white select-none shadow-xs">
+                      <Sparkles size={14} className="fill-white/20 text-white" />
                     </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-slate-100 truncate max-w-[130px]">

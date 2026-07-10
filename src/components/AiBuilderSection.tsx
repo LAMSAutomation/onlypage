@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, Code, CheckSquare, Search, MessageSquareCode, 
-  ArrowRight, ShieldCheck, HelpCircle, Eye, ChevronRight, Settings
+  ArrowRight, ShieldCheck, HelpCircle, Eye, ChevronRight, Settings, Loader2
 } from 'lucide-react';
 
 interface AiBuilderSectionProps {
@@ -168,8 +168,8 @@ export default function AiBuilderSection({ businessName }: AiBuilderSectionProps
               >
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 animate-spin text-[10px]">
-                      🌀
+                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                      <Loader2 size={12} className="animate-spin" />
                     </div>
                     <span className="text-xs font-bold text-slate-800">OnlyPage AI Orchestrator</span>
                   </div>
@@ -240,23 +240,24 @@ export default function AiBuilderSection({ businessName }: AiBuilderSectionProps
                 <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex flex-wrap gap-1 items-center">
                   <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-3">Preview Output:</span>
                   {[
-                    { id: 'website', label: '🖥️ Website Preview', icon: Code },
-                    { id: 'form', label: '📋 Lead Form', icon: CheckSquare },
-                    { id: 'seo', label: '🔍 SEO Tags', icon: Search },
-                    { id: 'bot', label: '🤖 WhatsApp Bot', icon: MessageSquareCode }
+                    { id: 'website', label: 'Website Preview', icon: Code },
+                    { id: 'form', label: 'Lead Form', icon: CheckSquare },
+                    { id: 'seo', label: 'SEO Tags', icon: Search },
+                    { id: 'bot', label: 'WhatsApp Bot', icon: MessageSquareCode }
                   ].map((tab) => {
                     const Icon = tab.icon;
                     return (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
                           activeTab === tab.id
                             ? 'bg-white border-slate-200 text-indigo-600 shadow-2xs font-bold'
                             : 'bg-transparent border-transparent text-slate-500 hover:text-slate-800'
                         }`}
                       >
-                        {tab.label}
+                        <Icon size={12} className={activeTab === tab.id ? 'text-indigo-600' : 'text-slate-400'} />
+                        <span>{tab.label}</span>
                       </button>
                     );
                   })}

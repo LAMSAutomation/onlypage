@@ -9,9 +9,10 @@ import { Sparkles, Menu, X, ArrowRight } from 'lucide-react';
 
 interface HeaderProps {
   onScrollTo: (sectionId: string) => void;
+  onLoginClick: () => void;
 }
 
-export default function Header({ onScrollTo }: HeaderProps) {
+export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -72,8 +73,8 @@ export default function Header({ onScrollTo }: HeaderProps) {
             {/* CTAs */}
             <div className="hidden md:flex items-center space-x-4">
               <button 
-                onClick={() => onScrollTo('pricing')}
-                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+                onClick={onLoginClick}
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 Sign In
               </button>
@@ -135,9 +136,9 @@ export default function Header({ onScrollTo }: HeaderProps) {
                 <button 
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    onScrollTo('pricing');
+                    onLoginClick();
                   }}
-                  className="text-sm font-medium text-slate-600"
+                  className="text-sm font-medium text-slate-600 cursor-pointer"
                 >
                   Sign In
                 </button>

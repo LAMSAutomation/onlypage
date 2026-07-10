@@ -225,9 +225,9 @@ export default function WebsiteEditorSection({ selectedPersona, businessName, se
                 </label>
                 <div className="space-y-2">
                   {[
-                    { id: 'services', label: '📋 Services Grid List', val: showServices, setVal: setShowServices },
-                    { id: 'booking', label: '📅 Online Booking Engine', val: showBooking, setVal: setShowBooking },
-                    { id: 'reviews', label: '⭐ Client Reviews Box', val: showReviews, setVal: setShowReviews }
+                    { id: 'services', label: 'Services Grid List', val: showServices, setVal: setShowServices },
+                    { id: 'booking', label: 'Online Booking Engine', val: showBooking, setVal: setShowBooking },
+                    { id: 'reviews', label: 'Client Reviews Box', val: showReviews, setVal: setShowReviews }
                   ].map((sec) => (
                     <label key={sec.id} className="flex items-center space-x-2.5 text-xs font-semibold text-slate-700 bg-white p-2.5 rounded-xl border border-slate-200/60 shadow-3xs cursor-pointer hover:border-slate-300 transition-colors">
                       <input

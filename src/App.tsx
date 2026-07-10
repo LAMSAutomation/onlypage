@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Sparkles, CheckCircle, ShieldCheck, X, ArrowRight } from 'lucide-react';
+import { Sparkles, CheckCircle, ShieldCheck, X, ArrowRight, Globe, Zap } from 'lucide-react';
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -19,6 +19,8 @@ import FeaturesSection from './components/FeaturesSection';
 import TemplatesSection from './components/TemplatesSection';
 import PrdExplorer from './components/PrdExplorer';
 import PricingSection from './components/PricingSection';
+import LoginForm from '@/components/ui/login-form';
+import EfferdDashboard2 from '@/components/ui/efferd-dashboard-2';
 import { Persona } from './types';
 import { PERSONAS } from './data';
 
@@ -27,6 +29,22 @@ export default function App() {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(PERSONAS[0]); // default to salon
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showClaimModal, setShowClaimModal] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show sticky bar once scrolled past 480px
+      if (window.scrollY > 480) {
+        setShowStickyBar(true);
+      } else {
+        setShowStickyBar(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleScrollTo = (sectionId: string) => {
     const el = document.getElementById(sectionId);
@@ -63,10 +81,14 @@ export default function App() {
     }
   };
 
+  if (isLoggedIn) {
+    return <EfferdDashboard2 onLogout={() => setIsLoggedIn(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
       {/* Floating Global Glass Header */}
-      <Header onScrollTo={handleScrollTo} />
+      <Header onScrollTo={handleScrollTo} onLoginClick={() => setIsLoginOpen(true)} />
 
       {/* --- SECTION 1: HERO --- */}
       <HeroSection 
@@ -120,15 +142,16 @@ export default function App() {
       />
 
       {/* --- SECTION 10: FINAL CTA --- */}
-      <section className="py-24 bg-radial from-slate-50 to-white relative overflow-hidden border-t border-slate-100">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-blue-100/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <section className="py-24 bg-mesh-cta relative overflow-hidden border-t border-slate-150 grid-pattern">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-10 w-[300px] h-[300px] bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8 relative">
           <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">
             Launch Today
           </span>
           
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight max-w-2xl mx-auto font-sans leading-tight">
+          <h2 className="text-fluid-h2 font-extrabold text-slate-900 tracking-tight max-w-2xl mx-auto font-sans leading-tight">
             Your idea deserves a place online.
           </h2>
           
@@ -242,6 +265,77 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* PERSISTENT FLOATING STICKY CTA BAR ON SCROLL */}
+      <AnimatePresence>
+        {showStickyBar && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+            className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-3xl z-45 bg-white/95 border border-slate-200/80 backdrop-blur-lg shadow-xl rounded-2xl p-3 md:p-4 flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-150 flex items-center justify-center shrink-0 text-indigo-600 hidden sm:flex">
+                <Globe size={14} className="animate-pulse" />
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-2 w-2 relative shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="font-mono text-xs font-bold text-slate-800 truncate">
+                    {businessName || 'yourname'}.onlypage.in
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5 hidden md:block">
+                  Your custom single-page presence is pre-generated and ready to go live.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => handleScrollTo('editor')}
+                className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] md:text-xs rounded-xl transition-all cursor-pointer hidden sm:inline-block"
+              >
+                Customize layout
+              </button>
+              <button
+                onClick={handleClaimDomain}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-[11px] md:text-xs rounded-xl shadow-md shadow-indigo-100 hover:scale-102 active:scale-98 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Claim domain</span>
+                <Zap size={11} className="fill-white" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- LOGIN & SIGNUP FULL SCREEN DIALOG --- */}
+      <AnimatePresence>
+        {isLoginOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-55 overflow-hidden"
+          >
+            <LoginForm 
+              onClose={() => setIsLoginOpen(false)} 
+              onSuccess={(username) => {
+                showToast(`Successfully signed in as ${username}!`);
+                setIsLoginOpen(false);
+                setIsLoggedIn(true);
+              }}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -109,15 +109,19 @@ export default function FeaturesSection({ onScrollTo }: FeaturesSectionProps) {
   };
 
   return (
-    <section id="features" className="py-24 bg-white relative border-b border-slate-100 overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="features" className="py-24 bg-mesh-feature relative border-b border-slate-100 overflow-hidden grid-pattern-subtle">
+      {/* Premium subtle glowing backdrops */}
+      <div className="absolute top-1/3 left-10 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-10 w-80 h-80 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
             All-In-One Toolkit
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <h2 className="text-fluid-h2 font-extrabold text-slate-900 tracking-tight mt-3">
             Supercharged features to scale your business
           </h2>
           <p className="text-slate-600 mt-4 text-base sm:text-lg font-medium leading-relaxed font-sans">

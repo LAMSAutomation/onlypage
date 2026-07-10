@@ -16,10 +16,10 @@ export default function PricingSection({ onPlanSelect }: PricingSectionProps) {
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('annual');
 
   return (
-    <section id="pricing" className="py-24 bg-white relative border-b border-slate-100 overflow-hidden">
+    <section id="pricing" className="py-24 bg-mesh-cta relative border-b border-slate-100 overflow-hidden grid-pattern-subtle">
       {/* Background blurs */}
-      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-100/10 rounded-full blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-indigo-100/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-[300px] h-[300px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
@@ -28,7 +28,7 @@ export default function PricingSection({ onPlanSelect }: PricingSectionProps) {
           <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">
             Simple Pricing
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-3">
+          <h2 className="text-fluid-h2 font-extrabold text-slate-900 tracking-tight mt-3">
             Honest plans. No hidden costs.
           </h2>
           <p className="text-slate-600 mt-4 text-base sm:text-lg font-medium leading-relaxed font-sans">
