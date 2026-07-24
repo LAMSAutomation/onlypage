@@ -14,7 +14,7 @@ export interface BlockCategory {
 }
 
 export const BLOCK_CATEGORIES: BlockCategory[] = [
-  { id: 'Navigation', name: 'Navigation Bars', icon: 'Menu', description: 'Header navigation menus' },
+  { id: 'Navigation', name: 'Header Menus', icon: 'Layout', description: 'Premium navbar designs' },
   { id: 'Hero', name: 'Hero Sections', icon: 'Sparkles', description: 'Premium header templates' },
   { id: 'Features', name: 'Feature Sections', icon: 'Grid', description: 'Showcase grids & bento boxes' },
   { id: 'CTA', name: 'Call to Actions', icon: 'Award', description: 'High-conversion CTA banners' },
@@ -23,8 +23,10 @@ export const BLOCK_CATEGORIES: BlockCategory[] = [
   { id: 'Pricing', name: 'Pricing Tiers', icon: 'DollarSign', description: 'SaaS & local service plans' },
   { id: 'Testimonials', name: 'Social Proof', icon: 'ThumbsUp', description: 'Wall of love & reviews' },
   { id: 'Forms', name: 'Lead Forms', icon: 'Mail', description: 'Booking & contact forms' },
+  { id: 'EComStore', name: 'E-Commerce Storefront', icon: 'ShoppingBag', description: 'Product grid with direct gateway checkout' },
+  { id: 'Map', name: 'Map & Location', icon: 'MapPin', description: 'Google Maps interactive embeds' },
   { id: 'Special', name: 'Special Widgets', icon: 'PlusCircle', description: 'FAQs, timelines & step guides' },
-  { id: 'Footer', name: 'Footer Menus', icon: 'Layout', description: 'Footer & site index columns' }
+  { id: 'Footer', name: 'Footer Zones', icon: 'Layers', description: 'Brand directory layouts' }
 ];
 
 export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
@@ -76,6 +78,15 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'newsletter', name: 'High-Impact Subscriber Bar', description: 'One-click newsletter subscriptions with custom validations', tags: ['Subscribers', 'Bar'] },
     { id: 'contact-complex', name: 'Detailed Contact Grid', description: 'Direct contact form flanked by interactive maps and contact details', tags: ['Forms', 'Detailed', 'Contact'] }
   ],
+  EComStore: [
+    { id: 'shop-header', name: 'Shopify Style Header & Announcement', description: 'Top announcement bar + brand logo + shop links + search & cart pill', tags: ['Header', 'Shopify', 'Nav'] },
+    { id: 'product-grid-filter', name: 'Untitled UI Filterable Product Catalog', description: 'Category pills, tag filters, price range, sorting & SEO alt tags', tags: ['Catalog', 'UntitledUI', 'Shop'] },
+    { id: 'offer-gallery', name: 'Featured Offers & Flash Sales Gallery', description: 'Shows products tagged OnSale/Featured with offer badges & countdown', tags: ['Offers', 'Sales', 'Badges'] },
+    { id: 'interactive-feature', name: 'Interactive React Feature Canvas', description: 'Mouse-follow card glow, image tilt, reveal animations & marquee', tags: ['FramerMotion', 'MouseGlow', 'Interactive'] },
+    { id: 'whatsapp-widget', name: 'Floating WhatsApp Store Button', description: 'Direct WhatsApp action button linking to merchant phone number', tags: ['WhatsApp', 'Floating', 'Automated'] },
+    { id: 'customer-auth', name: 'Storefront Customer Login & Signup', description: 'Shopify Canvas Light / Cream customer sign-in & registration template', tags: ['Auth', 'Login', 'Signup'] },
+    { id: 'store-legal', name: 'Store Terms & Refund Policies', description: 'Terms of Service, Shipping, and Privacy Policy page layout', tags: ['Legal', 'Terms', 'Compliance'] }
+  ],
   Special: [
     { id: 'faq-accordions', name: 'FAQ Interactive Drawers', description: 'Interactive accordion list maximizing space gracefully', tags: ['Accordions', 'Interactive'] },
     { id: 'steps-path', name: 'Step Process Roadmap', description: 'Horizontal paths mapping the user journey', tags: ['Timeline', 'Roadmap'] },
@@ -124,8 +135,10 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'footer-with-backtotop', name: '17. Built-in Back-to-Top Anchor', description: 'Displays an elegant scrolling chevron button to sweep visitors back to the peak.', tags: ['Navigation', 'UX'] },
     { id: 'footer-gradient-glow', name: '18. Shifting Horizon Gradient', description: 'Features an elegant moving neon horizon line separating the footer from the canvas.', tags: ['Gradient', 'Futuristic'] },
     { id: 'footer-jobs-hiring', name: '19. Active Careers Hiring Flag', description: 'Displays a glowing green pulsing "We are Hiring!" dot next to company links.', tags: ['Careers', 'Badge'] },
-    { id: 'footer-social-pill', name: '20. Capsule Social Shares Strip', description: 'Horizontal strip of colored, pill-shaped social share channels with counts.', tags: ['Social', 'Pills'] },
     { id: 'footer-copyright-only', name: '21. Super-Minimal Copyright Rail', description: 'Single elegant thin line containing copyright text and absolutely nothing else.', tags: ['Minimalist'] }
+  ],
+  Map: [
+    { id: 'map-classic', name: 'Interactive Location Map', description: 'Fully custom Google Map of your business location', tags: ['Location', 'Interactive', 'Google Maps'] }
   ]
 };
 

@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { 
   Home, Layers, Files, Database, ClipboardList, Inbox, Users, MessageSquare, 
   Calendar, BarChart3, Search, Megaphone, Sparkles, Cpu, Folder, Star, Plug, 
-  Settings, CreditCard, Menu, X, Bell, User, ExternalLink, ChevronDown, Check
+  Settings, CreditCard, Menu, X, Bell, User, ExternalLink, ShoppingBag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import type { SiteRecord } from './ui/onboarding-wizard';
 
-// Define the 18 sidebar items with metadata
+// Define the sidebar items with metadata
 export interface NavigationItem {
   id: string;
   label: string;
@@ -18,18 +19,19 @@ export interface NavigationItem {
 
 const SIDEBAR_ITEMS: NavigationItem[] = [
   { id: 'home', label: 'Home', icon: Home },
-  { id: 'builder', label: 'Website Builder', icon: Layers, badge: 'Live' },
+  { id: 'builder', label: 'Website Builder', icon: Layers },
   { id: 'pages', label: 'Pages', icon: Files },
   { id: 'cms', label: 'CMS', icon: Database },
-  { id: 'forms', label: 'Forms Center', icon: ClipboardList, badge: 'New' },
-  { id: 'inbox', label: 'Inbox', icon: Inbox, badge: '3' },
+  { id: 'store', label: 'Store & Products', icon: ShoppingBag, badge: 'ECom', badgeColor: 'bg-emerald-500 text-white' },
+  { id: 'forms', label: 'Forms Center', icon: ClipboardList },
+  { id: 'inbox', label: 'Inbox', icon: Inbox },
   { id: 'crm', label: 'Contacts CRM', icon: Users },
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare, badge: 'Bot' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
   { id: 'bookings', label: 'Bookings', icon: Calendar },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'seo', label: 'SEO Manager', icon: Search, badge: '87' },
+  { id: 'seo', label: 'SEO Manager', icon: Search },
   { id: 'marketing', label: 'Marketing', icon: Megaphone },
-  { id: 'ai', label: 'AI Assistant', icon: Sparkles, badge: 'AI' },
+  { id: 'ai', label: 'AI Assistant', icon: Sparkles },
   { id: 'automations', label: 'Automations', icon: Cpu },
   { id: 'files', label: 'Files', icon: Folder },
   { id: 'reviews', label: 'Reviews', icon: Star },
@@ -45,30 +47,20 @@ interface AppShellProps {
   activeTab: string;
   setActiveTab: (tabId: string) => void;
   dashboardMode: DashboardMode;
-  setDashboardMode: (mode: DashboardMode) => void;
   onLogout?: () => void;
+  site: SiteRecord;
 }
 
 export function AppShell({ 
   children, 
-  activeTab, 
-  setActiveTab, 
-  dashboardMode, 
-  setDashboardMode,
-  onLogout
+  activeTab,
+  setActiveTab,
+  dashboardMode,
+  onLogout,
+  site
 }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-
-  const getModeLabel = (mode: DashboardMode) => {
-    switch (mode) {
-      case 'student': return '🎓 Student Portfolio';
-      case 'salon': return '💇‍♀️ Salon Business';
-      case 'creator': return '🎨 Creator Hub';
-      case 'business': return '💼 Startup / SMB';
-    }
-  };
 
   const getVisibleItems = () => {
     // Dynamically re-order or highlight tabs based on chosen mode
@@ -95,46 +87,6 @@ export function AppShell({
           <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100/60 px-2 py-0.5 rounded-full select-none">
             v2.4
           </span>
-        </div>
-
-        {/* Dashboard Mode Selector Dropdown */}
-        <div className="px-4 py-3 border-b border-slate-100">
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-xs font-extrabold text-slate-700 transition-colors cursor-pointer select-none"
-            >
-              <span className="truncate">{getModeLabel(dashboardMode)}</span>
-              <ChevronDown size={14} className="text-slate-400 shrink-0 ml-1.5" />
-            </button>
-            <AnimatePresence>
-              {dropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden py-1"
-                  >
-                    {(['business', 'student', 'salon', 'creator'] as DashboardMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => {
-                          setDashboardMode(mode);
-                          setDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
-                      >
-                        <span>{getModeLabel(mode)}</span>
-                        {dashboardMode === mode && <Check size={12} className="text-indigo-600 font-bold" />}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
         </div>
 
         {/* Navigation Items Link List */}
@@ -234,34 +186,6 @@ export function AppShell({
                 </button>
               </div>
 
-              {/* Mode Select inside Mobile */}
-              <div className="px-4 py-3 border-b border-slate-100">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-extrabold text-slate-700 select-none"
-                >
-                  <span>{getModeLabel(dashboardMode)}</span>
-                  <ChevronDown size={14} className="text-slate-400" />
-                </button>
-                {dropdownOpen && (
-                  <div className="mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden py-1">
-                    {(['business', 'student', 'salon', 'creator'] as DashboardMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => {
-                          setDashboardMode(mode);
-                          setDropdownOpen(false);
-                        }}
-                        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
-                      >
-                        <span>{getModeLabel(mode)}</span>
-                        {dashboardMode === mode && <Check size={12} className="text-indigo-600" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Nav links list on Mobile */}
               <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 select-none">
                 {items.map((item) => {
@@ -334,12 +258,12 @@ export function AppShell({
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-400">Subdomain:</span>
               <a 
-                href="https://studio46.onlypage.in" 
+                href={`https://${site.subdomain}.onlypage.in`} 
                 target="_blank" 
                 rel="noreferrer"
                 className="flex items-center gap-1.5 text-xs font-extrabold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
               >
-                <span>studio46.onlypage.in</span>
+                <span>{site.subdomain}.onlypage.in</span>
                 <ExternalLink size={11} />
               </a>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold rounded-full select-none ml-1">

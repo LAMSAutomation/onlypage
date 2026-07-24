@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import React, { useState } from "react";
 import { X, Mail, Lock, User, ArrowLeft, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface LoginFormProps {
   onClose?: () => void;
@@ -14,35 +15,74 @@ export default function LoginForm({ onClose, onSuccess }: LoginFormProps) {
   const [name, setName] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
+    setInfo(null);
 
     if (isSignUp && !name.trim()) {
       setError("Please enter your name.");
-      setIsLoading(false);
       return;
     }
 
     if (isSignUp && !agreeTerms) {
       setError("You must agree to the terms and conditions.");
-      setIsLoading(false);
       return;
     }
 
-    // Simulate standard authentication delay
-    setTimeout(() => {
+    setIsLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name } },
+        });
+        if (signUpError) throw signUpError;
+
+        // If email confirmation is required, there is no active session yet.
+        if (!data.session) {
+          setInfo("Check your email to confirm your account, then sign in.");
+          setIsSignUp(false);
+          return;
+        }
+        onSuccess?.(name || email.split("@")[0]);
+        onClose?.();
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        onSuccess?.(email.split("@")[0]);
+        onClose?.();
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Authentication failed. Please try again.");
+    } finally {
       setIsLoading(false);
-      if (onSuccess) {
-        onSuccess(name || email.split("@")[0]);
-      }
-      if (onClose) {
-        onClose();
-      }
-    }, 1500);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setInfo(null);
+    setIsLoading(true);
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      // On success the browser redirects to Google; nothing further runs here.
+      if (oauthError) throw oauthError;
+    } catch (err: any) {
+      setError(err?.message ?? "Google sign-in failed.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -111,17 +151,18 @@ export default function LoginForm({ onClose, onSuccess }: LoginFormProps) {
               </div>
             )}
 
+            {/* Info messages (e.g. email confirmation) */}
+            {info && (
+              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-700 text-xs font-semibold flex items-center gap-2">
+                <Sparkles size={14} className="shrink-0" />
+                <span>{info}</span>
+              </div>
+            )}
+
             {/* Google Authentication Trigger */}
             <button
               type="button"
-              onClick={() => {
-                setIsLoading(true);
-                setTimeout(() => {
-                  setIsLoading(false);
-                  if (onSuccess) onSuccess("Google User");
-                  if (onClose) onClose();
-                }, 1000);
-              }}
+              onClick={handleGoogleSignIn}
               className="w-full mt-6 bg-slate-50 hover:bg-slate-100 border border-slate-200 flex items-center justify-center h-12 rounded-full font-bold text-xs text-slate-700 transition-all cursor-pointer shadow-3xs"
             >
               <img
@@ -231,6 +272,8 @@ export default function LoginForm({ onClose, onSuccess }: LoginFormProps) {
                 <span>{isSignUp ? "Sign Up" : "Sign In"}</span>
               )}
             </button>
+
+
 
             {/* Footer switcher */}
             <p className="text-slate-500 text-xs mt-5 text-center font-semibold">

@@ -2,19 +2,25 @@ import React, { useState } from 'react';
 import { AppShell, DashboardMode } from '@/components/app-shell';
 import { Dashboard } from '@/components/dashboard';
 import { WebsiteBuilderEditor } from "@/components/website-builder-editor";
+import type { SiteRecord } from '@/components/ui/onboarding-wizard';
 
 interface EfferdDashboard2Props {
   onLogout?: () => void;
+  site: SiteRecord;
+  onUpdateSite?: (site: SiteRecord) => void;
 }
 
-export function EfferdDashboard2({ onLogout }: EfferdDashboard2Props) {
+export function EfferdDashboard2({ onLogout, site, onUpdateSite }: EfferdDashboard2Props) {
   const [activeTab, setActiveTab] = useState<string>('home');
-  const [dashboardMode, setDashboardMode] = useState<DashboardMode>('salon');
+  const initialMode = (site.theme?.mode as DashboardMode) || 'business';
+  const [dashboardMode] = useState<DashboardMode>(initialMode);
 
   // If the active tab is 'builder' (Website Builder), render the full screen website builder workspace
   if (activeTab === 'builder') {
     return (
       <WebsiteBuilderEditor 
+        site={site}
+        onUpdateSite={onUpdateSite}
         onExit={() => {
           // Instead of logging out, return back to the main dashboard workspace Command Center
           setActiveTab('home');
@@ -28,14 +34,15 @@ export function EfferdDashboard2({ onLogout }: EfferdDashboard2Props) {
     <AppShell 
       activeTab={activeTab} 
       setActiveTab={setActiveTab} 
-      dashboardMode={dashboardMode} 
-      setDashboardMode={setDashboardMode}
+      dashboardMode={dashboardMode}
       onLogout={onLogout}
+      site={site}
     >
-      <Dashboard 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        dashboardMode={dashboardMode} 
+      <Dashboard
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        dashboardMode={dashboardMode}
+        site={site}
       />
     </AppShell>
   );

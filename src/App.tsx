@@ -21,8 +21,10 @@ import PrdExplorer from './components/PrdExplorer';
 import PricingSection from './components/PricingSection';
 import LoginForm from '@/components/ui/login-form';
 import EfferdDashboard2 from '@/components/ui/efferd-dashboard-2';
+import OnboardingWizard, { SiteRecord } from '@/components/ui/onboarding-wizard';
 import { Persona } from './types';
 import { PERSONAS } from './data';
+import { supabase } from '@/lib/supabase';
 
 export default function App() {
   const [businessName, setBusinessName] = useState('yourname');
@@ -31,7 +33,48 @@ export default function App() {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [site, setSite] = useState<SiteRecord | null>(null);
+  const [siteLoading, setSiteLoading] = useState(false);
+
+  // Load the current user's site (if any) to decide onboarding vs dashboard.
+  const loadSite = async (isInitial = false) => {
+    if (isInitial) setSiteLoading(true);
+    const { data, error } = await supabase
+      .from('sites')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!error) setSite((data as SiteRecord) ?? null);
+    if (isInitial) setSiteLoading(false);
+  };
+
+  useEffect(() => {
+    // Hydrate the initial session, then react to any auth state change
+    // (login, logout, and the Google OAuth redirect landing back here).
+    supabase.auth.getSession().then(async ({ data }) => {
+      const loggedIn = !!data.session;
+      setIsLoggedIn(loggedIn);
+      if (loggedIn) await loadSite(true);
+      setAuthReady(true);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setIsLoggedIn(!!session);
+      if (session) {
+        // Only load site on SIGNED_IN. Ignore TOKEN_REFRESHED to prevent editor resets.
+        if (event === 'SIGNED_IN') {
+          await loadSite(false);
+        }
+      } else {
+        setSite(null);
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,8 +124,30 @@ export default function App() {
     }
   };
 
+  if (!authReady || (isLoggedIn && siteLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   if (isLoggedIn) {
-    return <EfferdDashboard2 onLogout={() => setIsLoggedIn(false)} />;
+    // Logged in but no site yet -> run onboarding first.
+    if (!site) {
+      return <OnboardingWizard onComplete={(created) => setSite(created)} />;
+    }
+    return (
+      <EfferdDashboard2
+        site={site}
+        onUpdateSite={(updatedSite) => setSite(updatedSite)}
+        onLogout={async () => {
+          await supabase.auth.signOut();
+          setSite(null);
+          setIsLoggedIn(false);
+        }}
+      />
+    );
   }
 
   return (

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as LucideIcons from 'lucide-react';
 import { 
-  Award, Heart, Check, Globe, Sliders, Layout, Type, Phone, Mail, MapPin, 
-  Users, CheckCircle2, MessageSquare, Calendar, ChevronDown, ArrowRight, 
-  UploadCloud, ShieldCheck, Star, Play, ArrowUpRight, CheckSquare, 
-  ThumbsUp, Menu, Search, Sparkles
+  Award, Heart, Check, Globe, Sliders, Layout, Type, Phone, Mail, MapPin,
+  Users, CheckCircle2, MessageSquare, Calendar, ChevronDown, ArrowRight,
+  UploadCloud, ShieldCheck, Star, Play, ArrowUpRight, CheckSquare,
+  ThumbsUp, Menu, Search, Sparkles,
+  Twitter, Instagram, Github, Lock, CreditCard, ShoppingCart,
+  MessageCircle, ArrowUp, Rocket
 } from 'lucide-react';
 import { 
   Spotlight, MovingBorder, GridBackground, DotBackground, AuroraBackground, 
@@ -13,15 +15,55 @@ import {
   Magnetic, AnimatedBeams 
 } from './builder-effects';
 import { WebBlock, BlockCSSStyles } from './website-builder-editor';
+import { supabase } from '@/lib/supabase';
 
 // Dynamically render any Lucide icon by name
-export function DynamicIcon({ name, size = 18, className = "" }: { name: string; size?: number; className?: string }) {
+export function DynamicIcon({ name, size = 18, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
   const IconComponent = (LucideIcons as any)[name];
   if (IconComponent) {
-    return <IconComponent size={size} className={className} />;
+    return <IconComponent size={size} className={className} style={style} />;
   }
   // Default fallback icon
-  return <Sparkles size={size} className={className} />;
+  return <Sparkles size={size} className={className} style={style} />;
+}
+
+// Resolve dynamic variable bindings like {{site.business_name}}
+export function resolveBindings(
+  text: string, 
+  site: any, 
+  pages: any[] = [], 
+  activePageId?: string | null
+): string {
+  if (!text || typeof text !== 'string') return text;
+  
+  const activePage = pages && activePageId ? pages.find(p => p.id === activePageId) : null;
+  
+  return text.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
+    const key = path.trim();
+    if (key === 'site.business_name') return site?.business_name || '';
+    if (key === 'site.subdomain') return site?.subdomain || '';
+    if (key === 'site.theme.phone' || key === 'site.phone') return site?.theme?.phone || '';
+    if (key === 'site.theme.address' || key === 'site.address') return site?.theme?.address || '';
+    
+    if (key === 'page.name') return activePage?.name || 'Home';
+    if (key === 'page.slug') return activePage?.slug || 'home';
+    if (key === 'page.seo_title') return activePage?.seo_title || '';
+    if (key === 'page.seo_desc') return activePage?.seo_desc || '';
+    
+    // Support custom collections lookup: {{CollectionName.FieldName}}
+    const parts = key.split('.');
+    if (parts.length === 2 && site?.theme?.customCollections) {
+      const [collName, fieldName] = parts;
+      const coll = site.theme.customCollections.find(
+        (c: any) => c.name.toLowerCase() === collName.toLowerCase()
+      );
+      if (coll && coll.rows && coll.rows.length > 0) {
+        return coll.rows.map((r: any) => r[fieldName] || '').filter(Boolean).join(', ');
+      }
+    }
+    
+    return match;
+  });
 }
 
 interface BuilderRendererProps {
@@ -30,17 +72,148 @@ interface BuilderRendererProps {
   onSelect: () => void;
   selectedSubElement?: string | null;
   onSelectSubElement?: (elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media') => void;
+  siteId?: string;
+  pages?: any[];
+  onNavigatePage?: (slug: string) => void;
+  site?: any;
+  activePageId?: string | null;
 }
 
 export function BuilderRenderer({ 
-  block, 
+  block: inputBlock, 
   isActive, 
   onSelect,
   selectedSubElement = null,
-  onSelectSubElement
+  onSelectSubElement,
+  siteId,
+  pages = [],
+  onNavigatePage,
+  site,
+  activePageId
 }: BuilderRendererProps) {
-  const styles = block.styles;
   const [formSubmitted, setFormSubmitted] = useState(false);
+  
+  const resolve = (text: any): string => {
+    if (text === undefined || text === null) return '';
+    return resolveBindings(String(text), site, pages, activePageId || (inputBlock as any).page_id || (pages && pages[0]?.id));
+  };
+
+  const saveToCustomCollection = async (formData: FormData) => {
+    if ((inputBlock as any).bindCollectionName && siteId) {
+      try {
+        const { data: siteData } = await supabase.from('sites').select('theme').eq('id', siteId).single();
+        if (siteData) {
+          const theme = siteData.theme || {};
+          const customCollections = theme.customCollections || [];
+          const targetColl = customCollections.find(
+            (c: any) => c.name.toLowerCase() === (inputBlock as any).bindCollectionName.toLowerCase()
+          );
+          if (targetColl) {
+            if (!targetColl.rows) targetColl.rows = [];
+            const newRow: any = { id: crypto.randomUUID(), created_at: new Date().toISOString() };
+            for (const [k, v] of formData.entries()) {
+              newRow[k] = v;
+            }
+            targetColl.rows.push(newRow);
+            await supabase.from('sites').update({ theme }).eq('id', siteId);
+          }
+        }
+      } catch (err) {
+        console.error('Error saving form submission to custom collection:', err);
+      }
+    }
+  };
+
+  // Create a resolved block copy
+  const resolvedBlock: any = {
+    ...inputBlock,
+    title: resolve(inputBlock.title),
+    subtitle: resolve(inputBlock.subtitle),
+    badge: inputBlock.badge ? resolve(inputBlock.badge) : undefined,
+    btnText: inputBlock.btnText ? resolve(inputBlock.btnText) : undefined,
+    copyright: (inputBlock as any).copyright ? resolve((inputBlock as any).copyright) : undefined,
+    contactEmail: (inputBlock as any).contactEmail ? resolve((inputBlock as any).contactEmail) : undefined,
+    contactPhone: (inputBlock as any).contactPhone ? resolve((inputBlock as any).contactPhone) : undefined,
+    contactAddress: (inputBlock as any).contactAddress ? resolve((inputBlock as any).contactAddress) : undefined,
+    mapAddress: (inputBlock as any).mapAddress ? resolve((inputBlock as any).mapAddress) : undefined,
+  };
+
+  // Resolve collection bindings for list features
+  if (inputBlock.type === 'Features') {
+    let featuresToRender = inputBlock.features || [];
+    if ((inputBlock as any).bindCollectionName && site?.theme?.customCollections) {
+      const collection = site.theme.customCollections.find(
+        (c: any) => c.name.toLowerCase() === (inputBlock as any).bindCollectionName.toLowerCase()
+      );
+      if (collection && collection.rows) {
+        featuresToRender = collection.rows.map((row: any, index: number) => ({
+          id: row.id || `row-${index}`,
+          title: row[(inputBlock as any).bindFields?.title || 'title'] || row.title || row.name || '',
+          desc: row[(inputBlock as any).bindFields?.desc || 'desc'] || row.desc || row.description || '',
+          icon: row[(inputBlock as any).bindFields?.icon || 'icon'] || row.icon || 'Sparkles'
+        }));
+      }
+    }
+    resolvedBlock.features = featuresToRender.map(f => ({
+      ...f,
+      title: resolve(f.title),
+      desc: resolve(f.desc)
+    }));
+  } else if (inputBlock.type === 'Pricing') {
+    let pricingToRender = inputBlock.pricing || [];
+    if ((inputBlock as any).bindCollectionName && site?.theme?.customCollections) {
+      const collection = site.theme.customCollections.find(
+        (c: any) => c.name.toLowerCase() === (inputBlock as any).bindCollectionName.toLowerCase()
+      );
+      if (collection && collection.rows) {
+        pricingToRender = collection.rows.map((row: any, index: number) => ({
+          id: row.id || `row-${index}`,
+          tier: row[(inputBlock as any).bindFields?.tier || 'tier'] || row.tier || row.name || '',
+          price: row[(inputBlock as any).bindFields?.price || 'price'] || row.price || '',
+          features: typeof row[(inputBlock as any).bindFields?.features || 'features'] === 'string'
+            ? row[(inputBlock as any).bindFields?.features || 'features'].split(',').map((f: string) => f.trim())
+            : Array.isArray(row[(inputBlock as any).bindFields?.features || 'features'])
+              ? row[(inputBlock as any).bindFields?.features || 'features']
+              : [],
+          btnText: row[(inputBlock as any).bindFields?.btnText || 'btnText'] || row.btnText || 'Choose Plan',
+          popular: Boolean(row[(inputBlock as any).bindFields?.popular || 'popular']) || false
+        }));
+      }
+    }
+    resolvedBlock.pricing = pricingToRender.map(p => ({
+      ...p,
+      tier: resolve(p.tier),
+      price: resolve(p.price),
+      btnText: resolve(p.btnText),
+      features: p.features.map(f => resolve(f))
+    }));
+  } else if (inputBlock.type === 'Testimonials') {
+    let testimonialsToRender = inputBlock.testimonials || [];
+    if ((inputBlock as any).bindCollectionName && site?.theme?.customCollections) {
+      const collection = site.theme.customCollections.find(
+        (c: any) => c.name.toLowerCase() === (inputBlock as any).bindCollectionName.toLowerCase()
+      );
+      if (collection && collection.rows) {
+        testimonialsToRender = collection.rows.map((row: any, index: number) => ({
+          id: row.id || `row-${index}`,
+          name: row[(inputBlock as any).bindFields?.name || 'name'] || row.name || '',
+          role: row[(inputBlock as any).bindFields?.role || 'role'] || row.role || row.title || '',
+          content: row[(inputBlock as any).bindFields?.content || 'content'] || row.content || row.desc || row.description || '',
+          avatar: row[(inputBlock as any).bindFields?.avatar || 'avatar'] || row.avatar || '',
+          rating: Number(row[(inputBlock as any).bindFields?.rating || 'rating']) || 5
+        }));
+      }
+    }
+    resolvedBlock.testimonials = testimonialsToRender.map(t => ({
+      ...t,
+      name: resolve(t.name),
+      role: resolve(t.role),
+      content: resolve(t.content)
+    }));
+  }
+
+  const block = resolvedBlock;
+  const styles = block.styles;
   const [faqOpen, setFaqOpen] = useState<Record<string, boolean>>({});
   const [activeBeforeAfter, setActiveBeforeAfter] = useState<number>(50); // percentage slider
   const [activeOfferClaimed, setActiveOfferClaimed] = useState(false);
@@ -166,7 +339,8 @@ export function BuilderRenderer({
     elementId, 
     children, 
     className = "", 
-    style 
+    style,
+    key
   }: { 
     elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media'; 
     children: React.ReactNode; 
@@ -176,6 +350,31 @@ export function BuilderRenderer({
   }) => {
     const isSubActive = selectedSubElement === elementId;
     const isSelectedBlock = isActive;
+    
+    // Hijack Navigation subtitle to display dynamic site pages
+    let displayChildren = children;
+    if (block.type === 'Navigation' && elementId === 'subtitle') {
+      if (pages && pages.length > 0) {
+        displayChildren = (
+          <div className="flex items-center gap-6">
+            {pages.map((page: any) => (
+              <span 
+                key={page.id} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isActive && onNavigatePage) {
+                    onNavigatePage(page.slug);
+                  }
+                }}
+                className="hover:text-white cursor-pointer transition capitalize font-semibold"
+              >
+                {page.name}
+              </span>
+            ))}
+          </div>
+        );
+      }
+    }
     
     return (
       <div 
@@ -202,10 +401,41 @@ export function BuilderRenderer({
         }`}>
           {elementId}
         </div>
-        {children}
+        {displayChildren}
       </div>
     );
   };
+
+  // Resolve a link target: external URL opens in new tab, otherwise treat as page slug and navigate.
+  // No-op while editing (isActive) so clicks select instead of navigate.
+  const handleLinkNav = (url?: string) => {
+    if (isActive || !url || url === '#') return;
+    if (/^https?:\/\//i.test(url) || /^(mailto:|tel:)/i.test(url)) {
+      window.open(url, '_blank', 'noopener');
+      return;
+    }
+    const slug = url.replace(/^\//, '');
+    if (onNavigatePage) onNavigatePage(slug);
+  };
+
+  // Fire the block's configured button action (scroll / link-to-page / external URL).
+  const runBtnAction = () => {
+    if (isActive) return;
+    const type = (block as any).btnActionType;
+    const value = (block as any).btnActionValue;
+    if (!value) return;
+    if (type === 'scroll') {
+      document.getElementById(value)?.scrollIntoView({ behavior: 'smooth' });
+    } else if (type === 'link' && onNavigatePage) {
+      onNavigatePage(value);
+    } else if (type === 'external') {
+      window.open(value, '_blank', 'noopener');
+    }
+  };
+
+  // Editable footer links: real block.links when present, else sensible fallback labels.
+  const footerLinks: { id: string; label: string; url?: string }[] =
+    (block as any).links && (block as any).links.length > 0 ? (block as any).links : [];
 
   const bgType = (styles as any).bgType || (styles.useGradient ? 'gradient' : 'color');
   const bgImageUrl = (styles as any).bgImageUrl || '';
@@ -543,14 +773,59 @@ export function BuilderRenderer({
                   </div>
                 ))}
               </div>
+            ) : block.variant === 'icon-cards' ? (
+              // GLOWING ACCENT CARDS
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                {block.features?.map(feat => (
+                  <SelectableElement key={feat.id} elementId="card">
+                    <div
+                      className="relative p-8 h-full rounded-2xl border border-transparent hover:border-blue-500/50 bg-gradient-to-b from-slate-500/5 to-transparent transition-all duration-300 group"
+                      style={cardStyle}
+                    >
+                      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500" style={{ boxShadow: `inset 0 0 40px ${styles.accentColor}20` }} />
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300" style={{ backgroundColor: `${styles.accentColor}18`, color: styles.accentColor }}>
+                          <DynamicIcon name={feat.icon} size={22} />
+                        </div>
+                        <h3 className="text-lg font-black mb-2">{feat.title}</h3>
+                        <p className="text-sm opacity-80 leading-relaxed">{feat.desc}</p>
+                      </div>
+                    </div>
+                  </SelectableElement>
+                ))}
+              </div>
+            ) : block.variant === 'comparison' ? (
+              // FEATURE COMPARISON TABLE
+              <div className="max-w-3xl mx-auto overflow-hidden rounded-2xl border border-slate-500/15" style={cardStyle}>
+                <div className="grid grid-cols-2 px-6 py-4 border-b border-slate-500/15 text-xs font-black uppercase tracking-wider" style={{ backgroundColor: `${styles.accentColor}10` }}>
+                  <span>Feature</span>
+                  <span className="text-right" style={{ color: styles.accentColor }}>Included</span>
+                </div>
+                {block.features?.map(feat => (
+                  <SelectableElement key={feat.id} elementId="card">
+                    <div className="grid grid-cols-2 items-center px-6 py-4 border-b border-slate-500/10 last:border-0 text-left hover:bg-slate-500/5 transition">
+                      <div className="flex items-center gap-3">
+                        <DynamicIcon name={feat.icon} size={16} className="shrink-0" style={{ color: styles.accentColor }} />
+                        <div>
+                          <h4 className="text-sm font-bold">{feat.title}</h4>
+                          <p className="text-[11px] opacity-70">{feat.desc}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Check size={18} className="inline text-emerald-500" />
+                      </div>
+                    </div>
+                  </SelectableElement>
+                ))}
+              </div>
             ) : (
-              // DEFAULT CARD GRID
+              // DEFAULT CARD GRID (feature-grid)
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {block.features?.map(feat => (
                   <SelectableElement key={feat.id} elementId="card">
-                    <motion.div 
+                    <motion.div
                       whileHover={{ y: -5 }}
-                      className="text-left relative overflow-hidden flex flex-col justify-between group h-full" 
+                      className="text-left relative overflow-hidden flex flex-col justify-between group h-full"
                       style={cardStyle}
                     >
                       <div>
@@ -760,40 +1035,107 @@ export function BuilderRenderer({
             <SelectableElement elementId="subtitle" className="mb-12">
               <p style={subtitleStyle} className="max-w-2xl mx-auto">{block.subtitle}</p>
             </SelectableElement>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {block.pricing?.map(plan => (
-                <SelectableElement key={plan.id} elementId="card" className={plan.popular ? 'md:scale-[1.03] z-10' : ''}>
-                  <div 
-                    className={`p-8 text-left flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:shadow-2xl h-full ${
-                      plan.popular ? 'ring-2 ring-blue-500' : ''
-                    }`} 
-                    style={cardStyle}
-                  >
-                    {plan.popular && (
-                      <span className="absolute top-4 right-4 bg-blue-500 text-white text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">
-                        RECOMMENDED
-                      </span>
-                    )}
-                    <div>
-                      <h3 className="text-lg font-extrabold mb-1">{plan.tier}</h3>
-                      <p className="text-3xl font-black mb-6" style={{ color: styles.accentColor }}>{plan.price}</p>
-                      <ul className="space-y-3 mb-8">
-                        {plan.features.map((f, i) => (
-                          <li key={i} className="text-xs flex items-center gap-2 opacity-90">
-                            <Check size={14} className="text-emerald-500 shrink-0" />
-                            <span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
+
+            {block.variant === 'service-tier' ? (
+              // SIMPLE SERVICE PRICER — compact rows, per-item CTA
+              <div className="max-w-2xl mx-auto space-y-3">
+                {block.pricing?.map(plan => (
+                  <SelectableElement key={plan.id} elementId="card">
+                    <div className="flex items-center justify-between gap-4 p-5 rounded-2xl text-left transition-all hover:shadow-lg" style={cardStyle}>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-extrabold flex items-center gap-2">
+                          {plan.tier}
+                          {plan.popular && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: styles.accentColor, color: '#fff' }}>Popular</span>}
+                        </h3>
+                        <p className="text-[11px] opacity-70 mt-1 line-clamp-1">{plan.features.join(' · ')}</p>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0">
+                        <span className="text-xl font-black" style={{ color: styles.accentColor }}>{plan.price}</span>
+                        <button className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: styles.accentColor, color: '#fff', borderRadius: `${styles.buttonBorderRadius}px` }}>
+                          {plan.btnText}
+                        </button>
+                      </div>
                     </div>
-                    <button className="w-full py-3 font-bold text-xs cursor-pointer transition-all duration-300" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#ffffff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
-                      {plan.btnText}
-                    </button>
-                  </div>
-                </SelectableElement>
-              ))}
-            </div>
+                  </SelectableElement>
+                ))}
+              </div>
+            ) : block.variant === 'comparison-pricing' ? (
+              // FULL MATRIX PRICING — feature rows × plan columns
+              <div className="max-w-4xl mx-auto overflow-x-auto rounded-2xl border border-slate-500/15" style={cardStyle}>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-500/15">
+                      <th className="px-5 py-4 text-xs font-black uppercase tracking-wider">Plan</th>
+                      <th className="px-5 py-4 text-xs font-black uppercase tracking-wider" style={{ color: styles.accentColor }}>Price</th>
+                      <th className="px-5 py-4 text-xs font-black uppercase tracking-wider">What's included</th>
+                      <th className="px-5 py-4" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.pricing?.map(plan => (
+                      <SelectableElement key={plan.id} elementId="card">
+                        <tr className={`border-b border-slate-500/10 last:border-0 hover:bg-slate-500/5 transition ${plan.popular ? 'bg-slate-500/[0.04]' : ''}`}>
+                          <td className="px-5 py-4 font-extrabold text-sm">
+                            {plan.tier}
+                            {plan.popular && <span className="ml-2 text-[8px] font-black uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${styles.accentColor}20`, color: styles.accentColor }}>Best</span>}
+                          </td>
+                          <td className="px-5 py-4 font-black text-lg" style={{ color: styles.accentColor }}>{plan.price}</td>
+                          <td className="px-5 py-4">
+                            <ul className="space-y-1">
+                              {plan.features.map((f, i) => (
+                                <li key={i} className="text-[11px] flex items-center gap-1.5 opacity-90">
+                                  <Check size={12} className="text-emerald-500 shrink-0" /> {f}
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#fff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                              {plan.btnText}
+                            </button>
+                          </td>
+                        </tr>
+                      </SelectableElement>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              // STANDARD SAAS 3-TIERS (saas-pricing / default)
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {block.pricing?.map(plan => (
+                  <SelectableElement key={plan.id} elementId="card" className={plan.popular ? 'md:scale-[1.03] z-10' : ''}>
+                    <div
+                      className={`p-8 text-left flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:shadow-2xl h-full ${
+                        plan.popular ? 'ring-2 ring-blue-500' : ''
+                      }`}
+                      style={cardStyle}
+                    >
+                      {plan.popular && (
+                        <span className="absolute top-4 right-4 bg-blue-500 text-white text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">
+                          RECOMMENDED
+                        </span>
+                      )}
+                      <div>
+                        <h3 className="text-lg font-extrabold mb-1">{plan.tier}</h3>
+                        <p className="text-3xl font-black mb-6" style={{ color: styles.accentColor }}>{plan.price}</p>
+                        <ul className="space-y-3 mb-8">
+                          {plan.features.map((f, i) => (
+                            <li key={i} className="text-xs flex items-center gap-2 opacity-90">
+                              <Check size={14} className="text-emerald-500 shrink-0" />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <button className="w-full py-3 font-bold text-xs cursor-pointer transition-all duration-300" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#ffffff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                        {plan.btnText}
+                      </button>
+                    </div>
+                  </SelectableElement>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -832,8 +1174,47 @@ export function BuilderRenderer({
                   </SelectableElement>
                 ))}
               </div>
+            ) : block.variant === 'google-review' ? (
+              // GOOGLE STARS & BADGING — trust-focused
+              <div>
+                <div className="flex items-center justify-center gap-3 mb-10">
+                  <span className="text-2xl font-black" style={{ fontFamily: 'sans-serif' }}>
+                    <span style={{ color: '#4285F4' }}>G</span>
+                    <span style={{ color: '#EA4335' }}>o</span>
+                    <span style={{ color: '#FBBC05' }}>o</span>
+                    <span style={{ color: '#4285F4' }}>g</span>
+                    <span style={{ color: '#34A853' }}>l</span>
+                    <span style={{ color: '#EA4335' }}>e</span>
+                  </span>
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-slate-500/20">
+                    <span className="text-lg font-black text-amber-500">5.0</span>
+                    <div className="flex gap-0.5 text-amber-500">
+                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
+                  {block.testimonials?.map(test => (
+                    <SelectableElement key={test.id} elementId="card">
+                      <div className="p-6 rounded-2xl border border-slate-500/15" style={cardStyle}>
+                        <div className="flex items-center gap-3 mb-4">
+                          <img src={test.avatar} className="w-10 h-10 rounded-full object-cover shrink-0" alt="Avatar" />
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-black truncate">{test.name}</h4>
+                            <div className="flex gap-0.5 text-amber-500 mt-0.5">
+                              {Array.from({ length: test.rating }).map((_, rIdx) => <Star key={rIdx} size={11} fill="currentColor" />)}
+                            </div>
+                          </div>
+                          <svg className="ml-auto w-5 h-5 shrink-0" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        </div>
+                        <p className="text-xs leading-relaxed opacity-90">"{test.content}"</p>
+                      </div>
+                    </SelectableElement>
+                  ))}
+                </div>
+              </div>
             ) : (
-              // CLASSIC CAROUSEL STYLE TILES
+              // CLASSIC REVIEW TILES (review-cards / default)
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {block.testimonials?.map(test => (
                   <SelectableElement key={test.id} elementId="card">
@@ -886,8 +1267,25 @@ export function BuilderRenderer({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
                   {/* Styled Input card */}
                   <form 
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      const name = (formData.get('name') as string) || '';
+                      const email = (formData.get('email') as string) || '';
+                      const query = (formData.get('query') as string) || '';
+                      
+                      if (siteId) {
+                        await supabase.from('leads').insert({
+                          site_id: siteId,
+                          name: name || 'Anonymous',
+                          email: email || 'no-email@example.com',
+                          phone: '',
+                          status: 'lead',
+                          amount: null,
+                          source: 'Contact Form: ' + (block.title || 'General Query')
+                        });
+                        await saveToCustomCollection(formData);
+                      }
                       setFormSubmitted(true);
                     }}
                     className="p-8 flex flex-col gap-4"
@@ -895,15 +1293,15 @@ export function BuilderRenderer({
                   >
                     <div>
                       <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">FULL NAME</label>
-                      <input required type="text" placeholder="Kabir Mehta" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                      <input required name="name" type="text" placeholder="Kabir Mehta" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
                       <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">EMAIL ADDRESS</label>
-                      <input required type="email" placeholder="kabir@designco.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                      <input required name="email" type="email" placeholder="kabir@designco.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
                       <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">MESSAGE QUERY</label>
-                      <textarea required placeholder="Outline your project goals..." className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" rows={4} />
+                      <textarea required name="query" placeholder="Outline your project goals..." className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" rows={4} />
                     </div>
                     <button type="submit" className="w-full py-4 font-bold text-xs cursor-pointer hover:opacity-95 transition" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
                       {block.btnText || 'Submit Request'}
@@ -974,22 +1372,55 @@ export function BuilderRenderer({
                   {block.variant === 'newsletter' ? (
                     // NEWSLETTER BAR
                     <form 
-                      onSubmit={(e) => {
+                      onSubmit={async (e) => {
                         e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const email = (formData.get('email') as string) || '';
+                        
+                        if (siteId) {
+                          await supabase.from('leads').insert({
+                            site_id: siteId,
+                            name: 'Newsletter Subscriber',
+                            email: email || 'no-email@example.com',
+                            phone: '',
+                            status: 'lead',
+                            amount: null,
+                            source: 'Newsletter Subscribe'
+                          });
+                          await saveToCustomCollection(formData);
+                        }
                         setFormSubmitted(true);
                       }}
                       className="p-1 flex items-center gap-2 bg-slate-500/5 border border-slate-500/20 rounded-2xl w-full"
                     >
-                      <input required type="email" placeholder="kabir@designco.com" className="flex-1 bg-transparent px-4 py-3 text-xs outline-none text-white placeholder-slate-500" />
+                      <input required name="email" type="email" placeholder="kabir@designco.com" className="flex-1 bg-transparent px-4 py-3 text-xs outline-none text-white placeholder-slate-500" />
                       <button type="submit" className="px-6 py-3 font-bold text-xs whitespace-nowrap cursor-pointer transition" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
                         {block.btnText || 'Join List'}
                       </button>
                     </form>
-                  ) : (
-                    // APPOINTMENT BOOKER
-                    <form 
-                      onSubmit={(e) => {
+                  ) : block.variant === 'contact-complex' ? (
+                    // DETAILED CONTACT GRID — name + email + message → leads
+                    <form
+                      onSubmit={async (e) => {
                         e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const name = (formData.get('name') as string) || '';
+                        const email = (formData.get('email') as string) || '';
+                        const phone = (formData.get('phone') as string) || '';
+                        const message = (formData.get('message') as string) || '';
+
+                        if (siteId) {
+                          await supabase.from('leads').insert({
+                            site_id: siteId,
+                            name: name || 'Anonymous Contact',
+                            email: email || 'no-email@example.com',
+                            phone: phone || '',
+                            status: 'lead',
+                            amount: null,
+                            source: 'Contact Form' + (message ? `: ${message.slice(0, 140)}` : '')
+                          });
+                          await saveToCustomCollection(formData);
+                        }
                         setFormSubmitted(true);
                       }}
                       className="p-8 text-left space-y-4"
@@ -997,16 +1428,67 @@ export function BuilderRenderer({
                     >
                       <div>
                         <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">FULL NAME</label>
-                        <input required type="text" placeholder="Dr. Sonal" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                        <input required name="name" type="text" placeholder="Kabir Sharma" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">EMAIL</label>
+                          <input required name="email" type="email" placeholder="kabir@mail.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">PHONE</label>
+                          <input name="phone" type="tel" placeholder="+91 98765 43210" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">MESSAGE</label>
+                        <textarea name="message" rows={3} placeholder="How can we help you?" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none resize-none" />
+                      </div>
+                      <button type="submit" className="w-full py-4 mt-2 font-bold text-xs cursor-pointer" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                        {block.btnText || 'Send Message'}
+                      </button>
+                    </form>
+                  ) : (
+                    // APPOINTMENT BOOKER
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const name = (formData.get('name') as string) || '';
+                        const date = (formData.get('date') as string) || '';
+                        const time = (formData.get('time') as string) || '';
+
+                        if (siteId) {
+                          const slotAt = new Date(`${date}T${time}`);
+                          const validSlotAt = isNaN(slotAt.getTime()) ? new Date() : slotAt;
+
+                          await supabase.from('bookings').insert({
+                            site_id: siteId,
+                            name: name || 'Anonymous Guest',
+                            service: 'Website Booking: ' + (block.title || 'Session'),
+                            staff: 'Rathnavel K',
+                            slot_at: validSlotAt.toISOString(),
+                            status: 'Confirmed'
+                          });
+                          await saveToCustomCollection(formData);
+                        }
+                        setFormSubmitted(true);
+                      }}
+                      className="p-8 text-left space-y-4"
+                      style={{ backgroundColor: styles.cardBgColor, borderRadius: `${styles.cardBorderRadius}px` }}
+                    >
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">FULL NAME</label>
+                        <input required name="name" type="text" placeholder="Dr. Sonal" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">DATE</label>
-                          <input required type="date" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                          <input required name="date" type="date" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
                         </div>
                         <div>
                           <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">TIME</label>
-                          <input required type="time" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                          <input required name="time" type="time" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
                         </div>
                       </div>
                       <button type="submit" className="w-full py-4 mt-4 font-bold text-xs cursor-pointer" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
@@ -1035,14 +1517,14 @@ export function BuilderRenderer({
                     <span className="font-black text-sm uppercase tracking-widest" style={{ color: styles.accentColor }}>{block.title || 'OnlyPage'}</span>
                   )}
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <span className="hover:text-white cursor-pointer transition">Services</span>
                   <span className="hover:text-white cursor-pointer transition">Features</span>
                   <span className="hover:text-white cursor-pointer transition">Templates</span>
                   <span className="hover:text-white cursor-pointer transition">Pricing</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="font-extrabold cursor-pointer transition" style={{ ...buttonStyle, padding: '8px 16px', fontSize: '10px' }}>{block.btnText || 'Sign In'}</button>
+                  <button className="font-extrabold cursor-pointer transition" style={{ ...buttonStyle, padding: '9px 18px', fontSize: '11px' }}>{block.btnText || 'Sign In'}</button>
                 </SelectableElement>
               </div>
             )}
@@ -1117,12 +1599,12 @@ export function BuilderRenderer({
                     <span>Products</span> <ChevronDown size={12} />
                     <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover/mega:opacity-100 group-hover/mega:translate-y-0 group-hover/mega:pointer-events-auto transition-all duration-300 z-50 text-left grid grid-cols-2 gap-3">
                       <div>
-                        <h5 className="font-extrabold text-[9px] text-blue-500 tracking-wider">ENGINE</h5>
-                        <p className="text-[9px] text-slate-400 mt-1">Real-time DB synchronization.</p>
+                        <h5 className="font-extrabold text-[10px] text-blue-500 tracking-wider">ENGINE</h5>
+                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Real-time DB synchronization.</p>
                       </div>
                       <div>
-                        <h5 className="font-extrabold text-[9px] text-emerald-500 tracking-wider">DEPLOY</h5>
-                        <p className="text-[9px] text-slate-400 mt-1">Instant serverless CDN endpoints.</p>
+                        <h5 className="font-extrabold text-[10px] text-emerald-500 tracking-wider">DEPLOY</h5>
+                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Instant serverless CDN endpoints.</p>
                       </div>
                     </div>
                   </div>
@@ -1154,10 +1636,10 @@ export function BuilderRenderer({
             {/* nav-social-icons */}
             {block.variant === 'nav-social-icons' && (
               <div className="flex items-center justify-between p-4" style={{ backgroundColor: styles.cardBgColor }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs text-slate-400 hover:text-white cursor-pointer">𝕏</div>
-                  <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs text-slate-400 hover:text-white cursor-pointer">📸</div>
-                  <div className="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs text-slate-400 hover:text-white cursor-pointer">🐙</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Twitter size={14} /></div>
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Instagram size={14} /></div>
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Github size={14} /></div>
                 </div>
                 <SelectableElement elementId="title">
                   <span className="font-extrabold text-xs uppercase tracking-widest text-slate-500">{block.title || 'SOCIAL.CORP'}</span>
@@ -1171,9 +1653,10 @@ export function BuilderRenderer({
             {/* nav-double-header */}
             {block.variant === 'nav-double-header' && (
               <div className="w-full flex flex-col border-b border-slate-800">
-                <div className="bg-blue-600 text-white text-[9px] font-black tracking-widest uppercase p-1.5 text-center flex items-center justify-center gap-1">
-                  <span>🚀 NEW VERSION 2.5 BRUTALIST DESIGN KITS ARE LIVE</span>
-                  <span className="underline hover:opacity-85 cursor-pointer ml-1">EXPLORE BUNDLES {"→"}</span>
+                <div className="bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase py-2 px-3 text-center flex items-center justify-center gap-1.5">
+                  <Rocket size={11} />
+                  <span>NEW VERSION 2.5 BRUTALIST DESIGN KITS ARE LIVE</span>
+                  <span className="underline hover:opacity-85 cursor-pointer ml-1 flex items-center gap-0.5">EXPLORE BUNDLES <ArrowRight size={10} /></span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-slate-950">
                   <SelectableElement elementId="title">
@@ -1216,7 +1699,7 @@ export function BuilderRenderer({
                   <span className="hover:text-white cursor-pointer">Works</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="bg-white text-slate-950 rounded-full font-black text-[9px] px-3 py-1 hover:opacity-95">{block.btnText || 'Ping'}</button>
+                  <button className="bg-white text-slate-950 rounded-full font-black text-[10px] px-3.5 py-1.5 hover:opacity-95 transition">{block.btnText || 'Ping'}</button>
                 </SelectableElement>
               </div>
             )}
@@ -1349,11 +1832,11 @@ export function BuilderRenderer({
                   <span className="font-black text-sm">{block.title || 'ShopKart'}</span>
                 </SelectableElement>
                 <div className="flex items-center gap-4">
-                  <div className="relative cursor-pointer">
-                    <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                  <div className="relative cursor-pointer text-slate-300 hover:text-white transition">
+                    <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
                       3
                     </div>
-                    <span className="text-lg">🛒</span>
+                    <ShoppingCart size={20} />
                   </div>
                   <SelectableElement elementId="button">
                     <button className="px-3.5 py-1.5 bg-slate-800 text-white font-extrabold text-[11px] rounded">{block.btnText || 'Checkout'}</button>
@@ -1421,10 +1904,11 @@ export function BuilderRenderer({
                   ))}
                 </div>
                 <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                  <span>© {new Date().getFullYear()} ONLYPAGE IN. ALL RIGHTS RESERVED.</span>
+                  <span>{(block as any).copyright || `© ${new Date().getFullYear()} ONLYPAGE IN. ALL RIGHTS RESERVED.`}</span>
                   <div className="flex gap-4 mt-3 md:mt-0">
-                    <span className="hover:text-slate-300 cursor-pointer">Privacy</span>
-                    <span className="hover:text-slate-300 cursor-pointer">Terms</span>
+                    {(footerLinks.length > 0 ? footerLinks : [{ id: 'd1', label: 'Privacy' }, { id: 'd2', label: 'Terms' }]).map(link => (
+                      <span key={link.id} onClick={() => handleLinkNav(link.url)} className="hover:text-slate-300 cursor-pointer">{link.label}</span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1440,8 +1924,8 @@ export function BuilderRenderer({
                   <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">© {new Date().getFullYear()} REVOLUTIONARY CODEBASE</span>
                 </SelectableElement>
                 <div className="flex gap-2">
-                  <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px]">𝕏</div>
-                  <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px]">🐙</div>
+                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Twitter size={13} /></div>
+                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Github size={13} /></div>
                 </div>
               </div>
             )}
@@ -1506,7 +1990,9 @@ export function BuilderRenderer({
                 </SelectableElement>
                 <div className="max-w-sm mx-auto flex gap-2">
                   <input required disabled type="email" placeholder="enter email..." className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 outline-none" />
-                  <button className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded transition uppercase tracking-wider">Join</button>
+                  <SelectableElement elementId="button">
+                    <button onClick={runBtnAction} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded transition uppercase tracking-wider">{block.btnText || 'Join'}</button>
+                  </SelectableElement>
                 </div>
               </div>
             )}
@@ -1527,7 +2013,7 @@ export function BuilderRenderer({
                     </div>
                   ))}
                 </div>
-                <p className="text-[9px] text-slate-500 text-center font-bold">FOLLOW @ONLYPAGE_IN FOR HOURLY INSPIRATIONS</p>
+                <p className="text-[10px] text-slate-500 text-center font-bold tracking-wide">FOLLOW @ONLYPAGE_IN FOR HOURLY INSPIRATIONS</p>
               </div>
             )}
 
@@ -1536,11 +2022,11 @@ export function BuilderRenderer({
               <div className="p-6 bg-slate-950 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-left">
                   <span className="font-extrabold text-xs text-white">{block.title || 'OnlyPage secured'}</span>
-                  <p className="text-[9px] text-slate-500 mt-1">© {new Date().getFullYear()} Encrypted endpoints routing standard.</p>
+                  <p className="text-[10px] text-slate-500 mt-1">© {new Date().getFullYear()} Encrypted endpoints routing standard.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-mono text-[9px] text-emerald-500 font-extrabold tracking-widest flex items-center gap-1">🔒 SSL ENCRYPTED</span>
-                  <span className="px-2.5 py-1 bg-slate-900 border border-slate-800 rounded font-mono text-[9px] text-blue-500 font-extrabold tracking-widest flex items-center gap-1">💳 STRIPE DIRECT</span>
+                  <span className="px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded font-mono text-[10px] text-emerald-500 font-extrabold tracking-wider flex items-center gap-1.5"><Lock size={11} /> SSL ENCRYPTED</span>
+                  <span className="px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded font-mono text-[10px] text-blue-500 font-extrabold tracking-wider flex items-center gap-1.5"><CreditCard size={11} /> STRIPE DIRECT</span>
                 </div>
               </div>
             )}
@@ -1554,7 +2040,7 @@ export function BuilderRenderer({
                     <p className="text-[10px] text-slate-300 mt-0.5">Publish your custom domain live in exactly 2 minutes flat.</p>
                   </div>
                   <SelectableElement elementId="button">
-                    <button className="px-4 py-2 bg-white text-slate-950 font-bold text-xs rounded-lg shadow-xl">{block.btnText || 'Launch Now'}</button>
+                    <button onClick={runBtnAction} className="px-4 py-2 bg-white text-slate-950 font-bold text-xs rounded-lg shadow-xl hover:opacity-90 transition">{block.btnText || 'Launch Now'}</button>
                   </SelectableElement>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-[10px] text-slate-400 uppercase tracking-widest font-extrabold border-t border-slate-800 pt-6">
@@ -1576,7 +2062,7 @@ export function BuilderRenderer({
                   <p className="text-[10px] text-slate-400 max-w-sm mx-auto mb-6">Designed with precision for developers, designers, and visual layout architects.</p>
                 </SelectableElement>
                 <div className="h-px bg-gradient-to-r from-transparent via-violet-500/20 to-transparent w-full my-4" />
-                <span className="text-[9px] font-mono text-slate-500">LAUNCHING ORBITS AT COLD SPEEDS DECK V2.5</span>
+                <span className="text-[10px] font-mono text-slate-500">LAUNCHING ORBITS AT COLD SPEEDS DECK V2.5</span>
               </div>
             )}
 
@@ -1596,9 +2082,9 @@ export function BuilderRenderer({
             {block.variant === 'footer-split-legal' && (
               <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 <div className="flex gap-4">
-                  <span className="hover:text-white cursor-pointer">Privacy Charter</span>
-                  <span className="hover:text-white cursor-pointer">Cookie Settings</span>
-                  <span className="hover:text-white cursor-pointer">TOS</span>
+                  {(footerLinks.length > 0 ? footerLinks : [{ id: 'd1', label: 'Privacy Charter' }, { id: 'd2', label: 'Cookie Settings' }, { id: 'd3', label: 'TOS' }]).map(link => (
+                    <span key={link.id} onClick={() => handleLinkNav(link.url)} className="hover:text-white cursor-pointer">{link.label}</span>
+                  ))}
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -1611,8 +2097,8 @@ export function BuilderRenderer({
             {block.variant === 'footer-with-map' && (
               <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
                 <div className="aspect-video bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center relative overflow-hidden">
-                  <span className="text-3xl">📍</span>
-                  <span className="absolute bottom-3 left-3 bg-slate-950/80 px-2 py-1 rounded text-[9px] font-mono text-slate-300">Bengaluru Workspace, India</span>
+                  <MapPin size={32} className="text-slate-600" />
+                  <span className="absolute bottom-3 left-3 bg-slate-950/80 px-2 py-1 rounded text-[10px] font-mono text-slate-300">Bengaluru Workspace, India</span>
                 </div>
                 <div className="flex flex-col justify-between">
                   <div>
@@ -1638,7 +2124,7 @@ export function BuilderRenderer({
                 <div className="p-5 bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border border-blue-500/20 rounded-xl flex flex-col justify-between">
                   <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">WIDGET</span>
                   <SelectableElement elementId="button">
-                    <button className="px-3.5 py-1.5 bg-blue-600 text-white rounded font-bold text-[10px] mt-4 shadow">{block.btnText || 'Launch Platform'}</button>
+                    <button onClick={runBtnAction} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold text-[10px] mt-4 shadow transition">{block.btnText || 'Launch Platform'}</button>
                   </SelectableElement>
                 </div>
               </div>
@@ -1648,8 +2134,8 @@ export function BuilderRenderer({
             {block.variant === 'footer-multilingual' && (
               <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span className="text-[10px] font-bold text-slate-400">© {new Date().getFullYear()} INTERNATIONAL INCORPORATION</span>
-                <div className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-[10px] font-bold text-slate-300">
-                  🌐 LOCALE SELECT: <span className="text-blue-400 underline cursor-pointer">ENGLISH (US)</span>
+                <div className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[10px] font-bold text-slate-300 flex items-center gap-1.5">
+                  <Globe size={12} className="text-slate-400" /> LOCALE SELECT: <span className="text-blue-400 underline cursor-pointer">ENGLISH (US)</span>
                 </div>
               </div>
             )}
@@ -1662,9 +2148,11 @@ export function BuilderRenderer({
                 </SelectableElement>
                 <div className="flex gap-2 max-w-sm">
                   <input required disabled type="date" className="bg-slate-900 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 outline-none" />
-                  <button className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded">Lock Seat</button>
+                  <SelectableElement elementId="button">
+                    <button onClick={runBtnAction} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded transition">{block.btnText || 'Lock Seat'}</button>
+                  </SelectableElement>
                 </div>
-                <p className="text-[9px] text-slate-500 font-bold">RESERVATIONS LOCK SECURELY INTO SYSTEM ACCORDIONS</p>
+                <p className="text-[10px] text-slate-500 font-bold tracking-wide">RESERVATIONS LOCK SECURELY INTO SYSTEM ACCORDIONS</p>
               </div>
             )}
 
@@ -1678,7 +2166,7 @@ export function BuilderRenderer({
                     <span className="text-slate-400 ml-1 text-[10px] font-bold">4.9 / 5.0 SCORE</span>
                   </div>
                 </div>
-                <span className="text-[9px] text-slate-500 font-mono tracking-widest font-black uppercase">TRUSTED BY 12,500+ SOLOPRENEURS</span>
+                <span className="text-[10px] text-slate-500 font-mono tracking-wider font-black uppercase">TRUSTED BY 12,500+ SOLOPRENEURS</span>
               </div>
             )}
 
@@ -1686,8 +2174,8 @@ export function BuilderRenderer({
             {block.variant === 'footer-with-backtotop' && (
               <div className="p-4 flex items-center justify-between" style={{ backgroundColor: styles.cardBgColor, borderTop: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">© {new Date().getFullYear()} ONLYPAGE AUTO-ANCHORS</span>
-                <button className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs text-slate-300 hover:text-white transition">
-                  ▲
+                <button className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition">
+                  <ArrowUp size={15} />
                 </button>
               </div>
             )}
@@ -1718,18 +2206,18 @@ export function BuilderRenderer({
             {block.variant === 'footer-social-pill' && (
               <div className="p-6 text-center space-y-4 bg-slate-950 border border-slate-900 rounded-3xl">
                 <div className="flex justify-center gap-2 flex-wrap">
-                  <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-black rounded-full cursor-pointer hover:bg-blue-500/20">𝕏 TWITTER</span>
-                  <span className="px-3 py-1 bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[9px] font-black rounded-full cursor-pointer hover:bg-pink-500/20">📸 INSTAGRAM</span>
-                  <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black rounded-full cursor-pointer hover:bg-indigo-500/20">💬 DISCORD</span>
+                  <span className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black rounded-full cursor-pointer hover:bg-blue-500/20 flex items-center gap-1.5"><Twitter size={11} /> TWITTER</span>
+                  <span className="px-3 py-1.5 bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[10px] font-black rounded-full cursor-pointer hover:bg-pink-500/20 flex items-center gap-1.5"><Instagram size={11} /> INSTAGRAM</span>
+                  <span className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black rounded-full cursor-pointer hover:bg-indigo-500/20 flex items-center gap-1.5"><MessageCircle size={11} /> DISCORD</span>
                 </div>
-                <p className="text-[9px] text-slate-500 font-semibold uppercase tracking-wider">© {new Date().getFullYear()} STACKED CAPSULE SHARING PLATFORMS</p>
+                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">© {new Date().getFullYear()} STACKED CAPSULE SHARING PLATFORMS</p>
               </div>
             )}
 
             {/* footer-copyright-only */}
             {block.variant === 'footer-copyright-only' && (
               <div className="p-3 border-t border-slate-800/40 text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                © {new Date().getFullYear()} {block.title || 'OnlyPage'}. All rights reserved under local visual licensing.
+                {(block as any).copyright || `© ${new Date().getFullYear()} ${block.title || 'OnlyPage'}. All rights reserved under local visual licensing.`}
               </div>
             )}
           </div>
@@ -1810,6 +2298,348 @@ export function BuilderRenderer({
                     <p className="text-xs opacity-80 leading-relaxed">{step.desc}</p>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==========================================================
+            CATEGORY: MAP (Interactive Google Maps)
+            ========================================================== */}
+        {block.type === 'Map' && (
+          <div>
+            <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title || 'Our Location'}</h2>
+            <p className="mb-8" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle || 'Visit our physical workspace or get directions'}</p>
+            
+            {block.variant === 'map-split' ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+                <div className="md:col-span-2 relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg min-h-[350px]">
+                  <iframe
+                    title="Location Map"
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    style={{ border: 0 }}
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(block.mapAddress || 'Bengaluru')}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                    allowFullScreen
+                  />
+                </div>
+                <div className="flex flex-col justify-center p-6 bg-slate-50 border border-slate-100 rounded-2xl text-left space-y-4">
+                  <div>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Physical Address</h4>
+                    <p className="text-xs font-semibold text-slate-700 mt-1">{block.mapAddress || 'Bengaluru'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Operation Hours</h4>
+                    <p className="text-xs font-semibold text-slate-700 mt-1">Mon - Sat: 9:00 AM - 8:00 PM</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg" style={{ height: '400px' }}>
+                <iframe
+                  title="Location Map"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  style={{ border: 0 }}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(block.mapAddress || 'Bengaluru')}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==========================================================
+            CATEGORY: EComStore (Shopify & Untitled UI Storefront System)
+            ========================================================== */}
+        {block.type === 'EComStore' && (
+          <div className="w-full text-left space-y-6">
+            {block.variant === 'shop-header' ? (
+              /* Shopify Style Header & Top Announcement Bar */
+              <div className="space-y-4">
+                {/* Announcement Bar */}
+                <div className="bg-slate-900 text-white text-[11px] font-bold py-2 px-4 rounded-full flex items-center justify-between select-none">
+                  <div className="flex items-center gap-2">
+                    <span className="bg-emerald-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase">
+                      Flash Offer
+                    </span>
+                    <span>🔥 Festive Sale: Get 20% OFF with code <strong className="text-emerald-400">FESTIVE20</strong></span>
+                  </div>
+                  <span className="text-slate-400 text-[10px] hidden sm:inline">Free Shipping on orders above ₹999</span>
+                </div>
+
+                {/* Main Navigation Bar */}
+                <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 flex items-center justify-between shadow-3xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-slate-950 text-white font-black flex items-center justify-center text-sm shadow-xs">
+                      {site?.business_name ? site.business_name.charAt(0).toUpperCase() : 'S'}
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">{resolve(block.title) || site?.business_name || 'Store Name'}</h3>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Official Storefront</span>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
+                    <button onClick={() => onNavigatePage && onNavigatePage('home')} className="hover:text-indigo-600 cursor-pointer">Home</button>
+                    <button onClick={() => onNavigatePage && onNavigatePage('shop')} className="hover:text-indigo-600 cursor-pointer">Shop All</button>
+                    <button onClick={() => onNavigatePage && onNavigatePage('shop')} className="hover:text-indigo-600 cursor-pointer">Categories</button>
+                    <button onClick={() => onNavigatePage && onNavigatePage('terms')} className="hover:text-indigo-600 cursor-pointer">Terms & Policies</button>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => onNavigatePage && onNavigatePage('login')}
+                      className="button-outline-on-light text-xs font-bold px-4 py-2 border rounded-full border-slate-300 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Sign In
+                    </button>
+                    <button className="button-primary-pill text-xs font-bold px-4 py-2 bg-slate-950 text-white rounded-full flex items-center gap-1.5 cursor-pointer shadow-sm">
+                      <ShoppingCart size={14} />
+                      <span>Cart (2)</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            ) : block.variant === 'product-grid-filter' ? (
+              /* Untitled UI Filterable Product Catalog Grid */
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">{resolve(block.title) || 'Product Collection'}</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-1">{resolve(block.subtitle) || 'Browse our curated items with SEO alt descriptions'}</p>
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div className="flex flex-wrap items-center gap-2 select-none">
+                    {['All', 'Beverages', 'Home Decor', 'OnSale', 'Featured'].map((filterTag) => (
+                      <span
+                        key={filterTag}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                          filterTag === 'All'
+                            ? 'bg-slate-950 text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {filterTag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Product Grid Tiles */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {(() => {
+                    let liveProds: any[] = [];
+                    try {
+                      const key = `onlypage_ecom_prods_${siteId || site?.id}`;
+                      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+                      if (raw) liveProds = JSON.parse(raw);
+                    } catch (e) {}
+
+                    if (!liveProds || liveProds.length === 0) {
+                      liveProds = [
+                        { id: 'p1', title: 'HP Pavilion 16.1 Inch Gaming Laptop', price: '960.99', compare_at: '1199', offer_badge: 'Best Seller', alt: 'HP gaming laptop', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80' },
+                        { id: 'p2', title: 'Samsung SM-A21S Galaxy A21S', price: '350.00', compare_at: '450', offer_badge: 'Mobile', alt: 'Samsung galaxy smartphone', image: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&auto=format&fit=crop&q=80' },
+                        { id: 'p3', title: 'Ultimate Ears Wonderboom Bluetooth Speaker', price: '119.99', compare_at: '150', offer_badge: '20% OFF', alt: 'Bluetooth speaker', image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&auto=format&fit=crop&q=80' }
+                      ];
+                    }
+
+                    return liveProds.map((prod) => (
+                      <div key={prod.id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between">
+                        <div className="relative aspect-4/3 bg-slate-100 overflow-hidden">
+                          <img 
+                            src={prod.image || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80'} 
+                            alt={prod.alt || prod.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                          />
+                          <span className="absolute top-3 left-3 bg-emerald-500 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full uppercase shadow-xs">
+                            {prod.offer_badge || prod.badge || 'Active'}
+                          </span>
+                        </div>
+                        <div className="p-4 space-y-2 text-left">
+                          <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">{prod.title}</h4>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-base font-black text-slate-900">₹{prod.price}</span>
+                              {prod.compare_at && <span className="text-xs font-bold text-slate-400 line-through">₹{prod.compare_at}</span>}
+                            </div>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const cartKey = `onlypage_cart_${siteId || site?.id}`;
+                                const currentCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
+                                localStorage.setItem(cartKey, JSON.stringify([...currentCart, prod]));
+                                alert(`Added "${prod.title}" to cart!`);
+                              }}
+                              className="button-primary-pill text-xs px-3.5 py-1.5 bg-slate-950 text-white rounded-full hover:bg-indigo-600 transition-colors font-bold cursor-pointer"
+                            >
+                              Add to Cart
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+            ) : block.variant === 'offer-gallery' ? (
+              /* Featured Offers & Sales Gallery */
+              <div className="bg-slate-950 text-white rounded-3xl p-8 space-y-6 relative overflow-hidden">
+                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="bg-emerald-400 text-slate-950 font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
+                      Special Offer Gallery
+                    </span>
+                    <h2 className="text-3xl font-black tracking-tight mt-3">{resolve(block.title) || 'Featured Flash Sales'}</h2>
+                    <p className="text-xs text-slate-400 max-w-md mt-1">{resolve(block.subtitle) || 'Limited time discounted items tagged OnSale'}</p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl">
+                    <span className="text-xs font-bold text-slate-300">Offer Ends In:</span>
+                    <span className="font-mono font-black text-emerald-400 text-sm">04h : 22m : 15s</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { title: 'Artisan Espresso Starter Kit', price: '1,499', original: '2,200', tag: 'OnSale', image: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500&auto=format&fit=crop&q=80' },
+                    { title: 'Stainless Steel Travel Flask', price: '899', original: '1,299', tag: 'Featured', image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80' }
+                  ].map((offer, oIdx) => (
+                    <div key={oIdx} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex gap-4 items-center">
+                      <img src={offer.image} alt={offer.title} className="w-20 h-20 rounded-xl object-cover" />
+                      <div className="flex-1 space-y-1">
+                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{offer.tag}</span>
+                        <h4 className="text-sm font-bold text-white">{offer.title}</h4>
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-sm font-black text-emerald-300">₹{offer.price}</span>
+                          <span className="text-xs text-slate-500 line-through">₹{offer.original}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            ) : block.variant === 'interactive-feature' ? (
+              /* Mouse Glow Card & Motion Component Canvas */
+              <div className="space-y-6">
+                <MouseGlowCard className="p-8 bg-white border border-slate-200 rounded-3xl shadow-elevation-3 relative overflow-hidden">
+                  <div className="max-w-xl space-y-3">
+                    <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                      Framer Motion Canvas
+                    </span>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">{resolve(block.title) || 'Interactive Shopping Experience'}</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      {resolve(block.subtitle) || 'Hover over this card to experience mouse-tracking spotlight overlays and dynamic React animations.'}
+                    </p>
+                  </div>
+                </MouseGlowCard>
+
+                <InfiniteMarquee
+                  speed="slow"
+                  items={[
+                    <span key="1" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ Free Pan-India Delivery</span>,
+                    <span key="2" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ 100% Authentic Products</span>,
+                    <span key="3" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ Easy 7-Day Returns</span>,
+                    <span key="4" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ Instant WhatsApp Support</span>
+                  ]}
+                />
+              </div>
+
+            ) : block.variant === 'whatsapp-widget' ? (
+              /* Floating WhatsApp Action Button */
+              <div className="bg-emerald-50 border border-emerald-200/80 p-6 rounded-3xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                    <MessageSquare size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-900">Need Help Placing an Order?</h4>
+                    <p className="text-xs text-slate-600 mt-0.5">Chat directly with our sales team on WhatsApp</p>
+                  </div>
+                </div>
+                <a
+                  href={`https://wa.me/${block.contactPhone || '919876543210'}?text=${encodeURIComponent('Hi! I have a question about products on your store.')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-full shadow-sm flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <MessageSquare size={14} />
+                  <span>Chat on WhatsApp</span>
+                </a>
+              </div>
+
+            ) : block.variant === 'customer-auth' ? (
+              /* Shopify Canvas Light / Cream Customer Login & Signup Form */
+              <div className="max-w-md mx-auto bg-fbfbf5 border border-slate-200 p-8 rounded-3xl space-y-6 shadow-elevation-3 text-left">
+                <div className="text-center space-y-2">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-950 text-white font-black flex items-center justify-center text-sm mx-auto">
+                    {site?.business_name ? site.business_name.charAt(0).toUpperCase() : 'S'}
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Sign In to Your Account</h3>
+                  <p className="text-xs text-slate-500 font-medium">Access your order history and saved cart items</p>
+                </div>
+
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setFormSubmitted(true);
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Email Address</label>
+                    <input 
+                      type="email"
+                      required
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Password</label>
+                    <input 
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-slate-900"
+                    />
+                  </div>
+
+                  {formSubmitted && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold">
+                      ✓ Welcome! Verification email dispatched with store coupon.
+                    </div>
+                  )}
+
+                  <button 
+                    type="submit"
+                    className="w-full button-primary-pill py-3 bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs rounded-full transition-all cursor-pointer"
+                  >
+                    Sign In to Store
+                  </button>
+                </form>
+              </div>
+
+            ) : (
+              /* Store Legal & Policy Layout */
+              <div className="bg-white border border-slate-200 p-8 rounded-3xl space-y-6 text-left max-w-3xl mx-auto shadow-3xs">
+                <div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Document</span>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1">{resolve(block.title) || 'Terms of Service & Return Policy'}</h2>
+                  <p className="text-xs text-slate-400 mt-1">Last updated: July 2026</p>
+                </div>
+                <div className="space-y-4 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-6">
+                  <h4 className="font-extrabold text-slate-900 text-sm">1. Ordering & Shipping Policy</h4>
+                  <p>All orders placed on {site?.business_name || 'this store'} are processed within 24-48 hours. Shipping confirmation with live tracking will be emailed to you.</p>
+
+                  <h4 className="font-extrabold text-slate-900 text-sm">2. 7-Day Refund & Replacement Guarantee</h4>
+                  <p>If you receive a damaged product, notify our support team within 7 days of delivery for a 100% refund or replacement.</p>
+                </div>
               </div>
             )}
           </div>

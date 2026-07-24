@@ -8,10 +8,10 @@ updated: 2026-07-10T22:43:15.000Z
 
 ## Current Test
 
-number: 2
-name: Domain Reservation & Landing interaction
+number: 3
+name: Account Sign In & Session Swap
 expected: |
-  On the landing page, type a name in the business input and click "Claim Domain" or use the sticky bar "Claim Domain" button. The success modal should display containing the correct custom subdomain link (e.g. `{yourname}.onlypage.in`).
+  Click "Login" or "Sign In" in the header to open the auth overlay. Submit credentials. Verify the app transitions successfully from public landing page to the admin dashboard command center.
 awaiting: user response
 
 ## Tests
@@ -24,7 +24,7 @@ result: pass
 ### 2. Domain Reservation & Landing interaction
 expected: |
   On the landing page, type a name in the business input and click "Claim Domain" or use the sticky bar "Claim Domain" button. The success modal should display containing the correct custom subdomain link (e.g. `{yourname}.onlypage.in`).
-result: pending
+result: pass
 
 ### 3. Account Sign In & Session Swap
 expected: |
@@ -49,9 +49,9 @@ result: pending
 ## Summary
 
 total: 6
-passed: 1
+passed: 2
 issues: 0
-pending: 5
+pending: 4
 skipped: 0
 
 ## Gaps

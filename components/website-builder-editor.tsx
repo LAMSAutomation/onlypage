@@ -6,11 +6,14 @@ import {
   Layout, Type, Palette, SlidersHorizontal, PlusCircle, Save, ExternalLink, 
   Eye, Globe, RefreshCw, X, Sliders as SliderIcon, Type as FontIcon, 
   Grid, Compass, Info, CheckSquare, MessageSquare, Briefcase, DollarSign, List,
-  MapPin, Phone, Mail, Award, ThumbsUp, Star, Palette as ThemeIcon
+  MapPin, Phone, Mail, Award, ThumbsUp, Star, Palette as ThemeIcon,
+  UploadCloud, Loader2, Files
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP, INDUSTRY_PRESETS } from './builder-data';
 import { BuilderRenderer } from './builder-renderer';
+import { supabase } from '@/lib/supabase';
+import type { SiteRecord } from './ui/onboarding-wizard';
 
 // ==========================================
 // TYPES & INTERFACES
@@ -77,13 +80,18 @@ export interface BlockCSSStyles {
 
 export interface WebBlock {
   id: string;
-  type: 'Hero' | 'Features' | 'Pricing' | 'Testimonials' | 'Contact' | 'Footer' | 'Gallery' | 'Business' | 'Forms' | 'Special' | 'CTA' | 'Navigation';
+  type: 'Hero' | 'Features' | 'Pricing' | 'Testimonials' | 'Contact' | 'Footer' | 'Gallery' | 'Business' | 'Forms' | 'Special' | 'CTA' | 'Navigation' | 'Map' | 'EComStore';
   title: string;
   subtitle: string;
   badge?: string;
   imageUrl?: string;
   btnText?: string;
   variant?: string;
+  // Button Actions
+  btnActionType?: 'scroll' | 'link' | 'external' | 'none' | string;
+  btnActionValue?: string;
+  // Map configuration
+  mapAddress?: string;
   // Gallery Slide Images
   galleryImages?: { id: string; url: string; title: string; subtitle: string; aspect?: string }[];
   // Features lists
@@ -94,12 +102,14 @@ export interface WebBlock {
   testimonials?: { id: string; name: string; role: string; content: string; avatar: string; rating: number }[];
   // Contact details
   contactEmail?: string;
+  // ...
   contactPhone?: string;
   contactAddress?: string;
   showMap?: boolean;
   // Footer content
   copyright?: string;
   links?: { id: string; label: string; url: string }[];
+  linkColumns?: { id: string; heading: string; links: { id: string; label: string; url: string }[] }[];
   // FAQ, Stats, Steps
   faqs?: { id: string; q: string; a: string }[];
   stats?: { id: string; label: string; val: number; suffix: string }[];
@@ -123,33 +133,53 @@ export const GOOGLE_FONTS_LIST = [
   "Caveat", "Pacifico", "Shadows Into Light", "Great Vibes", "Architects Daughter", "Dancing Script"
 ];
 
-const INITIAL_BLOCKS = INDUSTRY_PRESETS['portfolio'].blocks as unknown as WebBlock[];
+const INITIAL_BLOCKS: WebBlock[] = [];
 
-export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
+export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: () => void; site: SiteRecord; onUpdateSite?: (site: SiteRecord) => void }) {
   // --- CORE STATE ---
-  const [blocks, setBlocks] = useState<WebBlock[]>(INITIAL_BLOCKS);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(INITIAL_BLOCKS[0]?.id || null);
+  const [blocks, setBlocks] = useState<WebBlock[]>([]);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [selectedSubElement, setSelectedSubElement] = useState<'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media' | null>(null);
   const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   
   // Navigation & Workspace Preferences
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [leftSidebarTab, setLeftSidebarTab] = useState<'add-blocks' | 'layers' | 'seo'>('add-blocks');
+  const [leftSidebarTab, setLeftSidebarTab] = useState<'add-blocks' | 'pages' | 'layers' | 'seo' | 'database'>('add-blocks');
   const [rightInspectorTab, setRightInspectorTab] = useState<'content' | 'css-styles'>('css-styles');
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showLivePreviewModal, setShowLivePreviewModal] = useState(false);
+  const [showAddPageModal, setShowAddPageModal] = useState(false);
+  const [newPageName, setNewPageName] = useState('');
+  const [newPageSlug, setNewPageSlug] = useState('');
   
   // Undo/Redo tracking
-  const [history, setHistory] = useState<WebBlock[][]>([INITIAL_BLOCKS]);
+  const [history, setHistory] = useState<WebBlock[][]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'dirty'>('saved');
 
   // Page Setup & SEO
-  const [seoTitle, setSeoTitle] = useState('My Portfolio | Live OnlyPage Build');
-  const [seoDesc, setSeoDesc] = useState('Explore visual designs built instantly with the OnlyPage live editor.');
+  const [seoTitle, setSeoTitle] = useState(() => site ? `${site.business_name} | Home` : '');
+  const [seoDesc, setSeoDesc] = useState(() => site ? `Welcome to ${site.business_name} website.` : '');
+  const [pages, setPages] = useState<any[]>([]);
+  const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Global layout components
+  const [globalHeader, setGlobalHeader] = useState<WebBlock | null>(null);
+  const [globalFooter, setGlobalFooter] = useState<WebBlock | null>(null);
+
+  // Preview modal states
+  const [previewPageId, setPreviewPageId] = useState<string | null>(null);
+  const [previewBlocks, setPreviewBlocks] = useState<WebBlock[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Gallery image upload ref
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Alert Notifications
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+  const [revisions, setRevisions] = useState<any[]>([]);
 
   // Search and tabs for Lego Builder Block Library
   const [blockSearch, setBlockSearch] = useState('');
@@ -159,16 +189,146 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
-  // Auto-save simulation
-  useEffect(() => {
-    if (saveStatus === 'dirty') {
-      setSaveStatus('saving');
-      const timer = setTimeout(() => {
-        setSaveStatus('saved');
-      }, 1000);
-      return () => clearTimeout(timer);
+  // Database custom collections states
+  const [selectedCollectionName, setSelectedCollectionName] = useState<string | null>(null);
+  const [showAddCollectionForm, setShowAddCollectionForm] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [newCollectionColumns, setNewCollectionColumns] = useState<{ name: string; type: 'text' | 'number' | 'image' | 'email' | 'phone' }[]>([
+    { name: 'name', type: 'text' }
+  ]);
+  const [newColumnName, setNewColumnName] = useState('');
+  const [newColumnType, setNewColumnType] = useState<'text' | 'number' | 'image' | 'email' | 'phone'>('text');
+  
+  // States for row editing
+  const [showAddRowForm, setShowAddRowForm] = useState(false);
+  const [newRowData, setNewRowData] = useState<Record<string, string>>({});
+
+  // States for On-Canvas AI Assistant
+  const [aiAssistantBlockId, setAiAssistantBlockId] = useState<string | null>(null);
+  const [aiAssistantPrompt, setAiAssistantPrompt] = useState('');
+
+  const handleUpdateCustomCollections = async (updatedCollections: any[]) => {
+    const updatedTheme = {
+      ...site.theme,
+      customCollections: updatedCollections
+    };
+    
+    onUpdateSite?.({
+      ...site,
+      theme: updatedTheme
+    });
+    
+    setSaveStatus('saving');
+    try {
+      const { error } = await supabase
+        .from('sites')
+        .update({ theme: updatedTheme })
+        .eq('id', site.id);
+      if (error) throw error;
+      setSaveStatus('saved');
+    } catch (err: any) {
+      console.error('Error saving collections:', err);
+      setSaveStatus('dirty');
     }
-  }, [saveStatus]);
+  };
+
+  const handleCreateCollection = () => {
+    if (!newCollectionName.trim()) {
+      triggerToast('Collection name is required', 'error');
+      return;
+    }
+    const currentCollections = site.theme?.customCollections || [];
+    if (currentCollections.some((c: any) => c.name.toLowerCase() === newCollectionName.toLowerCase())) {
+      triggerToast('Collection name already exists', 'error');
+      return;
+    }
+    
+    const newColl = {
+      name: newCollectionName.trim(),
+      columns: [...newCollectionColumns],
+      rows: []
+    };
+    
+    const updated = [...currentCollections, newColl];
+    handleUpdateCustomCollections(updated);
+    setNewColumnName('');
+    setNewCollectionName('');
+    setNewCollectionColumns([{ name: 'name', type: 'text' }]);
+    setShowAddCollectionForm(false);
+    setSelectedCollectionName(newColl.name);
+    triggerToast(`Created database table ${newColl.name}!`, 'success');
+  };
+
+  const handleDeleteCollection = (name: string) => {
+    const currentCollections = site.theme?.customCollections || [];
+    const updated = currentCollections.filter((c: any) => c.name.toLowerCase() !== name.toLowerCase());
+    handleUpdateCustomCollections(updated);
+    if (selectedCollectionName?.toLowerCase() === name.toLowerCase()) {
+      setSelectedCollectionName(null);
+    }
+    triggerToast(`Deleted database table ${name}`, 'info');
+  };
+
+  const handleAddColumn = (collName: string) => {
+    if (!newColumnName.trim()) {
+      triggerToast('Column name is required', 'error');
+      return;
+    }
+    const currentCollections = site.theme?.customCollections || [];
+    const updated = currentCollections.map((c: any) => {
+      if (c.name.toLowerCase() === collName.toLowerCase()) {
+        if (c.columns.some((col: any) => col.name.toLowerCase() === newColumnName.toLowerCase())) {
+          triggerToast('Column already exists', 'error');
+          return c;
+        }
+        return {
+          ...c,
+          columns: [...c.columns, { name: newColumnName.trim(), type: newColumnType }]
+        };
+      }
+      return c;
+    });
+    handleUpdateCustomCollections(updated);
+    setNewColumnName('');
+    triggerToast(`Added column ${newColumnName}!`, 'success');
+  };
+
+  const handleAddRow = (collName: string) => {
+    const currentCollections = site.theme?.customCollections || [];
+    const updated = currentCollections.map((c: any) => {
+      if (c.name.toLowerCase() === collName.toLowerCase()) {
+        const newRow = {
+          id: crypto.randomUUID(),
+          created_at: new Date().toISOString(),
+          ...newRowData
+        };
+        return {
+          ...c,
+          rows: [...(c.rows || []), newRow]
+        };
+      }
+      return c;
+    });
+    handleUpdateCustomCollections(updated);
+    setNewRowData({});
+    setShowAddRowForm(false);
+    triggerToast('Added row to collection', 'success');
+  };
+
+  const handleDeleteRow = (collName: string, rowId: string) => {
+    const currentCollections = site.theme?.customCollections || [];
+    const updated = currentCollections.map((c: any) => {
+      if (c.name.toLowerCase() === collName.toLowerCase()) {
+        return {
+          ...c,
+          rows: (c.rows || []).filter((r: any) => r.id !== rowId)
+        };
+      }
+      return c;
+    });
+    handleUpdateCustomCollections(updated);
+    triggerToast('Deleted row from collection', 'info');
+  };
 
   // Helper to trigger toast alerts
   const triggerToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
@@ -177,6 +337,328 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
       setToast(null);
     }, 3500);
   };
+
+  const fetchRevisions = async () => {
+    if (!site?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('site_history')
+        .select('*')
+        .eq('site_id', site.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      setRevisions(data || []);
+    } catch (err: any) {
+      console.error('Error fetching revisions:', err);
+    }
+  };
+
+  // 1. Fetch pages and blocks on mount
+  useEffect(() => {
+    async function loadSiteData() {
+      setLoading(true);
+      fetchRevisions();
+      try {
+        let { data: pagesData, error: pagesError } = await supabase
+          .from('pages')
+          .select('*')
+          .eq('site_id', site.id)
+          .order('position', { ascending: true });
+
+        if (pagesError) throw pagesError;
+
+        if (!pagesData || pagesData.length === 0) {
+          const { data: newPage, error: createPageError } = await supabase
+            .from('pages')
+            .insert({
+              site_id: site.id,
+              name: 'Home',
+              slug: 'home',
+              position: 0,
+              seo_title: `${site.business_name} | Home`,
+              seo_desc: `Welcome to ${site.business_name}. Find our contact details, bookings, and services online.`,
+            })
+            .select()
+            .single();
+
+          if (createPageError) throw createPageError;
+          pagesData = [newPage];
+        }
+
+        setPages(pagesData);
+        const activePage = pagesData[0];
+        setActivePageId(activePage.id);
+
+        setSeoTitle(activePage.seo_title || '');
+        setSeoDesc(activePage.seo_desc || '');
+
+        // Load Global Header & Footer from site.theme
+        const themeHeader = site.theme?.header;
+        const themeFooter = site.theme?.footer;
+        
+        if (themeHeader) {
+          setGlobalHeader(themeHeader);
+        } else {
+          setGlobalHeader({
+            id: 'global-header',
+            type: 'Navigation',
+            title: site.business_name,
+            subtitle: '',
+            btnText: 'Contact Us',
+            variant: 'nav-minimal',
+            styles: {
+              backgroundColor: '#ffffff',
+              textColor: '#0f172a',
+              subtitleColor: '#475569',
+              accentColor: '#2563eb',
+              badgeBgColor: '#f1f5f9',
+              badgeTextColor: '#2563eb',
+              buttonBgColor: '#0f172a',
+              buttonTextColor: '#ffffff',
+              fontFamily: 'Inter',
+              titleSize: 18,
+              titleWeight: 'black',
+              subtitleSize: 12,
+              bodySize: 12,
+              paddingTop: 16,
+              paddingBottom: 16,
+              paddingLeft: 24,
+              paddingRight: 24,
+              gapSize: 12,
+              maxWidth: 1200,
+              textAlign: 'left',
+              useGradient: false,
+              cardBgColor: '#ffffff',
+              cardTextColor: '#0f172a',
+              cardBorderRadius: 8,
+              cardShadow: 'none',
+              cardBorderWidth: 1,
+              cardBorderColor: '#e2e8f0',
+              borderRadius: 0,
+              borderWidth: 0,
+              borderColor: '',
+              borderStyle: 'solid',
+              boxShadow: 'none',
+              buttonBorderRadius: 8,
+              buttonHoverScale: true
+            }
+          });
+        }
+
+        if (themeFooter) {
+          setGlobalFooter(themeFooter);
+        } else {
+          setGlobalFooter({
+            id: 'global-footer',
+            type: 'Footer',
+            title: site.business_name,
+            subtitle: 'Powered by OnlyPage',
+            copyright: `© ${new Date().getFullYear()} ${site.business_name}. All rights reserved.`,
+            variant: 'footer-classic',
+            styles: {
+              backgroundColor: '#0f172a',
+              textColor: '#94a3b8',
+              subtitleColor: '#64748b',
+              accentColor: '#38bdf8',
+              badgeBgColor: '#1e293b',
+              badgeTextColor: '#38bdf8',
+              buttonBgColor: '#38bdf8',
+              buttonTextColor: '#0f172a',
+              fontFamily: 'Inter',
+              titleSize: 14,
+              titleWeight: 'bold',
+              subtitleSize: 11,
+              bodySize: 11,
+              paddingTop: 48,
+              paddingBottom: 48,
+              paddingLeft: 24,
+              paddingRight: 24,
+              gapSize: 16,
+              maxWidth: 1200,
+              textAlign: 'center',
+              useGradient: false,
+              cardBgColor: '#1e293b',
+              cardTextColor: '#94a3b8',
+              cardBorderRadius: 8,
+              cardShadow: 'none',
+              cardBorderWidth: 1,
+              cardBorderColor: '#334155',
+              borderRadius: 0,
+              borderWidth: 0,
+              borderColor: '',
+              borderStyle: 'solid',
+              boxShadow: 'none',
+              buttonBorderRadius: 8,
+              buttonHoverScale: true
+            }
+          });
+        }
+
+        const { data: blocksData, error: blocksError } = await supabase
+          .from('blocks')
+          .select('*')
+          .eq('page_id', activePage.id)
+          .order('position', { ascending: true });
+
+        if (blocksError) throw blocksError;
+
+        if (blocksData && blocksData.length > 0) {
+          const mappedBlocks = blocksData
+            .filter(b => b.type !== 'Navigation' && b.type !== 'Footer')
+            .map(b => ({
+              id: b.id,
+              type: b.type as any,
+              position: b.position,
+              ...(b.config as any)
+            }));
+          setBlocks(mappedBlocks);
+          setHistory([mappedBlocks]);
+          setHistoryIndex(0);
+          if (mappedBlocks.length > 0) {
+            setSelectedBlockId(mappedBlocks[0].id);
+          }
+        } else {
+          const themeMode = site.theme?.mode || 'salon';
+          const presetBlocks = (INDUSTRY_PRESETS[themeMode] || INDUSTRY_PRESETS['salon']).blocks.map((b) => ({
+            ...b,
+            id: crypto.randomUUID()
+          }));
+
+          setBlocks(presetBlocks);
+          setHistory([presetBlocks]);
+          setHistoryIndex(0);
+          if (presetBlocks.length > 0) {
+            setSelectedBlockId(presetBlocks[0].id);
+          }
+
+          const rows = presetBlocks.map((b, idx) => ({
+            page_id: activePage.id,
+            type: b.type,
+            position: idx,
+            config: {
+              title: b.title,
+              subtitle: b.subtitle,
+              badge: b.badge,
+              imageUrl: b.imageUrl,
+              btnText: b.btnText,
+              variant: b.variant,
+              styles: b.styles,
+              features: b.features,
+              pricing: b.pricing,
+              testimonials: b.testimonials,
+              galleryImages: b.galleryImages,
+            }
+          }));
+          await supabase.from('blocks').insert(rows);
+        }
+      } catch (err: any) {
+        console.error('Error loading site data:', err);
+        triggerToast('Failed to load website blocks: ' + err.message, 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSiteData();
+  }, [site.id]);
+
+  // 2. Auto-save to Supabase when dirty
+  useEffect(() => {
+    if (saveStatus !== 'dirty' || !activePageId) return;
+
+    const timer = setTimeout(async () => {
+      setSaveStatus('saving');
+      try {
+        const { error: deleteError } = await supabase
+          .from('blocks')
+          .delete()
+          .eq('page_id', activePageId);
+
+        if (deleteError) throw deleteError;
+
+        if (blocks.length > 0) {
+          const rows = blocks.map((b, idx) => ({
+            page_id: activePageId,
+            type: b.type,
+            position: idx,
+            config: {
+              title: b.title,
+              subtitle: b.subtitle,
+              badge: b.badge,
+              imageUrl: b.imageUrl,
+              btnText: b.btnText,
+              variant: b.variant,
+              styles: b.styles,
+              features: b.features,
+              pricing: b.pricing,
+              testimonials: b.testimonials,
+              galleryImages: b.galleryImages,
+            }
+          }));
+
+          const { error: insertError } = await supabase
+            .from('blocks')
+            .insert(rows);
+
+          if (insertError) throw insertError;
+        }
+
+        // Save globalHeader & globalFooter to sites table
+        const updatedTheme = {
+          ...site.theme,
+          header: globalHeader,
+          footer: globalFooter
+        };
+        const { error: siteError } = await supabase
+          .from('sites')
+          .update({
+            theme: updatedTheme
+          })
+          .eq('id', site.id);
+
+        if (siteError) throw siteError;
+
+        onUpdateSite?.({
+          ...site,
+          theme: updatedTheme
+        });
+
+        const { error: pageError } = await supabase
+          .from('pages')
+          .update({
+            seo_title: seoTitle,
+            seo_desc: seoDesc
+          })
+          .eq('id', activePageId);
+
+        if (pageError) throw pageError;
+
+        // Log to site_history table
+        await supabase
+          .from('site_history')
+          .insert({
+            site_id: site.id,
+            page_id: activePageId,
+            blocks: blocks,
+            header: globalHeader,
+            footer: globalFooter,
+            seo_title: seoTitle,
+            seo_desc: seoDesc
+          });
+        
+        fetchRevisions();
+
+        setSaveStatus('saved');
+      } catch (err: any) {
+        console.error('Error saving site data:', err);
+        setSaveStatus('dirty');
+        triggerToast('Auto-save failed: ' + err.message, 'error');
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [blocks, seoTitle, seoDesc, activePageId, globalHeader, globalFooter, site, onUpdateSite]);
 
   // State update helper with history push
   const updateBlocksState = (newBlocks: WebBlock[]) => {
@@ -246,6 +728,32 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
   // Interactive style tuning helpers (CSS Inspector updates)
   const handleUpdateBlockStyle = (key: keyof BlockCSSStyles, value: any) => {
     if (!selectedBlockId) return;
+    if (selectedBlockId === 'global-header') {
+      if (globalHeader) {
+        setGlobalHeader({
+          ...globalHeader,
+          styles: {
+            ...globalHeader.styles,
+            [key]: value
+          }
+        });
+        setSaveStatus('dirty');
+      }
+      return;
+    }
+    if (selectedBlockId === 'global-footer') {
+      if (globalFooter) {
+        setGlobalFooter({
+          ...globalFooter,
+          styles: {
+            ...globalFooter.styles,
+            [key]: value
+          }
+        });
+        setSaveStatus('dirty');
+      }
+      return;
+    }
     const updated = blocks.map(b => {
       if (b.id === selectedBlockId) {
         return {
@@ -264,6 +772,20 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
 
   const handleUpdateBlockContent = (key: string, value: any) => {
     if (!selectedBlockId) return;
+    if (selectedBlockId === 'global-header') {
+      if (globalHeader) {
+        setGlobalHeader({ ...globalHeader, [key]: value });
+        setSaveStatus('dirty');
+      }
+      return;
+    }
+    if (selectedBlockId === 'global-footer') {
+      if (globalFooter) {
+        setGlobalFooter({ ...globalFooter, [key]: value });
+        setSaveStatus('dirty');
+      }
+      return;
+    }
     const updated = blocks.map(b => {
       if (b.id === selectedBlockId) {
         return {
@@ -275,6 +797,302 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
     });
     setBlocks(updated);
     setSaveStatus('dirty');
+  };
+
+  // Manual save handler
+  const handleManualSave = async () => {
+    if (!activePageId) return;
+    setSaveStatus('saving');
+    try {
+      const { error: deleteError } = await supabase
+        .from('blocks')
+        .delete()
+        .eq('page_id', activePageId);
+      if (deleteError) throw deleteError;
+
+      if (blocks.length > 0) {
+        const rows = blocks.map((b, idx) => ({
+          page_id: activePageId,
+          type: b.type,
+          position: idx,
+          config: {
+            title: b.title,
+            subtitle: b.subtitle,
+            badge: b.badge,
+            imageUrl: b.imageUrl,
+            btnText: b.btnText,
+            variant: b.variant,
+            styles: b.styles,
+            features: b.features,
+            pricing: b.pricing,
+            testimonials: b.testimonials,
+            galleryImages: b.galleryImages,
+          }
+        }));
+        const { error: insertError } = await supabase.from('blocks').insert(rows);
+        if (insertError) throw insertError;
+      }
+
+      // Save global header and footer
+      const updatedTheme = {
+        ...site.theme,
+        header: globalHeader,
+        footer: globalFooter
+      };
+      const { error: siteError } = await supabase
+        .from('sites')
+        .update({
+          theme: updatedTheme
+        })
+        .eq('id', site.id);
+      if (siteError) throw siteError;
+
+      onUpdateSite?.({
+        ...site,
+        theme: updatedTheme
+      });
+
+      const { error: pageError } = await supabase
+        .from('pages')
+        .update({ seo_title: seoTitle, seo_desc: seoDesc })
+        .eq('id', activePageId);
+      if (pageError) throw pageError;
+
+      // Log to site_history table
+      await supabase
+        .from('site_history')
+        .insert({
+          site_id: site.id,
+          page_id: activePageId,
+          blocks: blocks,
+          header: globalHeader,
+          footer: globalFooter,
+          seo_title: seoTitle,
+          seo_desc: seoDesc
+        });
+      
+      fetchRevisions();
+
+      setSaveStatus('saved');
+      triggerToast('All changes saved to database!', 'success');
+    } catch (err: any) {
+      setSaveStatus('dirty');
+      triggerToast('Save failed: ' + err.message, 'error');
+    }
+  };
+
+  // Load blocks for a specific page (used in preview modal)
+  const loadBlocksForPage = async (pageId: string) => {
+    setPreviewLoading(true);
+    try {
+      if (pageId === activePageId) {
+        setPreviewBlocks(blocks);
+      } else {
+        const { data, error } = await supabase
+          .from('blocks')
+          .select('*')
+          .eq('page_id', pageId)
+          .order('position', { ascending: true });
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setPreviewBlocks(data.map(b => ({
+            id: b.id,
+            type: b.type as any,
+            position: b.position,
+            ...(b.config as any)
+          })));
+        } else {
+          setPreviewBlocks([]);
+        }
+      }
+
+      // Log page view in our self-hosted page_views analytics table
+      const pageObj = pages.find(p => p.id === pageId);
+      if (pageObj) {
+        supabase
+          .from('page_views')
+          .insert({
+            site_id: site.id,
+            page_slug: pageObj.slug,
+            referrer: 'editor_preview',
+            user_agent: navigator.userAgent
+          })
+          .then(({ error }) => {
+            if (error) console.error('Failed to log page view:', error.message);
+          });
+      }
+    } catch (err: any) {
+      triggerToast('Failed to load page blocks: ' + err.message, 'error');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // Gallery image upload to Supabase Storage
+  const handleGalleryImageUpload = async (files: FileList) => {
+    if (!selectedBlockId || files.length === 0) return;
+    setUploadingImage(true);
+    const currentBlock = selectedBlockId === 'global-header' ? globalHeader : selectedBlockId === 'global-footer' ? globalFooter : blocks.find(b => b.id === selectedBlockId);
+    const currentSlides = currentBlock?.galleryImages || [];
+    const newSlides = [...currentSlides];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${site.id}/gallery/${Date.now()}-${i}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('site-assets')
+          .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('site-assets')
+          .getPublicUrl(fileName);
+
+        newSlides.push({
+          id: `slide-${Date.now()}-${i}`,
+          url: publicUrlData.publicUrl,
+          title: file.name.replace(/\.[^/.]+$/, ''),
+          subtitle: ''
+        });
+      }
+
+      handleUpdateBlockContent('galleryImages', newSlides);
+      triggerToast(`Uploaded ${files.length} image${files.length > 1 ? 's' : ''} to gallery!`, 'success');
+    } catch (err: any) {
+      triggerToast('Upload failed: ' + err.message, 'error');
+    } finally {
+      setUploadingImage(false);
+      if (galleryFileInputRef.current) galleryFileInputRef.current.value = '';
+    }
+  };
+
+  // Single image upload to Supabase Storage
+  const handleSingleImageUpload = async (file: File, target: 'content' | 'style', fieldName: any) => {
+    if (!selectedBlockId || !file) return;
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${site.id}/assets/${Date.now()}-${Math.random().toString(36).substring(2, 6)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(fileName);
+
+      const url = publicUrlData.publicUrl;
+
+      if (target === 'content') {
+        handleUpdateBlockContent(fieldName, url);
+      } else {
+        handleUpdateBlockStyle(fieldName, url);
+      }
+      triggerToast('Image uploaded successfully!', 'success');
+    } catch (err: any) {
+      console.error(err);
+      triggerToast('Failed to upload image: ' + err.message, 'error');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Switch active page
+  const switchActivePage = async (pageId: string) => {
+    if (saveStatus === 'dirty') {
+      await handleManualSave();
+    }
+    setLoading(true);
+    try {
+      const activePage = pages.find(p => p.id === pageId);
+      if (!activePage) return;
+      setActivePageId(pageId);
+      setSeoTitle(activePage.seo_title || '');
+      setSeoDesc(activePage.seo_desc || '');
+
+      const { data: blocksData, error: blocksError } = await supabase
+        .from('blocks')
+        .select('*')
+        .eq('page_id', pageId)
+        .order('position', { ascending: true });
+
+      if (blocksError) throw blocksError;
+
+      const mappedBlocks = (blocksData || [])
+        .filter(b => b.type !== 'Navigation' && b.type !== 'Footer')
+        .map(b => ({
+          id: b.id,
+          type: b.type as any,
+          position: b.position,
+          ...(b.config as any)
+        }));
+
+      setBlocks(mappedBlocks);
+      setHistory([mappedBlocks]);
+      setHistoryIndex(0);
+      if (mappedBlocks.length > 0) {
+        setSelectedBlockId(mappedBlocks[0].id);
+      } else {
+        setSelectedBlockId(null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerToast('Failed to switch page: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create new page inside builder
+  const handleCreatePageInBuilder = async (name: string, slug: string) => {
+    if (!name.trim()) return;
+    const formattedSlug = slug.trim().startsWith('/') ? slug.trim() : '/' + slug.trim();
+    try {
+      const { data: newPage, error: createError } = await supabase
+        .from('pages')
+        .insert({
+          site_id: site.id,
+          name: name.trim(),
+          slug: formattedSlug,
+          position: pages.length,
+          seo_title: `${name.trim()} | ${site.business_name}`,
+          seo_desc: `Welcome to ${name.trim()} page.`,
+        })
+        .select()
+        .single();
+        
+      if (createError) throw createError;
+
+      // Add default Hero block for new page
+      const defaultBlock = generateDefaultBlock('Hero', 'saas-saas');
+      const rows = [{
+        page_id: newPage.id,
+        type: defaultBlock.type,
+        position: 0,
+        config: {
+          title: `Welcome to the ${name.trim()} Page`,
+          subtitle: `Explore dynamic content customized and structured for ${site.business_name}.`,
+          badge: 'NEW PAGE ROUTE',
+          variant: defaultBlock.variant,
+          styles: defaultBlock.styles
+        }
+      }];
+
+      await supabase.from('blocks').insert(rows);
+
+      setPages([...pages, newPage]);
+      triggerToast(`Page "${name}" created!`, 'success');
+      switchActivePage(newPage.id);
+    } catch (err: any) {
+      triggerToast('Error creating page: ' + err.message, 'error');
+    }
   };
 
   // Load a complete Industry Preset
@@ -330,9 +1148,22 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
       buttonHoverScale: true
     };
 
-    const id = `${category.toLowerCase()}-${Date.now()}`;
+    const id = category === 'Navigation' 
+      ? 'global-header' 
+      : category === 'Footer' 
+        ? 'global-footer' 
+        : `${category.toLowerCase()}-${Date.now()}`;
     
     const defaultData: any = {
+      Navigation: {
+        title: site.business_name || 'OnlyPage Brand',
+        btnText: 'Contact Us',
+        links: [
+          { id: 'n-1', label: 'Services', url: '#' },
+          { id: 'n-2', label: 'Pricing', url: '#' },
+          { id: 'n-3', label: 'Contact', url: '#' }
+        ]
+      },
       Hero: {
         title: variantKey === 'aurora-sky' ? 'Rejuvenate Your Senses. Restore Your Glow.' : 'Transform Your Online Experience',
         subtitle: 'Build responsive, highly optimized landing pages instantly with the easiest visual block builder.',
@@ -416,10 +1247,30 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
       Footer: {
         title: 'OnlyPage',
         copyright: '© 2026 OnlyPage Inc. All rights reserved. Crafting beautiful visual layouts.',
+        btnText: 'Get Started',
+        btnActionType: 'none',
+        btnActionValue: '',
         links: [
           { id: 'l-1', label: 'Dashboard', url: '#' },
           { id: 'l-2', label: 'Privacy Policy', url: '#' },
           { id: 'l-3', label: 'Terms of Service', url: '#' }
+        ],
+        linkColumns: [
+          { id: 'col-1', heading: 'Products', links: [
+            { id: 'c1-1', label: 'Feature Links', url: '#' },
+            { id: 'c1-2', label: 'Pricing Matrix', url: '#' },
+            { id: 'c1-3', label: 'Support Desk', url: '#' }
+          ] },
+          { id: 'col-2', heading: 'Solutions', links: [
+            { id: 'c2-1', label: 'Feature Links', url: '#' },
+            { id: 'c2-2', label: 'Pricing Matrix', url: '#' },
+            { id: 'c2-3', label: 'Support Desk', url: '#' }
+          ] },
+          { id: 'col-3', heading: 'Legal', links: [
+            { id: 'c3-1', label: 'Feature Links', url: '#' },
+            { id: 'c3-2', label: 'Pricing Matrix', url: '#' },
+            { id: 'c3-3', label: 'Support Desk', url: '#' }
+          ] }
         ]
       }
     }[category] || {};
@@ -441,6 +1292,24 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
     if (!categoryVariants) return;
     const template = categoryVariants.find(v => v.id === variantKey);
     if (!template) return;
+
+    if (category === 'Navigation') {
+      const newHeader = generateDefaultBlock('Navigation', variantKey);
+      setGlobalHeader(newHeader);
+      setSelectedBlockId('global-header');
+      triggerToast(`Switched Header style to [${template.name}]`, 'success');
+      setSaveStatus('dirty');
+      return;
+    }
+
+    if (category === 'Footer') {
+      const newFooter = generateDefaultBlock('Footer', variantKey);
+      setGlobalFooter(newFooter);
+      setSelectedBlockId('global-footer');
+      triggerToast(`Switched Footer style to [${template.name}]`, 'success');
+      setSaveStatus('dirty');
+      return;
+    }
 
     const newBlock = generateDefaultBlock(category, variantKey);
 
@@ -536,7 +1405,57 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
     }
   };
 
-  const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+  const handleExecuteAiAssistant = async () => {
+    if (!aiAssistantPrompt.trim() || !aiAssistantBlockId) return;
+    setIsAiLoading(true);
+    triggerToast('OnlyPage AI is processing your request...', 'info');
+
+    // Scoped prompt instructions targeting only the specific block
+    const scopedPrompt = `For the section block with ID "${aiAssistantBlockId}", please apply the following copywriting/style modification: ${aiAssistantPrompt}`;
+
+    try {
+      // Find block if it is global header/footer to include it in the body payload
+      let blocksToSend = [...blocks];
+      if (globalHeader) blocksToSend.unshift(globalHeader);
+      if (globalFooter) blocksToSend.push(globalFooter);
+
+      const response = await fetch('/api/ai/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: scopedPrompt, blocks: blocksToSend })
+      });
+
+      if (!response.ok) throw new Error('AI assistant call failed');
+      const data = await response.json();
+      if (data.blocks) {
+        // Extract updated global header & footer back if they were modified
+        const newHeader = data.blocks.find((b: any) => b.id === 'global-header');
+        const newFooter = data.blocks.find((b: any) => b.id === 'global-footer');
+        const newPageBlocks = data.blocks.filter((b: any) => b.id !== 'global-header' && b.id !== 'global-footer');
+
+        if (newHeader) setGlobalHeader(newHeader);
+        if (newFooter) setGlobalFooter(newFooter);
+        updateBlocksState(newPageBlocks);
+
+        triggerToast('Section transformed by AI successfully!', 'success');
+        setAiAssistantPrompt('');
+        setAiAssistantBlockId(null);
+      } else {
+        throw new Error('Invalid AI response payload');
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerToast('AI Assistant request failed: ' + err.message, 'error');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const selectedBlock = selectedBlockId === 'global-header' 
+    ? globalHeader 
+    : selectedBlockId === 'global-footer' 
+      ? globalFooter 
+      : blocks.find(b => b.id === selectedBlockId);
 
 
   return (
@@ -655,9 +1574,52 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
             </button>
           </div>
 
-          {/* Live Preview & Publish */}
+          {/* Save, Live Preview & Publish */}
           <button 
-            onClick={() => setShowLivePreviewModal(true)}
+            onClick={handleManualSave}
+            disabled={saveStatus === 'saving'}
+            className={`h-9 px-3.5 border rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              saveStatus === 'saved' 
+                ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300' 
+                : saveStatus === 'saving'
+                  ? 'bg-slate-900 border-slate-700 text-slate-400 cursor-wait'
+                  : 'bg-slate-900 hover:bg-slate-800 border-amber-700 text-amber-300'
+            }`}
+            id="save-site-btn"
+            title={saveStatus === 'saved' ? 'All changes saved' : saveStatus === 'saving' ? 'Saving...' : 'Unsaved changes'}
+          >
+            {saveStatus === 'saving' ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : saveStatus === 'saved' ? (
+              <CheckCircle2 size={13} />
+            ) : (
+              <Save size={13} />
+            )}
+            <span>{saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save'}</span>
+          </button>
+
+          <button 
+            onClick={() => {
+              setPreviewPageId(activePageId);
+              setPreviewBlocks(blocks);
+              setShowLivePreviewModal(true);
+              
+              // Log page view in our self-hosted page_views analytics table
+              const pageObj = pages.find(p => p.id === activePageId);
+              if (pageObj) {
+                supabase
+                  .from('page_views')
+                  .insert({
+                    site_id: site.id,
+                    page_slug: pageObj.slug,
+                    referrer: 'editor_preview',
+                    user_agent: navigator.userAgent
+                  })
+                  .then(({ error }) => {
+                    if (error) console.error('Failed to log page view:', error.message);
+                  });
+              }
+            }}
             className="h-9 px-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-bold text-slate-200 transition-colors cursor-pointer flex items-center gap-1.5"
             id="preview-site-btn"
           >
@@ -687,26 +1649,28 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
         <aside className="w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col h-full shrink-0 z-10" id="left-sidebar">
           
           {/* Tab Selector buttons */}
-          <div className="grid grid-cols-3 border-b border-slate-800 p-1.5 bg-slate-950">
+          <div className="grid grid-cols-5 border-b border-slate-800 p-1.5 bg-slate-950">
             {[
               { id: 'add-blocks' as const, label: 'Add Blocks', icon: PlusCircle },
-              { id: 'layers' as const, label: 'Layers Tree', icon: Layers },
-              { id: 'seo' as const, label: 'Page SEO', icon: Settings }
+              { id: 'pages' as const, label: 'Pages', icon: Files },
+              { id: 'layers' as const, label: 'Layers', icon: Layers },
+              { id: 'database' as const, label: 'Database', icon: Database },
+              { id: 'seo' as const, label: 'SEO', icon: Settings }
             ].map(tab => {
               const Icon = tab.icon;
               const isSelected = leftSidebarTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setLeftSidebarTab(tab.id)}
-                  className={`py-2 rounded-lg text-[10px] font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  onClick={() => setLeftSidebarTab(tab.id as any)}
+                  className={`py-2 rounded-lg text-[9px] font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
                     isSelected 
                       ? 'bg-slate-900 text-white border border-slate-800 shadow'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
                   }`}
                   id={`left-tab-${tab.id}`}
                 >
-                  <Icon size={14} />
+                  <Icon size={13} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -715,6 +1679,139 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
 
           {/* Tab Contents */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+            
+            {/* PAGES TAB */}
+            {leftSidebarTab === 'pages' && (
+              <div className="space-y-4 text-left" id="pages-manager-panel">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide">Website Pages</p>
+                  <button
+                    onClick={() => setShowAddPageModal(true)}
+                    className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer uppercase bg-blue-950/40 border border-blue-900/40 px-2 py-0.5 rounded"
+                  >
+                    <Plus size={10} /> Add Page
+                  </button>
+                </div>
+                
+                <div className="space-y-1.5">
+                  {pages.map(page => {
+                    const isActive = page.id === activePageId;
+                    return (
+                      <div
+                        key={page.id}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                          isActive 
+                            ? 'bg-blue-950/40 border-blue-800/80 text-blue-300' 
+                            : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
+                        }`}
+                      >
+                        <button
+                          onClick={() => switchActivePage(page.id)}
+                          className="flex-1 text-left font-black text-xs cursor-pointer truncate"
+                        >
+                          <span className="block">{page.name}</span>
+                          <span className="block text-[8px] font-mono opacity-60 mt-0.5">{page.slug}</span>
+                        </button>
+                        
+                        {page.name !== 'Home' && page.slug !== '/home' && page.slug !== '/' && (
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Are you sure you want to delete page "${page.name}"? This will delete all its sections.`)) {
+                                try {
+                                  const { error } = await supabase.from('pages').delete().eq('id', page.id);
+                                  if (error) throw error;
+                                  setPages(pages.filter(p => p.id !== page.id));
+                                  if (isActive) {
+                                    const homePage = pages.find(p => p.name === 'Home' || p.slug === '/' || p.slug === 'home') || pages[0];
+                                    if (homePage) {
+                                      switchActivePage(homePage.id);
+                                    }
+                                  }
+                                  triggerToast(`Page "${page.name}" deleted`, 'success');
+                                } catch (err: any) {
+                                  triggerToast('Delete failed: ' + err.message, 'error');
+                                }
+                              }
+                            }}
+                            className="p-1 hover:bg-red-950 rounded text-slate-500 hover:text-red-400 cursor-pointer"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* HISTORICAL REVISIONS FROM SUPABASE */}
+                <div className="pt-4 border-t border-slate-800 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide flex items-center gap-1.5">
+                      <RotateCcw size={11} className="text-amber-400" />
+                      <span>Revision History</span>
+                    </p>
+                    <button
+                      onClick={fetchRevisions}
+                      className="text-[8px] text-slate-500 hover:text-slate-300 font-bold uppercase transition"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+
+                  {revisions.length === 0 ? (
+                    <div className="p-3 bg-slate-900/30 border border-slate-800/40 rounded-xl text-center">
+                      <p className="text-[9px] text-slate-500 font-medium">No saved revisions logged in database history yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto scrollbar-thin pr-1">
+                      {revisions.map((rev) => (
+                        <div
+                          key={rev.id}
+                          className="flex items-center justify-between p-2 rounded-xl bg-slate-900/30 border border-slate-800/50 hover:bg-slate-900/60 transition"
+                        >
+                          <div className="min-w-0 pr-2">
+                            <span className="block text-[9px] font-bold text-slate-300 truncate">
+                              {new Date(rev.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(rev.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                            </span>
+                            <span className="block text-[8px] font-mono text-slate-500 truncate mt-0.5">
+                              {rev.blocks?.length || 0} blocks • {rev.header ? 'header' : 'no-hdr'}
+                            </span>
+                          </div>
+                          
+                          <button
+                            onClick={() => {
+                              if (confirm("Are you sure you want to restore this saved history revision? Current unsaved modifications will be overridden.")) {
+                                if (rev.blocks) {
+                                  setBlocks(rev.blocks);
+                                }
+                                if (rev.header) {
+                                  setGlobalHeader(rev.header);
+                                }
+                                if (rev.footer) {
+                                  setGlobalFooter(rev.footer);
+                                }
+                                if (rev.seo_title !== undefined) {
+                                  setSeoTitle(rev.seo_title || '');
+                                }
+                                if (rev.seo_desc !== undefined) {
+                                  setSeoDesc(rev.seo_desc || '');
+                                }
+                                setSaveStatus('dirty');
+                                triggerToast("Loaded historical revision onto canvas!", "success");
+                              }
+                            }}
+                            className="px-2 py-1 bg-amber-950/40 hover:bg-amber-900/40 border border-amber-900/30 hover:border-amber-700 text-[8px] font-black text-amber-300 rounded cursor-pointer transition uppercase"
+                          >
+                            Restore
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
             
             {/* 1. ADD BLOCKS TAB */}
             {leftSidebarTab === 'add-blocks' && (
@@ -787,21 +1884,42 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                     <span className="text-[9px] text-slate-500 font-mono">Variants Mode</span>
                   </div>
 
-                  {/* Horizontal scrolling Categories bar */}
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-800 shrink-0">
-                    {BLOCK_CATEGORIES.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setActiveCategory(cat.id)}
-                        className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black whitespace-nowrap uppercase tracking-wider transition-all cursor-pointer border ${
-                          activeCategory === cat.id
-                            ? 'bg-blue-600 border-blue-500 text-white shadow shadow-blue-500/10'
-                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
+                  {/* Wrapping Categories grid — all categories visible, no horizontal scroll */}
+                  <div className="grid grid-cols-2 gap-1.5 pb-1">
+                    {BLOCK_CATEGORIES.map(cat => {
+                      // Categories whose blocks can bind to CMS collections (dynamic data)
+                      const cmsConnectable = cat.id === 'Features' || cat.id === 'Pricing' || cat.id === 'Testimonials';
+                      const isForm = cat.id === 'Forms';
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => setActiveCategory(cat.id)}
+                          className={`relative px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border text-left flex items-center gap-1 ${
+                            activeCategory === cat.id
+                              ? 'bg-blue-600 border-blue-500 text-white shadow shadow-blue-500/10'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                        >
+                          <span className="truncate">{cat.name}</span>
+                          {cmsConnectable && (
+                            <span
+                              title="Connects to your CMS data (Services / Products / Blogs)"
+                              className="ml-auto shrink-0 flex items-center gap-0.5 text-[7px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1 py-0.5 rounded"
+                            >
+                              <Database size={7} /> CMS
+                            </span>
+                          )}
+                          {isForm && (
+                            <span
+                              title="Captures visitor input into your Forms inbox"
+                              className="ml-auto shrink-0 flex items-center gap-0.5 text-[7px] bg-amber-500/15 text-amber-400 border border-amber-500/30 px-1 py-0.5 rounded"
+                            >
+                              <Mail size={7} /> INPUT
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* Curated list of specific premium variants for the active Category */}
@@ -810,34 +1928,19 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                       <div
                         key={v.id}
                         onClick={() => addBlockVariant(activeCategory, v.id)}
-                        className="group p-3 bg-slate-900/40 hover:bg-slate-900/80 border border-slate-800/80 hover:border-blue-600/40 rounded-xl transition-all cursor-pointer flex flex-col gap-1.5 text-left"
+                        className="group p-3 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-blue-600/60 rounded-2xl transition-all cursor-pointer flex items-center justify-between shadow-xs select-none"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-black text-slate-200 group-hover:text-white uppercase tracking-tight">{v.id.replace('-', ' ')}</span>
-                          <span className="text-[8px] bg-slate-800 text-slate-400 group-hover:bg-blue-950 group-hover:text-blue-300 px-1.5 py-0.5 rounded font-bold transition-all">ADD</span>
+                        <div className="space-y-0.5 text-left">
+                          <span className="text-xs font-black text-slate-100 group-hover:text-white uppercase tracking-wider block font-sans">
+                            {v.name || v.id.replace(/-/g, ' ')}
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-medium block">
+                            {v.tags?.join(' • ') || 'E-Commerce Component'}
+                          </span>
                         </div>
-                        <p className="text-[9px] text-slate-500 leading-normal group-hover:text-slate-400">
-                          {v.id === 'minimal' && 'Clean typography layout with elegant badges'}
-                          {v.id === 'split' && 'Asymmetric block split with beautiful mockups'}
-                          {v.id === 'saas-modern' && 'Sleek dashboard mockups, grid dots, and dark cards'}
-                          {v.id === 'gradient-glow' && 'Stunning spotlight mask overlay with floating particles'}
-                          {v.id === 'aurora-sky' && 'Breathtaking canvas with fluid moving aurora backgrounds'}
-                          {v.id === '3d-mesh' && 'Cyber dot-grid overlays connected with animated beams'}
-                          {v.id === 'video-simulate' && 'Embedded media visual mockup with hover-active play triggers'}
-                          {v.id === 'bento-box' && 'Premium asymmetrical card arrangements for clean feature showcase'}
-                          {v.id === 'alternating' && 'Fluid alternating flow sheets featuring staggered media steps'}
-                          {v.id === 'marquee-logos' && 'Infinite sliding marquee row to showcase premium client logos'}
-                          {v.id === 'slider' && 'Interactive comparison layout with sliding comparison node'}
-                          {v.id === 'treatment-list' && 'Luxury, minimalist itemized grid layout with CTA booking triggers'}
-                          {v.id === 'active-offer' && 'Attention-grabbing discount card with functional claimed code state'}
-                          {v.id === 'wall-of-love' && 'Grid structure mapping review profiles with avatar tags'}
-                          {v.id === 'newsletter' && 'Clean input form tailored specifically to capture newsletter signups'}
-                          {v.id === 'appointment' && 'Detailed reservation picker for consultation clinic consults'}
-                          {v.id === 'faq-accordions' && 'Interactive expanding panels with collapsible details'}
-                          {v.id === 'stats-grid' && 'Interactive columns housing real-time countup ticker variables'}
-                          {v.id === 'roadmap-steps' && 'Staggered path mapping step sequences with numbers'}
-                          {v.id === 'gradient-cta' && 'Glow-masked call to action overlay with spotlight effects'}
-                        </p>
+                        <span className="px-2.5 py-1 bg-slate-900 group-hover:bg-blue-600 group-hover:text-white border border-slate-700/80 group-hover:border-blue-500 text-[9px] font-black text-slate-400 rounded-lg transition-all tracking-wider shrink-0">
+                          ADD
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -855,6 +1958,24 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                 </div>
 
                 <div className="space-y-1.5">
+                  {/* Global Header Layer */}
+                  {globalHeader && (
+                    <div
+                      onClick={() => { setSelectedBlockId('global-header'); setSelectedSubElement(null); }}
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between border ${
+                        selectedBlockId === 'global-header' 
+                          ? 'bg-blue-600/10 border-blue-500 text-white' 
+                          : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-mono text-slate-500 shrink-0 bg-slate-900 border border-slate-800/60 w-5 h-5 rounded flex items-center justify-center">L</span>
+                        <span className="text-xs font-black truncate">Global Header</span>
+                      </div>
+                      <span className="text-[8px] font-black text-slate-500 uppercase bg-slate-900 border border-slate-800/60 px-1.5 py-0.5 rounded">Locked Layout</span>
+                    </div>
+                  )}
+
                   {blocks.map((block, index) => {
                     const isSelected = selectedBlockId === block.id;
                     const isHovered = hoveredBlockId === block.id;
@@ -906,6 +2027,24 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                       </div>
                     );
                   })}
+
+                  {/* Global Footer Layer */}
+                  {globalFooter && (
+                    <div
+                      onClick={() => { setSelectedBlockId('global-footer'); setSelectedSubElement(null); }}
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between border ${
+                        selectedBlockId === 'global-footer' 
+                          ? 'bg-blue-600/10 border-blue-500 text-white' 
+                          : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-mono text-slate-500 shrink-0 bg-slate-900 border border-slate-800/60 w-5 h-5 rounded flex items-center justify-center">L</span>
+                        <span className="text-xs font-black truncate">Global Footer</span>
+                      </div>
+                      <span className="text-[8px] font-black text-slate-500 uppercase bg-slate-900 border border-slate-800/60 px-1.5 py-0.5 rounded">Locked Layout</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -951,6 +2090,278 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                     <p className="text-[10px] text-slate-500 leading-normal line-clamp-2">{seoDesc || 'Provide description details...'}</p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* DATABASE / COLLECTION MANAGER TAB */}
+            {leftSidebarTab === 'database' && (
+              <div className="space-y-4 text-left font-sans animate-fade-in" id="database-panel">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                  <div>
+                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-wide flex items-center gap-1.5">
+                      <Database size={12} className="text-indigo-400" />
+                      <span>Data Collections</span>
+                    </h3>
+                    <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Manage zero-code relational collections.</p>
+                  </div>
+                  {!showAddCollectionForm && (
+                    <button
+                      onClick={() => setShowAddCollectionForm(true)}
+                      className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer uppercase bg-blue-955/40 border border-blue-900/40 px-2 py-1 rounded transition"
+                    >
+                      <Plus size={10} />
+                      <span>Add Table</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* CREATE COLLECTION FORM */}
+                {showAddCollectionForm ? (
+                  <div className="bg-slate-900/50 border border-slate-850 p-3 rounded-xl space-y-3">
+                    <div className="flex justify-between items-center pb-1 border-b border-slate-800">
+                      <span className="text-[10px] font-black text-slate-200">New Table Schema</span>
+                      <button onClick={() => setShowAddCollectionForm(false)} className="text-[9px] text-slate-500 hover:text-slate-300 cursor-pointer font-bold">Cancel</button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Table Name</label>
+                        <input 
+                          type="text"
+                          value={newCollectionName}
+                          onChange={(e) => setNewCollectionName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                          placeholder="e.g. team_members"
+                          className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs outline-none text-slate-200 focus:border-blue-500 font-mono"
+                        />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-slate-400 uppercase">Columns Definition</label>
+                        <div className="space-y-1 max-h-[100px] overflow-y-auto pr-1">
+                          {newCollectionColumns.map((col, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-slate-950/40 p-1.5 rounded border border-slate-850 text-[10px]">
+                              <span className="font-mono text-slate-300">{col.name} ({col.type})</span>
+                              {idx > 0 && (
+                                <button 
+                                  onClick={() => setNewCollectionColumns(newCollectionColumns.filter((_, i) => i !== idx))}
+                                  className="text-[9px] text-rose-500 hover:underline cursor-pointer"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Add column input inside form */}
+                      <div className="flex gap-1.5 bg-slate-950 p-2 rounded border border-slate-850">
+                        <input 
+                          type="text"
+                          value={newColumnName}
+                          onChange={(e) => setNewColumnName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                          placeholder="column_name"
+                          className="flex-1 bg-transparent text-[10px] outline-none text-slate-200 font-mono"
+                        />
+                        <select 
+                          value={newColumnType}
+                          onChange={(e: any) => setNewColumnType(e.target.value)}
+                          className="bg-slate-900 text-[10px] text-slate-300 outline-none border border-slate-800 rounded px-1 cursor-pointer"
+                        >
+                          <option value="text">text</option>
+                          <option value="number">number</option>
+                          <option value="image">image url</option>
+                          <option value="email">email</option>
+                          <option value="phone">phone</option>
+                        </select>
+                        <button
+                          onClick={() => {
+                            if (!newColumnName.trim()) return;
+                            setNewCollectionColumns([...newCollectionColumns, { name: newColumnName.trim(), type: newColumnType }]);
+                            setNewColumnName('');
+                          }}
+                          className="bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-350 text-[9px] px-2 rounded font-black cursor-pointer transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleCreateCollection}
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-black uppercase transition-all shadow-md shadow-blue-600/10 cursor-pointer"
+                    >
+                      Initialize Database Table
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {/* COLLECTIONS LIST */}
+                    {(!site.theme?.customCollections || site.theme.customCollections.length === 0) ? (
+                      <div className="p-5 bg-slate-900/30 border border-slate-850 rounded-xl text-center space-y-2 select-none">
+                        <Database size={24} className="mx-auto opacity-35 text-slate-500 mb-1" />
+                        <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">No custom collections defined. Create a table to start mapping dynamic data to card modules.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Dropdown Selector */}
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-slate-500 uppercase tracking-wide block">Active Database Table</label>
+                          <div className="relative">
+                            <select 
+                              value={selectedCollectionName || ''}
+                              onChange={(e) => {
+                                setSelectedCollectionName(e.target.value || null);
+                                setShowAddRowForm(false);
+                              }}
+                              className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none cursor-pointer font-bold capitalize"
+                            >
+                              <option value="">-- Choose collection --</option>
+                              {(site.theme.customCollections || []).map((c: any) => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {selectedCollectionName && (() => {
+                          const coll = site.theme.customCollections.find(
+                            (c: any) => c.name.toLowerCase() === selectedCollectionName.toLowerCase()
+                          );
+                          if (!coll) return null;
+                          return (
+                            <div className="space-y-3">
+                              {/* Collection actions */}
+                              <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-slate-400 font-bold font-mono uppercase">{coll.rows?.length || 0} rows found</span>
+                                <button 
+                                  onClick={() => handleDeleteCollection(coll.name)}
+                                  className="text-rose-500 hover:text-rose-450 hover:underline uppercase font-black text-[9px] cursor-pointer"
+                                >
+                                  Drop Table
+                                </button>
+                              </div>
+
+                              {/* Columns display */}
+                              <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-850 space-y-2 text-left">
+                                <span className="text-[8px] font-black uppercase text-slate-500 block">Schema fields</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {coll.columns.map((c: any) => (
+                                    <span key={c.name} className="px-2 py-0.5 rounded bg-slate-950 border border-slate-850 font-mono text-[8px] text-slate-400">
+                                      {c.name}:{c.type}
+                                    </span>
+                                  ))}
+                                </div>
+                                
+                                {/* Add column inline */}
+                                <div className="flex gap-1 pt-2 border-t border-slate-850/40">
+                                  <input 
+                                    type="text"
+                                    placeholder="new_col"
+                                    value={newColumnName}
+                                    onChange={(e) => setNewColumnName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                    className="flex-1 bg-slate-950 border border-slate-800 rounded p-1.5 text-[9px] outline-none text-slate-200 font-mono"
+                                  />
+                                  <select 
+                                    value={newColumnType}
+                                    onChange={(e: any) => setNewColumnType(e.target.value)}
+                                    className="bg-slate-950 border border-slate-800 text-[8px] text-slate-300 outline-none rounded px-0.5 cursor-pointer font-bold"
+                                  >
+                                    <option value="text">text</option>
+                                    <option value="number">number</option>
+                                    <option value="image">image</option>
+                                    <option value="email">email</option>
+                                    <option value="phone">phone</option>
+                                  </select>
+                                  <button 
+                                    onClick={() => handleAddColumn(coll.name)}
+                                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] px-2 rounded cursor-pointer font-black"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* ADD ROW CONTROLLER */}
+                              {showAddRowForm ? (
+                                <div className="p-3.5 bg-slate-900 border border-slate-850 rounded-xl space-y-3 text-left">
+                                  <div className="flex justify-between items-center border-b border-slate-850 pb-1.5 mb-2">
+                                    <span className="text-[10px] font-black text-slate-200">Insert Row Record</span>
+                                    <button onClick={() => setShowAddRowForm(false)} className="text-[9px] text-slate-500 hover:text-slate-300 font-bold cursor-pointer">Cancel</button>
+                                  </div>
+                                  
+                                  <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1 scrollbar-thin">
+                                    {coll.columns.map((c: any) => (
+                                      <div key={c.name} className="space-y-1">
+                                        <label className="text-[8px] font-black uppercase text-slate-400 block">{c.name}</label>
+                                        <input 
+                                          type={c.type === 'number' ? 'number' : 'text'}
+                                          value={newRowData[c.name] || ''}
+                                          onChange={(e) => setNewRowData({ ...newRowData, [c.name]: e.target.value })}
+                                          placeholder={`Enter ${c.name}...`}
+                                          className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs outline-none text-slate-200 focus:border-blue-500 font-sans"
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <button 
+                                    onClick={() => handleAddRow(coll.name)}
+                                    className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-black uppercase transition-all shadow-md shadow-blue-600/10 cursor-pointer"
+                                  >
+                                    Insert Record Row
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setNewRowData({});
+                                    setShowAddRowForm(true);
+                                  }}
+                                  className="w-full py-2 bg-slate-900 border border-slate-850 hover:bg-slate-850 text-slate-200 rounded text-[10px] font-black uppercase transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Plus size={11} />
+                                  <span>Insert Row Record</span>
+                                </button>
+                              )}
+
+                              {/* ROWS TABLE LIST DISPLAY */}
+                              <div className="space-y-2 border-t border-slate-850/80 pt-3 text-left">
+                                <span className="text-[8px] font-black uppercase text-slate-500 block">Row logs</span>
+                                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
+                                  {(!coll.rows || coll.rows.length === 0) ? (
+                                    <div className="p-4 text-center text-slate-600 text-[10px] font-bold italic select-none">
+                                      No records found in this table.
+                                    </div>
+                                  ) : (
+                                    coll.rows.map((row: any, rIdx: number) => (
+                                      <div key={row.id || rIdx} className="p-3 border border-slate-850 rounded-xl bg-slate-900/20 hover:bg-slate-900/40 transition flex items-start justify-between gap-3 text-[10px]">
+                                        <div className="min-w-0 flex-1 space-y-1 font-sans leading-tight">
+                                          {coll.columns.map((c: any) => (
+                                            <div key={c.name} className="truncate">
+                                              <span className="font-mono text-slate-500 uppercase text-[8px] mr-1">{c.name}:</span>
+                                              <span className="text-slate-300 font-bold">{row[c.name] || <span className="text-slate-700 italic">null</span>}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <button 
+                                          onClick={() => handleDeleteRow(coll.name, row.id)}
+                                          className="text-slate-500 hover:text-rose-500 p-0.5 rounded cursor-pointer shrink-0 transition"
+                                        >
+                                          <X size={11} />
+                                        </button>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
@@ -1014,6 +2425,60 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
               {/* Dynamic Live website view rendering starts here */}
               <div className="w-full bg-white text-slate-900 rounded-lg overflow-hidden shadow-2xl flex flex-col relative" id="live-canvas-preview">
                 
+                {/* Global Header */}
+                {globalHeader && (
+                  <div
+                    onMouseEnter={() => setHoveredBlockId('global-header')}
+                    onMouseLeave={() => setHoveredBlockId(null)}
+                    className={`relative group/item ${selectedBlockId === 'global-header' ? 'ring-2 ring-blue-600' : ''}`}
+                  >
+                    {/* Hover Outline Label Overlay */}
+                    {hoveredBlockId === 'global-header' && selectedBlockId !== 'global-header' && (
+                      <div className="absolute top-2 left-2 bg-blue-500 text-white text-[9px] font-mono px-2 py-0.5 rounded-md z-30 pointer-events-none shadow">
+                        Global Header
+                      </div>
+                    )}
+
+                    {selectedBlockId === 'global-header' && (
+                      <>
+                        <div className="absolute -top-11 left-4 bg-slate-950 border border-slate-800 rounded-xl p-1 shadow-2xl z-30 flex items-center gap-1 text-slate-100">
+                          <span className="text-[9px] text-slate-400 font-mono px-2 border-r border-slate-800">Global Header</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAiAssistantBlockId('global-header'); setAiAssistantPrompt(''); }}
+                            className="p-1 hover:bg-slate-900 rounded-lg text-indigo-400 hover:text-indigo-300 cursor-pointer flex items-center gap-1 font-bold text-[9px] px-1.5 border border-indigo-950 bg-indigo-950/20"
+                            title="Ask AI to edit Header"
+                          >
+                            <Sparkles size={11} />
+                            <span>Ask AI</span>
+                          </button>
+                        </div>
+                        <div className="absolute top-0 left-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                        <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                      </>
+                    )}
+
+                    <BuilderRenderer 
+                      block={globalHeader} 
+                      isActive={selectedBlockId === 'global-header'} 
+                      selectedSubElement={selectedBlockId === 'global-header' ? selectedSubElement : null}
+                      onSelect={() => {
+                        setSelectedBlockId('global-header');
+                        setSelectedSubElement(null);
+                      }} 
+                      onSelectSubElement={(subId) => {
+                        setSelectedBlockId('global-header');
+                        setSelectedSubElement(subId);
+                      }}
+                      siteId={site.id}
+                      pages={pages}
+                      site={site}
+                      activePageId={activePageId}
+                    />
+                  </div>
+                )}
+
                 {blocks.map((block, index) => {
                   const isSelected = selectedBlockId === block.id;
                   const isHovered = hoveredBlockId === block.id;
@@ -1043,6 +2508,14 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                           {/* Floating Quick Action Overlay controls */}
                           <div className="absolute -top-11 right-4 bg-slate-950 border border-slate-800 rounded-xl p-1 shadow-2xl z-30 flex items-center gap-1 text-slate-100">
                             <span className="text-[9px] text-slate-400 font-mono px-2 border-r border-slate-800">{block.type}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setAiAssistantBlockId(block.id); setAiAssistantPrompt(''); }}
+                              className="p-1 hover:bg-slate-900 rounded-lg text-indigo-400 hover:text-indigo-300 cursor-pointer flex items-center gap-1 font-bold text-[9px] px-1.5 border border-r border-indigo-950 bg-indigo-950/20"
+                              title="Ask AI to edit this section"
+                            >
+                              <Sparkles size={11} />
+                              <span>Ask AI</span>
+                            </button>
                             <button
                               disabled={index === 0}
                               onClick={(e) => { e.stopPropagation(); handleMoveBlock(index, 'up'); }}
@@ -1095,14 +2568,71 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                           setSelectedBlockId(block.id);
                           setSelectedSubElement(subId);
                         }}
+                        siteId={site.id}
+                        pages={pages}
+                        site={site}
+                        activePageId={activePageId}
                       />
                     </div>
                   );
                 })}
 
+                {/* Global Footer */}
+                {globalFooter && (
+                  <div
+                    onMouseEnter={() => setHoveredBlockId('global-footer')}
+                    onMouseLeave={() => setHoveredBlockId(null)}
+                    className={`relative group/item ${selectedBlockId === 'global-footer' ? 'ring-2 ring-blue-600' : ''}`}
+                  >
+                    {/* Hover Outline Label Overlay */}
+                    {hoveredBlockId === 'global-footer' && selectedBlockId !== 'global-footer' && (
+                      <div className="absolute top-2 left-2 bg-blue-500 text-white text-[9px] font-mono px-2 py-0.5 rounded-md z-30 pointer-events-none shadow">
+                        Global Footer
+                      </div>
+                    )}
+
+                    {selectedBlockId === 'global-footer' && (
+                      <>
+                        <div className="absolute -top-11 left-4 bg-slate-950 border border-slate-800 rounded-xl p-1 shadow-2xl z-30 flex items-center gap-1 text-slate-100">
+                          <span className="text-[9px] text-slate-400 font-mono px-2 border-r border-slate-800">Global Footer</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setAiAssistantBlockId('global-footer'); setAiAssistantPrompt(''); }}
+                            className="p-1 hover:bg-slate-900 rounded-lg text-indigo-400 hover:text-indigo-300 cursor-pointer flex items-center gap-1 font-bold text-[9px] px-1.5 border border-indigo-950 bg-indigo-950/20"
+                            title="Ask AI to edit Footer"
+                          >
+                            <Sparkles size={11} />
+                            <span>Ask AI</span>
+                          </button>
+                        </div>
+                        <div className="absolute top-0 left-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                        <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                        <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-white border-2 border-blue-600 rounded-full z-30 pointer-events-none" />
+                      </>
+                    )}
+
+                    <BuilderRenderer 
+                      block={globalFooter} 
+                      isActive={selectedBlockId === 'global-footer'} 
+                      selectedSubElement={selectedBlockId === 'global-footer' ? selectedSubElement : null}
+                      onSelect={() => {
+                        setSelectedBlockId('global-footer');
+                        setSelectedSubElement(null);
+                      }} 
+                      onSelectSubElement={(subId) => {
+                        setSelectedBlockId('global-footer');
+                        setSelectedSubElement(subId);
+                      }}
+                      siteId={site.id}
+                      pages={pages}
+                      site={site}
+                      activePageId={activePageId}
+                    />
+                  </div>
+                )}
+
               </div>
             </div>
-
           </div>
 
           {/* Canvas Bottom Instructions */}
@@ -2135,13 +3665,35 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                                 <label className="text-[9px] font-bold text-slate-400 block">Bg Image URL</label>
                                 <span className="text-[8px] font-bold text-blue-400 bg-blue-950/60 border border-blue-900/30 px-1.5 py-0.5 rounded">📏 Recommended: 1920x1080px</span>
                               </div>
-                              <input 
-                                type="text"
-                                value={selectedBlock.styles.bgImageUrl || ''}
-                                onChange={(e) => handleUpdateBlockStyle('bgImageUrl', e.target.value)}
-                                placeholder="https://images.unsplash.com/..."
-                                className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 font-mono outline-none"
-                              />
+                              <div className="flex gap-1.5">
+                                <input 
+                                  type="text"
+                                  value={selectedBlock.styles.bgImageUrl || ''}
+                                  onChange={(e) => handleUpdateBlockStyle('bgImageUrl', e.target.value)}
+                                  placeholder="https://images.unsplash.com/..."
+                                  className="flex-1 bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 font-mono outline-none"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.onchange = async (e: any) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        await handleSingleImageUpload(file, 'style', 'bgImageUrl');
+                                      }
+                                    };
+                                    input.click();
+                                  }}
+                                  disabled={uploadingImage}
+                                  className="px-2 bg-blue-600 hover:bg-blue-500 rounded text-[9px] font-bold text-white transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1 disabled:opacity-50"
+                                >
+                                  {uploadingImage ? <Loader2 size={10} className="animate-spin" /> : <UploadCloud size={10} />}
+                                  <span>Upload</span>
+                                </button>
+                              </div>
                               <p className="text-[8px] text-slate-500 leading-tight mt-1">Recommended background resolution: 1920x1080px (Full HD) for sharp cover-stretch across wide laptop and desktop viewports.</p>
                             </div>
 
@@ -2234,6 +3786,203 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                 {rightInspectorTab === 'content' && (
                   <div className="space-y-4" id="content-inspector-panel">
                     
+                    {/* Database Binding Controls */}
+                    <div className="p-3 bg-emerald-500/5 border border-emerald-500/25 rounded-xl space-y-3">
+                      <p className="text-[10px] font-black uppercase text-emerald-400 tracking-wide flex items-center gap-1.5">
+                        <Database size={11} className="text-emerald-400" />
+                        <span>Connect CMS Data</span>
+                      </p>
+                      <p className="text-[9px] text-slate-400 leading-relaxed text-left">
+                        Pick a collection below to auto-fill this block with your <span className="font-bold text-emerald-400">Services / Products / Blogs</span> records. Add or edit records in the <span className="font-bold text-slate-200">Dashboard → CMS</span> tab or the <span className="font-bold text-slate-200">Database</span> tab.
+                      </p>
+
+                      {(!site.theme?.customCollections || site.theme.customCollections.length === 0) && (
+                        <div className="text-[9px] text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2 text-left">
+                          No CMS collections yet. Open the <span className="font-bold">Database</span> tab (or Dashboard → CMS) and add records first — they'll appear here to connect.
+                        </div>
+                      )}
+
+                      <div className="space-y-1">
+                        <label className="text-[8px] font-bold text-slate-500 uppercase block text-left">1. Bind Block to Collection</label>
+                        <select
+                          value={(selectedBlock as any).bindCollectionName || ''}
+                          onChange={(e) => {
+                            const val = e.target.value || undefined;
+                            handleUpdateBlockContent('bindCollectionName', val);
+                            if (val) {
+                              // Initialize default fields mapping
+                              const colNames = site.theme?.customCollections?.find(
+                                (c: any) => c.name.toLowerCase() === val.toLowerCase()
+                              )?.columns?.map((c: any) => c.name) || [];
+                              
+                              if (selectedBlock.type === 'Features') {
+                                handleUpdateBlockContent('bindFields', {
+                                  title: colNames.find((n: string) => n.includes('title') || n.includes('name')) || colNames[0] || 'title',
+                                  desc: colNames.find((n: string) => n.includes('desc') || n.includes('body')) || colNames[1] || 'desc',
+                                  icon: colNames.find((n: string) => n.includes('icon') || n.includes('avatar')) || 'icon'
+                                });
+                              } else if (selectedBlock.type === 'Pricing') {
+                                handleUpdateBlockContent('bindFields', {
+                                  tier: colNames.find((n: string) => n.includes('tier') || n.includes('name')) || colNames[0] || 'tier',
+                                  price: colNames.find((n: string) => n.includes('price') || n.includes('amount')) || colNames[1] || 'price',
+                                  features: colNames.find((n: string) => n.includes('feat') || n.includes('list')) || 'features',
+                                  btnText: 'btnText',
+                                  popular: 'popular'
+                                });
+                              } else if (selectedBlock.type === 'Testimonials') {
+                                handleUpdateBlockContent('bindFields', {
+                                  name: colNames.find((n: string) => n.includes('name') || n.includes('author')) || colNames[0] || 'name',
+                                  role: colNames.find((n: string) => n.includes('role') || n.includes('title')) || colNames[1] || 'role',
+                                  content: colNames.find((n: string) => n.includes('content') || n.includes('body') || n.includes('text')) || colNames[2] || 'content',
+                                  avatar: colNames.find((n: string) => n.includes('avatar') || n.includes('image')) || 'avatar',
+                                  rating: 'rating'
+                                });
+                              }
+                            } else {
+                              handleUpdateBlockContent('bindFields', undefined);
+                            }
+                          }}
+                          className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 outline-none cursor-pointer capitalize font-bold"
+                        >
+                          <option value="">-- No collection binding --</option>
+                          {(site.theme?.customCollections || []).map((c: any) => (
+                            <option key={c.name} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Render mapping selector fields if bound */}
+                      {(selectedBlock as any).bindCollectionName && (selectedBlock.type === 'Features' || selectedBlock.type === 'Pricing' || selectedBlock.type === 'Testimonials') && (() => {
+                        const coll = site.theme?.customCollections?.find(
+                          (c: any) => c.name.toLowerCase() === (selectedBlock as any).bindCollectionName.toLowerCase()
+                        );
+                        if (!coll) return null;
+                        const colNames = coll.columns.map((c: any) => c.name);
+                        const fieldsMap = (selectedBlock as any).bindFields || {};
+                        
+                        return (
+                          <div className="space-y-2.5 pt-2 border-t border-slate-800 text-left">
+                            <span className="text-[8px] font-black text-emerald-400 uppercase block">2. Map Columns to Block Fields</span>
+                            
+                            {selectedBlock.type === 'Features' && (
+                              <div className="grid grid-cols-3 gap-1.5 text-[8px]">
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Title</label>
+                                  <select 
+                                    value={fieldsMap.title || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, title: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Desc</label>
+                                  <select 
+                                    value={fieldsMap.desc || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, desc: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Icon</label>
+                                  <select 
+                                    value={fieldsMap.icon || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, icon: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    <option value="">(Default Sparkles)</option>
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+
+                            {selectedBlock.type === 'Testimonials' && (
+                              <div className="grid grid-cols-3 gap-1.5 text-[8px]">
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Author Name</label>
+                                  <select 
+                                    value={fieldsMap.name || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, name: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Author Role</label>
+                                  <select 
+                                    value={fieldsMap.role || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, role: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Content Body</label>
+                                  <select 
+                                    value={fieldsMap.content || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, content: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+
+                            {selectedBlock.type === 'Pricing' && (
+                              <div className="grid grid-cols-3 gap-1.5 text-[8px]">
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Tier Title</label>
+                                  <select 
+                                    value={fieldsMap.tier || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, tier: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Price Tag</label>
+                                  <select 
+                                    value={fieldsMap.price || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, price: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[7px] font-black text-slate-400 uppercase">Features</label>
+                                  <select 
+                                    value={fieldsMap.features || ''}
+                                    onChange={(e) => handleUpdateBlockContent('bindFields', { ...fieldsMap, features: e.target.value })}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1 font-bold text-slate-300"
+                                  >
+                                    {colNames.map((n: string) => <option key={n} value={n}>{n}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Display cheat sheet */}
+                      <div className="p-2 bg-slate-955 rounded border border-slate-850 text-[9px] text-slate-500 space-y-1 text-left leading-relaxed">
+                        <span className="font-bold text-slate-400 block mb-0.5">📌 Dynamic Tags (copy-paste in text fields):</span>
+                        <div className="flex items-center justify-between"><span>• Business Name:</span> <code className="font-mono text-indigo-400 bg-slate-950 px-1 rounded select-all cursor-pointer">{"{{site.business_name}}"}</code></div>
+                        <div className="flex items-center justify-between"><span>• Office Phone:</span> <code className="font-mono text-indigo-400 bg-slate-950 px-1 rounded select-all cursor-pointer">{"{{site.theme.phone}}"}</code></div>
+                        <div className="flex items-center justify-between"><span>• Corporate Address:</span> <code className="font-mono text-indigo-400 bg-slate-950 px-1 rounded select-all cursor-pointer">{"{{site.theme.address}}"}</code></div>
+                        <div className="flex items-center justify-between"><span>• Active Page Name:</span> <code className="font-mono text-indigo-400 bg-slate-950 px-1 rounded select-all cursor-pointer">{"{{page.name}}"}</code></div>
+                      </div>
+                    </div>
+                    
                     {/* Badge Copy */}
                     {selectedBlock.badge !== undefined && (
                       <div className="space-y-1.5">
@@ -2274,15 +4023,101 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
 
                     {/* Button Text */}
                     {selectedBlock.btnText !== undefined && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide">Button CTA Text</label>
-                        <input 
-                          type="text" 
-                          value={selectedBlock.btnText}
-                          onChange={(e) => handleUpdateBlockContent('btnText', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500"
-                          placeholder="Action CTA Button"
-                        />
+                      <>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide">Button CTA Text</label>
+                          <input 
+                            type="text" 
+                            value={selectedBlock.btnText}
+                            onChange={(e) => handleUpdateBlockContent('btnText', e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500"
+                            placeholder="Action CTA Button"
+                          />
+                        </div>
+
+                        {/* Link Tagging Action builder */}
+                        <div className="space-y-3 pt-3.5 border-t border-slate-800">
+                          <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide flex items-center gap-1.5">
+                            <SlidersHorizontal size={11} className="text-blue-400" />
+                            <span>Link Action Target</span>
+                          </p>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-bold text-slate-500 uppercase">Action Type</label>
+                              <select
+                                value={selectedBlock.btnActionType || 'none'}
+                                onChange={(e) => handleUpdateBlockContent('btnActionType', e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 outline-none cursor-pointer"
+                              >
+                                <option value="none">No Action</option>
+                                <option value="scroll">Scroll to Block</option>
+                                <option value="link">Link to Page</option>
+                                <option value="external">External URL</option>
+                              </select>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <label className="text-[8px] font-bold text-slate-500 uppercase">Destination</label>
+                              {selectedBlock.btnActionType === 'scroll' ? (
+                                <select
+                                  value={selectedBlock.btnActionValue || ''}
+                                  onChange={(e) => handleUpdateBlockContent('btnActionValue', e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 outline-none cursor-pointer"
+                                >
+                                  <option value="">Select block...</option>
+                                  {blocks.map(b => (
+                                    <option key={b.id} value={b.id}>{b.type} ({b.title?.slice(0, 15) || b.id})</option>
+                                  ))}
+                                </select>
+                              ) : selectedBlock.btnActionType === 'link' ? (
+                                <select
+                                  value={selectedBlock.btnActionValue || ''}
+                                  onChange={(e) => handleUpdateBlockContent('btnActionValue', e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 outline-none cursor-pointer"
+                                >
+                                  <option value="">Select page...</option>
+                                  {pages.map(p => (
+                                    <option key={p.id} value={p.slug}>{p.name} ({p.slug})</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <input
+                                  type="text"
+                                  placeholder="https://example.com"
+                                  value={selectedBlock.btnActionValue || ''}
+                                  onChange={(e) => handleUpdateBlockContent('btnActionValue', e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 outline-none font-mono"
+                                  disabled={selectedBlock.btnActionType === 'none'}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Google Map location configuration */}
+                    {selectedBlock.type === 'Map' && (
+                      <div className="space-y-3 pt-3 border-t border-slate-800">
+                        <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide flex items-center gap-1.5">
+                          <MapPin size={11} className="text-blue-400" />
+                          <span>Google Maps Settings</span>
+                        </p>
+                        
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] text-slate-500 uppercase">Target Address / Location</label>
+                          <input 
+                            type="text" 
+                            value={selectedBlock.mapAddress || ''}
+                            onChange={(e) => handleUpdateBlockContent('mapAddress', e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500"
+                            placeholder="e.g. Indiranagar, Bengaluru"
+                          />
+                          <p className="text-[8px] text-slate-500 mt-1 leading-normal">
+                            Type any street name, landmark, or coordinates. The embedded map resolves it dynamically.
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -2297,13 +4132,35 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                             {selectedBlock.type === 'Navigation' ? '📏 Recommended: 200x50px' : '📏 Recommended: 1200x800px'}
                           </span>
                         </div>
-                        <input 
-                          type="text" 
-                          value={selectedBlock.imageUrl || ''}
-                          onChange={(e) => handleUpdateBlockContent('imageUrl', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500 font-mono"
-                          placeholder={selectedBlock.type === 'Navigation' ? 'Logo secure image url...' : 'Unsplash secure image url...'}
-                        />
+                         <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={selectedBlock.imageUrl || ''}
+                            onChange={(e) => handleUpdateBlockContent('imageUrl', e.target.value)}
+                            className="flex-1 bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500 font-mono"
+                            placeholder={selectedBlock.type === 'Navigation' ? 'Logo secure image url...' : 'Unsplash secure image url...'}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const input = document.createElement('input');
+                              input.type = 'file';
+                              input.accept = 'image/*';
+                              input.onchange = async (e: any) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  await handleSingleImageUpload(file, 'content', 'imageUrl');
+                                }
+                              };
+                              input.click();
+                            }}
+                            disabled={uploadingImage}
+                            className="px-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-xs font-bold text-white transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1 hover:shadow-lg disabled:opacity-50"
+                          >
+                            {uploadingImage ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
+                            <span>Upload</span>
+                          </button>
+                        </div>
                         <p className="text-[9px] text-slate-500 leading-normal">
                           {selectedBlock.type === 'Navigation' 
                             ? 'Recommended: 200x50px transparent PNG brand logo. Keep it short and compact so it fits perfectly on all mobile & desktop navigation layouts.' 
@@ -2818,15 +4675,34 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                               </div>
 
                               <div className="col-span-5 space-y-1">
-                                <label className="text-[8px] font-bold text-slate-500 uppercase">URL Link</label>
-                                <input 
-                                  type="text" 
+                                <label className="text-[8px] font-bold text-slate-500 uppercase flex items-center justify-between">
+                                  <span>URL / Page Link</span>
+                                  <select
+                                    value=""
+                                    onChange={(e) => {
+                                      if (!e.target.value) return;
+                                      const copy = [...(selectedBlock.links || [])];
+                                      copy[index] = { ...copy[index], url: e.target.value };
+                                      handleUpdateBlockContent('links', copy);
+                                    }}
+                                    className="bg-slate-900 border border-slate-800 rounded px-1 py-0.5 text-[8px] text-blue-400 outline-none cursor-pointer"
+                                    title="Connect to a page"
+                                  >
+                                    <option value="">Connect page…</option>
+                                    {pages.map(p => (
+                                      <option key={p.id} value={`/${p.slug}`}>{p.name}</option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <input
+                                  type="text"
                                   value={link.url}
                                   onChange={(e) => {
                                     const copy = [...(selectedBlock.links || [])];
                                     copy[index] = { ...copy[index], url: e.target.value };
                                     handleUpdateBlockContent('links', copy);
                                   }}
+                                  placeholder="/about or https://..."
                                   className="w-full bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-slate-200 font-mono outline-none"
                                 />
                               </div>
@@ -3212,8 +5088,26 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                               }}
                               className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer uppercase bg-blue-950/40 border border-blue-900/40 px-2 py-1 rounded"
                             >
-                              <Plus size={10} /> Add Slide Image
+                              <Plus size={10} /> Add Slide
                             </button>
+                            <button 
+                              onClick={() => galleryFileInputRef.current?.click()}
+                              disabled={uploadingImage}
+                              className="flex items-center gap-1 text-[9px] text-emerald-400 hover:text-emerald-300 font-extrabold cursor-pointer uppercase bg-emerald-950/40 border border-emerald-900/40 px-2 py-1 rounded disabled:opacity-50"
+                            >
+                              {uploadingImage ? <Loader2 size={10} className="animate-spin" /> : <UploadCloud size={10} />}
+                              {uploadingImage ? 'Uploading...' : 'Upload Images'}
+                            </button>
+                            <input
+                              ref={galleryFileInputRef}
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                if (e.target.files) handleGalleryImageUpload(e.target.files);
+                              }}
+                            />
                           </div>
 
                           <div className="space-y-3">
@@ -3268,16 +5162,62 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                                       <label className="text-[8px] font-bold text-slate-500 uppercase">Image URL</label>
                                       <span className="text-[7px] font-extrabold text-blue-400 bg-blue-950 px-1 py-0.2 rounded">📏 Rec: 800x600px</span>
                                     </div>
-                                    <input 
-                                      type="text" 
-                                      value={slide.url}
-                                      onChange={(e) => {
-                                        const copy = [...currentSlides];
-                                        copy[index] = { ...copy[index], url: e.target.value };
-                                        handleUpdateBlockContent('galleryImages', copy);
-                                      }}
-                                      className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 font-mono outline-none"
-                                    />
+                                    <div className="flex gap-1.5">
+                                      <input 
+                                        type="text" 
+                                        value={slide.url}
+                                        onChange={(e) => {
+                                          const copy = [...currentSlides];
+                                          copy[index] = { ...copy[index], url: e.target.value };
+                                          handleUpdateBlockContent('galleryImages', copy);
+                                        }}
+                                        className="flex-1 bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 font-mono outline-none"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const input = document.createElement('input');
+                                          input.type = 'file';
+                                          input.accept = 'image/*';
+                                          input.onchange = async (e: any) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                              setUploadingImage(true);
+                                              try {
+                                                const fileExt = file.name.split('.').pop();
+                                                const fileName = `${site.id}/gallery/${Date.now()}-${index}.${fileExt}`;
+
+                                                const { error: uploadError } = await supabase.storage
+                                                  .from('site-assets')
+                                                  .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+                                                if (uploadError) throw uploadError;
+
+                                                const { data: publicUrlData } = supabase.storage
+                                                  .from('site-assets')
+                                                  .getPublicUrl(fileName);
+
+                                                const copy = [...currentSlides];
+                                                copy[index] = { ...copy[index], url: publicUrlData.publicUrl };
+                                                handleUpdateBlockContent('galleryImages', copy);
+                                                triggerToast('Slide image uploaded successfully!', 'success');
+                                              } catch (err: any) {
+                                                console.error(err);
+                                                triggerToast('Failed to upload image: ' + err.message, 'error');
+                                              } finally {
+                                                setUploadingImage(false);
+                                              }
+                                            }
+                                          };
+                                          input.click();
+                                        }}
+                                        disabled={uploadingImage}
+                                        className="px-2 bg-blue-600 hover:bg-blue-500 rounded text-[9px] font-bold text-white transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1 disabled:opacity-50"
+                                      >
+                                        {uploadingImage ? <Loader2 size={10} className="animate-spin" /> : <UploadCloud size={10} />}
+                                        <span>Upload</span>
+                                      </button>
+                                    </div>
                                   </div>
                                   <div className="space-y-1">
                                     <label className="text-[8px] font-bold text-slate-500 uppercase">Slide Header</label>
@@ -3412,7 +5352,26 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
           <div className="h-14 border-b border-slate-800 bg-slate-950 px-6 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-              <span className="text-xs font-black text-slate-200">Responsive Site Live Preview Mode</span>
+              <span className="text-xs font-black text-slate-200">Live Preview Mode</span>
+            </div>
+
+            {/* Pages tab bar */}
+            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+              {pages.map(page => (
+                <button
+                  key={page.id}
+                  onClick={() => {
+                    setPreviewPageId(page.id);
+                    loadBlocksForPage(page.id);
+                  }}
+                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    previewPageId === page.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Files size={10} />
+                  {page.name}
+                </button>
+              ))}
             </div>
 
             {/* Middle Screen controls */}
@@ -3454,159 +5413,205 @@ export function WebsiteBuilderEditor({ onExit }: { onExit: () => void }) {
                     : 'max-w-6xl'
               }`}
             >
-              {blocks.map(block => {
-                const styles = block.styles;
-                const containerStyle: React.CSSProperties = {
-                  paddingTop: `${styles.paddingTop}px`,
-                  paddingBottom: `${styles.paddingBottom}px`,
-                  paddingLeft: `${styles.paddingLeft}px`,
-                  paddingRight: `${styles.paddingRight}px`,
-                  backgroundColor: styles.useGradient ? undefined : styles.backgroundColor,
-                  backgroundImage: styles.useGradient ? styles.backgroundGradient : undefined,
-                  color: styles.textColor,
-                  fontFamily: styles.fontFamily === 'Inter' ? '"Inter", sans-serif' : 
-                              styles.fontFamily === 'Space Grotesk' ? '"Space Grotesk", sans-serif' : 
-                              styles.fontFamily === 'Playfair Display' ? '"Playfair Display", serif' : 
-                              styles.fontFamily === 'Georgia' ? 'Georgia, serif' : '"JetBrains Mono", monospace',
-                  borderRadius: `${styles.borderRadius}px`,
-                  borderWidth: `${styles.borderWidth}px`,
-                  borderColor: styles.borderColor,
-                  borderStyle: styles.borderStyle,
-                  boxShadow: styles.boxShadow === 'none' ? 'none' : '0 10px 15px -3px rgba(0,0,0,0.1)',
-                  textAlign: styles.textAlign
-                };
-
-                return (
-                  <div key={block.id} style={containerStyle}>
-                    <div className="mx-auto" style={{ maxWidth: `${styles.maxWidth}px`, width: '100%' }}>
-                      
-                      {block.badge && (
-                        <span className="inline-block text-[10px] uppercase tracking-widest font-extrabold mb-4 px-2.5 py-0.5 rounded-full" style={{ backgroundColor: styles.badgeBgColor, color: styles.badgeTextColor }}>
-                          {block.badge}
-                        </span>
-                      )}
-
-                      {block.type === 'Hero' && (
-                        <div className={`grid grid-cols-1 ${styles.textAlign === 'left' ? 'lg:grid-cols-2' : ''} gap-8 items-center text-left`}>
-                          <div className={styles.textAlign === 'center' ? 'text-center mx-auto' : ''}>
-                            <h1 style={{ fontSize: `${styles.titleSize}px`, fontWeight: styles.titleWeight === 'light' ? 300 : styles.titleWeight === 'normal' ? 400 : styles.titleWeight === 'semibold' ? 600 : styles.titleWeight === 'bold' ? 700 : 900, lineHeight: styles.lineHeight }}>{block.title}</h1>
-                            <p className="my-6" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
-                            {block.btnText && (
-                              <button className="px-6 py-3 font-bold cursor-pointer" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
-                                {block.btnText}
-                              </button>
-                            )}
-                          </div>
-                          {block.imageUrl && styles.textAlign === 'left' && (
-                            <img src={block.imageUrl} className="w-full object-cover rounded-xl" style={{ maxHeight: '380px' }} alt="Hero Visual" />
-                          )}
-                        </div>
-                      )}
-
-                      {block.type === 'Features' && (
-                        <div>
-                          <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-                          <p className="mb-8" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {block.features?.map(feat => (
-                              <div key={feat.id} className="p-6 text-left" style={{ backgroundColor: styles.cardBgColor, color: styles.cardTextColor, borderRadius: `${styles.cardBorderRadius}px`, borderWidth: `${styles.cardBorderWidth}px`, borderColor: styles.cardBorderColor }}>
-                                <h3 className="text-base font-bold mb-2">{feat.title}</h3>
-                                <p className="text-xs opacity-80 leading-normal">{feat.desc}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {block.type === 'Pricing' && (
-                        <div>
-                          <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-                          <p className="mb-8" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {block.pricing?.map(plan => (
-                              <div key={plan.id} className="p-6 text-left flex flex-col justify-between" style={{ backgroundColor: styles.cardBgColor, color: styles.cardTextColor, borderRadius: `${styles.cardBorderRadius}px`, borderWidth: `${styles.cardBorderWidth}px`, borderColor: styles.cardBorderColor }}>
-                                <div>
-                                  <h3 className="text-lg font-bold mb-1">{plan.tier}</h3>
-                                  <p className="text-2xl font-black mb-4" style={{ color: styles.accentColor }}>{plan.price}</p>
-                                  <ul className="space-y-2 mb-6">
-                                    {plan.features.map((f, i) => (
-                                      <li key={i} className="text-xs flex items-center gap-1.5 opacity-80">
-                                        <Check size={12} className="text-emerald-500" />
-                                        <span>{f}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                                <button className="w-full py-2 font-bold text-xs" style={{ backgroundColor: styles.accentColor, color: '#ffffff', borderRadius: `${styles.buttonBorderRadius}px` }}>
-                                  {plan.btnText}
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {block.type === 'Testimonials' && (
-                        <div>
-                          <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-                          <p className="mb-8" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {block.testimonials?.map(test => (
-                              <div key={test.id} className="p-6 text-left" style={{ backgroundColor: styles.cardBgColor, color: styles.cardTextColor, borderRadius: `${styles.cardBorderRadius}px` }}>
-                                <p className="text-xs italic mb-4 font-medium">"{test.content}"</p>
-                                <div className="flex items-center gap-3">
-                                  <img src={test.avatar} className="w-8 h-8 rounded-full object-cover" alt="Avatar" />
-                                  <div>
-                                    <h4 className="text-xs font-black">{test.name}</h4>
-                                    <p className="text-[10px] text-slate-400">{test.role}</p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {block.type === 'Contact' && (
-                        <div>
-                          <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-                          <p className="mb-8" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                            <div className="p-6" style={{ backgroundColor: styles.cardBgColor, borderRadius: `${styles.cardBorderRadius}px` }}>
-                              <input type="text" placeholder="Your Name" className="w-full bg-white border p-2 text-xs mb-3 rounded" />
-                              <textarea placeholder="Your query..." className="w-full bg-white border p-2 text-xs mb-3 rounded" rows={3} />
-                              <button className="w-full py-2 font-bold text-xs" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
-                                {block.btnText}
-                              </button>
-                            </div>
-                            <div className="p-6 bg-slate-50 rounded-xl text-slate-600 text-xs space-y-3">
-                              <p>✉ {block.contactEmail}</p>
-                              <p>☎ {block.contactPhone}</p>
-                              <p>📍 {block.contactAddress}</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {block.type === 'Footer' && (
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-xs">
-                          <div>
-                            <h4 className="text-white font-bold">{block.title}</h4>
-                            <p className="text-[11px]">{block.subtitle}</p>
-                          </div>
-                          <p className="text-[10px]">{block.copyright}</p>
-                        </div>
-                      )}
-
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-32">
+                  <Loader2 size={24} className="animate-spin text-blue-500" />
+                  <span className="ml-3 text-sm text-slate-400 font-medium">Loading page blocks...</span>
+                </div>
+              ) : previewBlocks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-32 text-slate-400">
+                  <Layers size={32} className="mb-3 opacity-40" />
+                  <p className="text-sm font-medium">No blocks on this page yet.</p>
+                </div>
+              ) : (
+                <>
+                  {globalHeader && (
+                    <BuilderRenderer 
+                      block={globalHeader} 
+                      isActive={false} 
+                      onSelect={() => {}} 
+                      siteId={site.id}
+                      pages={pages}
+                      onNavigatePage={(slug) => {
+                        const targetPage = pages.find(p => p.slug === slug);
+                        if (targetPage) {
+                          setPreviewPageId(targetPage.id);
+                          loadBlocksForPage(targetPage.id);
+                        }
+                      }}
+                      site={site}
+                      activePageId={previewPageId}
+                    />
+                  )}
+                  {previewBlocks.map(block => (
+                    <div key={block.id}>
+                      <BuilderRenderer 
+                        block={block} 
+                        isActive={false} 
+                        onSelect={() => {}} 
+                        siteId={site.id}
+                        pages={pages}
+                        site={site}
+                        activePageId={previewPageId}
+                      />
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
+                  {globalFooter && (
+                    <BuilderRenderer 
+                      block={globalFooter} 
+                      isActive={false} 
+                      onSelect={() => {}} 
+                      siteId={site.id}
+                      pages={pages}
+                      site={site}
+                      activePageId={previewPageId}
+                    />
+                  )}
+                </>
+              )}
             </div>
 
           </div>
         </div>
       )}
+
+      {/* MODAL: ADD PAGE */}
+      {showAddPageModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 text-left">
+            <div>
+              <h3 className="text-sm font-extrabold text-white">Create New Page</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">Add a new route path to your website layout</p>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-[8px] font-black text-slate-500 uppercase block mb-1">Page Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Services"
+                  value={newPageName}
+                  onChange={(e) => {
+                    setNewPageName(e.target.value);
+                    setNewPageSlug('/' + e.target.value.toLowerCase().replace(/\s+/g, '-'));
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="text-[8px] font-black text-slate-500 uppercase block mb-1">URL Route Path</label>
+                <input
+                  type="text"
+                  placeholder="e.g. /services"
+                  value={newPageSlug}
+                  onChange={(e) => setNewPageSlug(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                onClick={() => {
+                  setShowAddPageModal(false);
+                  setNewPageName('');
+                  setNewPageSlug('');
+                }}
+                className="px-3.5 py-1.5 border border-slate-800 text-[11px] font-bold rounded-lg text-slate-400 hover:text-slate-200 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newPageName.trim() && newPageSlug.trim()) {
+                    handleCreatePageInBuilder(newPageName, newPageSlug);
+                    setShowAddPageModal(false);
+                    setNewPageName('');
+                    setNewPageSlug('');
+                  }
+                }}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-[11px] cursor-pointer"
+              >
+                Create Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FLOATING ON-CANVAS AI ASSISTANT PANEL */}
+      {aiAssistantBlockId && (() => {
+        const targetBlock = blocks.find(b => b.id === aiAssistantBlockId) || (globalHeader?.id === aiAssistantBlockId ? globalHeader : null) || (globalFooter?.id === aiAssistantBlockId ? globalFooter : null);
+        if (!targetBlock) return null;
+        
+        return (
+          <div className="fixed bottom-6 right-6 w-80 bg-slate-950/90 border border-slate-800 rounded-2xl p-4 shadow-2xl backdrop-blur-md z-45 flex flex-col gap-3 font-sans text-left animate-fade-in">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-850">
+              <div className="flex items-center gap-1.5">
+                <Sparkles size={13} className="text-indigo-400 animate-pulse" />
+                <span className="text-xs font-black text-slate-200">On-Canvas AI Assistant</span>
+              </div>
+              <button 
+                onClick={() => setAiAssistantBlockId(null)}
+                className="text-slate-500 hover:text-slate-350 cursor-pointer font-bold"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Editing: <span className="font-bold text-indigo-400 font-mono">{targetBlock.type}</span> section. Prompt AI to rewrite copy, change layout styles, or adjust tone.
+            </p>
+            
+            <div className="space-y-1.5">
+              <textarea
+                value={aiAssistantPrompt}
+                onChange={(e) => setAiAssistantPrompt(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    await handleExecuteAiAssistant();
+                  }
+                }}
+                rows={3}
+                placeholder="e.g. rewrite title to be more professional, change card border radius to 20px..."
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 outline-none focus:border-indigo-500 resize-none font-sans"
+              />
+            </div>
+            
+            {/* Quick Prompts Suggestions */}
+            <div className="flex flex-wrap gap-1">
+              {[
+                'Make it punchy',
+                'Dark futuristic style',
+                'Luxury serif font',
+                'Shorten description'
+              ].map(qp => (
+                <button
+                  key={qp}
+                  onClick={() => setAiAssistantPrompt(qp)}
+                  className="px-2 py-0.5 rounded bg-slate-900 border border-slate-850 text-[8px] text-slate-400 hover:text-slate-200 hover:bg-slate-850 cursor-pointer font-bold"
+                >
+                  {qp}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center mt-1">
+              <span className="text-[8px] font-mono text-slate-500">OnlyPage AI Assistant</span>
+              <button
+                onClick={handleExecuteAiAssistant}
+                disabled={isAiLoading || !aiAssistantPrompt.trim()}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-black text-[10px] rounded-lg flex items-center gap-1 cursor-pointer transition shadow-md shadow-indigo-600/10"
+              >
+                {isAiLoading ? <Loader2 size={10} className="animate-spin" /> : <Send size={10} />}
+                <span>Transform Section</span>
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ==========================================
           NOTIFICATION TOAST OUTLINE

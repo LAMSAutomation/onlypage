@@ -84,3 +84,72 @@
   animation: pulse-subtle 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ==========================================
+   SHOPIFY & UNTITLED UI DESIGN SYSTEM UTILITIES
+   ========================================== */
+.font-ss03 {
+  font-feature-settings: "ss03" 1;
+}
+
+.bg-canvas-night {
+  background-color: #000000;
+}
+
+.bg-canvas-cream {
+  background-color: #fbfbf5;
+}
+
+.bg-aloe-10 {
+  background-color: #c1fbd4;
+}
+
+.bg-pistachio-10 {
+  background-color: #d4f9e0;
+}
+
+.shadow-elevation-3 {
+  box-shadow: 0 8px 8px rgba(0,0,0,0.05), 0 4px 4px rgba(0,0,0,0.05), 0 2px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.button-primary-pill {
+  background-color: #000000;
+  color: #ffffff;
+  border-radius: 9999px;
+  font-weight: 600;
+  padding: 10px 22px;
+  transition: all 0.2s ease;
+}
+
+.button-primary-pill:hover {
+  background-color: #3f3f46;
+}
+
+.button-aloe-pill {
+  background-color: #c1fbd4;
+  color: #000000;
+  border-radius: 9999px;
+  font-weight: 700;
+  padding: 10px 22px;
+  transition: all 0.2s ease;
+}
+
+.button-aloe-pill:hover {
+  background-color: #a4f4bd;
+}
+
+.button-outline-on-dark {
+  background-color: #000000;
+  border: 2px solid #ffffff;
+  color: #ffffff;
+  border-radius: 9999px;
+  font-weight: 600;
+  padding: 10px 22px;
+  transition: all 0.2s ease;
+}
+
+.button-outline-on-dark:hover {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+
