@@ -14,6 +14,7 @@ import {
 import { DashboardMode } from './app-shell';
 import type { SiteRecord } from './ui/onboarding-wizard';
 import { supabase } from '@/lib/supabase';
+import { fetchProducts, fetchOrders, fetchStore, fetchPayoutProfile, upsertProduct, deleteProduct as deleteProductDb, upsertStore, upsertPayoutProfile } from '@/lib/ecom-queries';
 
 interface DashboardProps {
   activeTab: string;
@@ -55,10 +56,7 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
   // 4b. E-Commerce Store Manager state
   const [ecomSubTab, setEcomSubTab] = useState<'dashboard' | 'products' | 'detail' | 'add-product' | 'orders' | 'gateways' | 'payouts' | 'email' | 'whatsapp'>('dashboard');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [ecomProducts, setEcomProducts] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`onlypage_ecom_prods_${site.id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [ecomProducts, setEcomProducts] = useState<any[]>([]);
   const [newProdTitle, setNewProdTitle] = useState('');
   const [newProdPrice, setNewProdPrice] = useState('');
   const [newProdComparePrice, setNewProdComparePrice] = useState('');
@@ -73,39 +71,85 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
   const [newProdInStock, setNewProdInStock] = useState(true);
   const [newProdImg, setNewProdImg] = useState('');
 
-  const [welcomeEmailSubject, setWelcomeEmailSubject] = useState(() => {
-    return localStorage.getItem(`onlypage_welcome_subj_${site.id}`) || `Welcome to ${site.business_name}! 🎉 Here is your discount code`;
-  });
-  const [welcomeEmailBody, setWelcomeEmailBody] = useState(() => {
-    return localStorage.getItem(`onlypage_welcome_body_${site.id}`) || `Hi {{customer_name}},\n\nThank you for signing up with ${site.business_name}! We are thrilled to have you with us.\n\nUse coupon code WELCOME10 at checkout to get 10% off your first order.\n\nHappy shopping!\n${site.business_name} Team`;
-  });
-  const [whatsappStoreNumber, setWhatsappStoreNumber] = useState(() => {
-    return localStorage.getItem(`onlypage_store_wa_num_${site.id}`) || site.theme?.phone || '';
-  });
+  const [welcomeEmailSubject, setWelcomeEmailSubject] = useState(`Welcome to ${site.business_name}! 🎉 Here is your discount code`);
+  const [welcomeEmailBody, setWelcomeEmailBody] = useState(`Hi {{customer_name}},\n\nThank you for signing up with ${site.business_name}! We are thrilled to have you with us.\n\nUse coupon code WELCOME10 at checkout to get 10% off your first order.\n\nHappy shopping!\n${site.business_name} Team`);
+  const [whatsappStoreNumber, setWhatsappStoreNumber] = useState(site.theme?.phone || '');
 
-  const [ecomOrders, setEcomOrders] = useState<any[]>(() => {
-    const saved = localStorage.getItem(`onlypage_ecom_orders_${site.id}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [ecomOrders, setEcomOrders] = useState<any[]>([]);
 
-  const [razorpayKeyId, setRazorpayKeyId] = useState(() => localStorage.getItem(`onlypage_rzp_key_${site.id}`) || '');
-  const [razorpaySecret, setRazorpaySecret] = useState(() => localStorage.getItem(`onlypage_rzp_sec_${site.id}`) || '');
-  const [stripeAccountId, setStripeAccountId] = useState(() => localStorage.getItem(`onlypage_stripe_acc_${site.id}`) || '');
-  const [upiVpa, setUpiVpa] = useState(() => localStorage.getItem(`onlypage_upi_vpa_${site.id}`) || `${site.subdomain || 'store'}@upi`);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [razorpaySecret, setRazorpaySecret] = useState('');
+  const [stripeAccountId, setStripeAccountId] = useState('');
+  const [upiVpa, setUpiVpa] = useState(`${site.subdomain || 'store'}@upi`);
 
-  const [bankHolderName, setBankHolderName] = useState(() => localStorage.getItem(`onlypage_bank_holder_${site.id}`) || site.business_name);
-  const [bankAccountNum, setBankAccountNum] = useState(() => localStorage.getItem(`onlypage_bank_num_${site.id}`) || '');
-  const [bankIfsc, setBankIfsc] = useState(() => localStorage.getItem(`onlypage_bank_ifsc_${site.id}`) || '');
-  const [taxId, setTaxId] = useState(() => localStorage.getItem(`onlypage_tax_id_${site.id}`) || '');
-  const [payoutStatus, setPayoutStatus] = useState<'pending' | 'verified'>(() => (localStorage.getItem(`onlypage_payout_status_${site.id}`) as any) || 'pending');
+  const [bankHolderName, setBankHolderName] = useState(site.business_name);
+  const [bankAccountNum, setBankAccountNum] = useState('');
+  const [bankIfsc, setBankIfsc] = useState('');
+  const [taxId, setTaxId] = useState('');
+  const [payoutStatus, setPayoutStatus] = useState<'pending' | 'verified'>('pending');
+  const [ecomLoading, setEcomLoading] = useState(true);
 
+  // Load ecom data from Supabase on mount
   useEffect(() => {
-    localStorage.setItem(`onlypage_ecom_prods_${site.id}`, JSON.stringify(ecomProducts));
-  }, [ecomProducts, site.id]);
-
-  useEffect(() => {
-    localStorage.setItem(`onlypage_ecom_orders_${site.id}`, JSON.stringify(ecomOrders));
-  }, [ecomOrders, site.id]);
+    let cancelled = false;
+    async function loadEcomData() {
+      setEcomLoading(true);
+      const [products, orders, store, payout] = await Promise.all([
+        fetchProducts(site.id),
+        fetchOrders(site.id),
+        fetchStore(site.id),
+        fetchPayoutProfile(site.id)
+      ]);
+      if (cancelled) return;
+      setEcomProducts(products.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        price: String(p.price),
+        compare_at: p.compare_at_price ? String(p.compare_at_price) : '',
+        stock: p.stock,
+        category: p.category || 'General',
+        tags: p.tags || [],
+        offer_badge: p.offer_badge || '',
+        status: p.status === 'active' ? 'Active' : p.status === 'draft' ? 'Draft' : (p.status || 'Active'),
+        image: p.images?.[0]?.url || '',
+        seo_title: p.seo_title,
+        seo_desc: p.seo_desc
+      })));
+      setEcomOrders(orders.map((o: any) => ({
+        id: o.id,
+        order_number: o.order_number,
+        customer: o.customer_name,
+        email: o.customer_email,
+        phone: o.customer_phone,
+        total: String(o.total_amount),
+        status: o.order_status,
+        payment: o.payment_status,
+        gateway: o.payment_gateway,
+        items: o.items,
+        created_at: o.created_at
+      })));
+      if (store) {
+        setRazorpayKeyId(store.razorpay_key_id || '');
+        setRazorpaySecret(store.razorpay_key_secret || '');
+        setStripeAccountId(store.stripe_account_id || '');
+        setUpiVpa(store.upi_vpa || `${site.subdomain || 'store'}@upi`);
+        setWelcomeEmailSubject(store.welcome_email_subject || welcomeEmailSubject);
+        setWelcomeEmailBody(store.welcome_email_body || welcomeEmailBody);
+        setWhatsappStoreNumber(store.whatsapp_phone || site.theme?.phone || '');
+      }
+      if (payout) {
+        setBankHolderName(payout.bank_holder_name || site.business_name);
+        setBankAccountNum(payout.bank_account_number || '');
+        setBankIfsc(payout.bank_ifsc_code || '');
+        setTaxId(payout.tax_id || '');
+        setPayoutStatus(payout.verification_status === 'verified' ? 'verified' : 'pending');
+      }
+      setEcomLoading(false);
+    }
+    loadEcomData();
+    return () => { cancelled = true; };
+  }, [site.id]);
 
   // 5. Forms Center submissions and builder
   const [formSubmissions, setFormSubmissions] = useState<any[]>([]);
@@ -1706,48 +1750,41 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
                     <button onClick={() => setEcomSubTab('products')} className="px-4 py-2 border text-xs font-bold rounded-xl text-slate-600 hover:bg-slate-50 cursor-pointer">Discard</button>
                     <button onClick={() => showToast('Saved draft product')} className="px-4 py-2 border text-xs font-bold rounded-xl text-slate-800 hover:bg-slate-50 cursor-pointer">Save Draft</button>
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
                         if (!newProdTitle.trim()) { showToast('Please enter a product name'); return; }
-                        const newProd = {
-                          id: `p_${Date.now()}`,
-                          title: newProdTitle.trim(),
-                          price: newProdPrice || '99.00',
-                          compare_at: newProdComparePrice || '120.00',
-                          stock: newProdInStock ? (Number(newProdStock) || 10) : 0,
-                          sku: newProdSku || 'MVCFH27F',
-                          barcode: newProdBarcode || '123456789',
-                          description: newProdDesc,
-                          category: newProdCategory || 'Electronics',
-                          rating: 5.0,
-                          status: newProdStatus,
-                          image: newProdImg || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&auto=format&fit=crop&q=80',
-                          tags: newProdTags.split(',').map(t => t.trim()).filter(Boolean),
-                          offer_badge: newProdBadge || 'Active'
-                        };
-                        const updatedList = [newProd, ...ecomProducts];
-                        setEcomProducts(updatedList);
-                        localStorage.setItem(`onlypage_ecom_prods_${site.id}`, JSON.stringify(updatedList));
-
-                        // Sync with Supabase database
-                        supabase.from('ecom_products').upsert({
-                          id: newProd.id,
+                        const tags = newProdTags.split(',').map(t => t.trim()).filter(Boolean);
+                        const imageUrl = newProdImg || '';
+                        const dbProduct = await upsertProduct({
                           site_id: site.id,
-                          title: newProd.title,
-                          price: parseFloat(newProd.price),
-                          compare_at_price: parseFloat(newProd.compare_at),
-                          stock: newProd.stock,
-                          sku: newProd.sku,
-                          category: newProd.category,
-                          tags: newProd.tags,
-                          offer_badge: newProd.offer_badge,
-                          status: newProd.status,
-                          image_url: newProd.image
-                        }).then(({ error }) => {
-                          if (error) console.error('[DB Sync Error]:', error);
-                          else console.log('[DB Sync]: Product upserted to Supabase');
+                          title: newProdTitle.trim(),
+                          price: parseFloat(newProdPrice) || 0,
+                          compare_at_price: newProdComparePrice ? parseFloat(newProdComparePrice) : null,
+                          stock: newProdInStock ? (Number(newProdStock) || 10) : 0,
+                          description: newProdDesc,
+                          category: newProdCategory || 'General',
+                          tags,
+                          offer_badge: newProdBadge || '',
+                          status: newProdStatus === 'Active' ? 'active' : 'draft',
+                          images: imageUrl ? [{ url: imageUrl, alt: newProdTitle.trim() }] : []
                         });
-
-                        showToast(`Published "${newProd.title}" successfully! Live in Storefront & Builder.`);
+                        if (dbProduct) {
+                          setEcomProducts(prev => [{
+                            id: dbProduct.id,
+                            title: dbProduct.title,
+                            description: dbProduct.description,
+                            price: String(dbProduct.price),
+                            compare_at: dbProduct.compare_at_price ? String(dbProduct.compare_at_price) : '',
+                            stock: dbProduct.stock,
+                            category: dbProduct.category || 'General',
+                            tags: dbProduct.tags || [],
+                            offer_badge: dbProduct.offer_badge || '',
+                            status: dbProduct.status === 'active' ? 'Active' : 'Draft',
+                            image: dbProduct.images?.[0]?.url || ''
+                          }, ...prev]);
+                          showToast(`Published "${dbProduct.title}" to your storefront.`);
+                        } else {
+                          showToast('Failed to save product. Check console for errors.');
+                        }
                         setEcomSubTab('products');
                       }}
                       className="px-5 py-2 bg-slate-950 text-white font-extrabold text-xs rounded-xl hover:bg-slate-800 cursor-pointer shadow-xs"
@@ -1983,11 +2020,16 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
                 </div>
 
                 <button
-                  onClick={() => {
-                    localStorage.setItem(`onlypage_rzp_key_${site.id}`, razorpayKeyId);
-                    localStorage.setItem(`onlypage_rzp_sec_${site.id}`, razorpaySecret);
-                    localStorage.setItem(`onlypage_upi_vpa_${site.id}`, upiVpa);
-                    showToast('Payment gateway routing parameters saved!');
+                  onClick={async () => {
+                    await upsertStore({
+                      site_id: site.id,
+                      store_name: site.business_name,
+                      razorpay_key_id: razorpayKeyId,
+                      razorpay_key_secret: razorpaySecret,
+                      upi_vpa: upiVpa,
+                      stripe_account_id: stripeAccountId
+                    });
+                    showToast('Payment gateway routing saved to database!');
                   }}
                   className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
                 >
@@ -2058,18 +2100,26 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!bankAccountNum || !bankIfsc) {
                         showToast('Please fill in bank account number and IFSC code');
                         return;
                       }
-                      localStorage.setItem(`onlypage_bank_holder_${site.id}`, bankHolderName);
-                      localStorage.setItem(`onlypage_bank_num_${site.id}`, bankAccountNum);
-                      localStorage.setItem(`onlypage_bank_ifsc_${site.id}`, bankIfsc);
-                      localStorage.setItem(`onlypage_tax_id_${site.id}`, taxId);
-                      setPayoutStatus('verified');
-                      localStorage.setItem(`onlypage_payout_status_${site.id}`, 'verified');
-                      showToast('Payout bank profile verified successfully!');
+                      const result = await upsertPayoutProfile({
+                        site_id: site.id,
+                        legal_name: bankHolderName,
+                        tax_id: taxId,
+                        bank_account_number: bankAccountNum,
+                        bank_ifsc_code: bankIfsc,
+                        bank_holder_name: bankHolderName,
+                        verification_status: 'verified'
+                      });
+                      if (result) {
+                        setPayoutStatus('verified');
+                        showToast('Payout bank profile verified and saved!');
+                      } else {
+                        showToast('Failed to save payout profile. Check console.');
+                      }
                     }}
                     className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
                   >
@@ -2112,10 +2162,14 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
                 </div>
 
                 <button
-                  onClick={() => {
-                    localStorage.setItem(`onlypage_welcome_subj_${site.id}`, welcomeEmailSubject);
-                    localStorage.setItem(`onlypage_welcome_body_${site.id}`, welcomeEmailBody);
-                    showToast('Saved custom Branded Welcome Email template!');
+                  onClick={async () => {
+                    await upsertStore({
+                      site_id: site.id,
+                      store_name: site.business_name,
+                      welcome_email_subject: welcomeEmailSubject,
+                      welcome_email_body: welcomeEmailBody
+                    });
+                    showToast('Saved branded welcome email template!');
                   }}
                   className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
                 >
@@ -2155,8 +2209,13 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
                 </div>
 
                 <button
-                  onClick={() => {
-                    localStorage.setItem(`onlypage_store_wa_num_${site.id}`, whatsappStoreNumber);
+                  onClick={async () => {
+                    await upsertStore({
+                      site_id: site.id,
+                      store_name: site.business_name,
+                      whatsapp_phone: whatsappStoreNumber,
+                      whatsapp_enabled: true
+                    });
                     showToast('Saved WhatsApp store number and automation rules!');
                   }}
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"

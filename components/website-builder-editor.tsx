@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP, INDUSTRY_PRESETS } from './builder-data';
 import { BuilderRenderer } from './builder-renderer';
 import { supabase } from '@/lib/supabase';
+import { fetchProducts } from '@/lib/ecom-queries';
 import type { SiteRecord } from './ui/onboarding-wizard';
 
 // ==========================================
@@ -180,6 +181,26 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
   // Alert Notifications
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   const [revisions, setRevisions] = useState<any[]>([]);
+  const [ecomProducts, setEcomProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!site?.id) return;
+    fetchProducts(site.id).then(prods => {
+      setEcomProducts(prods.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        price: String(p.price),
+        compare_at: p.compare_at_price ? String(p.compare_at_price) : '',
+        stock: p.stock,
+        category: p.category || 'General',
+        tags: p.tags || [],
+        offer_badge: p.offer_badge || '',
+        status: p.status === 'active' ? 'Active' : 'Draft',
+        image: p.images?.[0]?.url || ''
+      })));
+    });
+  }, [site?.id]);
 
   // Search and tabs for Lego Builder Block Library
   const [blockSearch, setBlockSearch] = useState('');
@@ -2475,6 +2496,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                       pages={pages}
                       site={site}
                       activePageId={activePageId}
+                      ecomProducts={ecomProducts}
                     />
                   </div>
                 )}
@@ -2572,6 +2594,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                         pages={pages}
                         site={site}
                         activePageId={activePageId}
+                        ecomProducts={ecomProducts}
                       />
                     </div>
                   );
@@ -2627,6 +2650,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                       pages={pages}
                       site={site}
                       activePageId={activePageId}
+                      ecomProducts={ecomProducts}
                     />
                   </div>
                 )}
@@ -5441,6 +5465,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                       }}
                       site={site}
                       activePageId={previewPageId}
+                      ecomProducts={ecomProducts}
                     />
                   )}
                   {previewBlocks.map(block => (
@@ -5453,6 +5478,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                         pages={pages}
                         site={site}
                         activePageId={previewPageId}
+                        ecomProducts={ecomProducts}
                       />
                     </div>
                   ))}
@@ -5465,6 +5491,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                       pages={pages}
                       site={site}
                       activePageId={previewPageId}
+                      ecomProducts={ecomProducts}
                     />
                   )}
                 </>

@@ -77,6 +77,7 @@ interface BuilderRendererProps {
   onNavigatePage?: (slug: string) => void;
   site?: any;
   activePageId?: string | null;
+  ecomProducts?: any[];
 }
 
 export function BuilderRenderer({ 
@@ -89,7 +90,8 @@ export function BuilderRenderer({
   pages = [],
   onNavigatePage,
   site,
-  activePageId
+  activePageId,
+  ecomProducts = []
 }: BuilderRendererProps) {
   const [formSubmitted, setFormSubmitted] = useState(false);
   
@@ -2405,60 +2407,66 @@ export function BuilderRenderer({
               </div>
 
             ) : block.variant === 'product-grid-filter' ? (
-              /* Untitled UI Filterable Product Catalog Grid */
+              /* Filterable Product Catalog Grid — reads from ecomProducts prop */
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
                   <div>
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">{resolve(block.title) || 'Product Collection'}</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-1">{resolve(block.subtitle) || 'Browse our curated items with SEO alt descriptions'}</p>
+                    <p className="text-xs text-slate-500 font-medium mt-1">{resolve(block.subtitle) || 'Browse our curated items'}</p>
                   </div>
 
-                  {/* Filter Pills */}
+                  {/* Dynamic Filter Pills derived from product categories and tags */}
                   <div className="flex flex-wrap items-center gap-2 select-none">
-                    {['All', 'Beverages', 'Home Decor', 'OnSale', 'Featured'].map((filterTag) => (
-                      <span
-                        key={filterTag}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                          filterTag === 'All'
-                            ? 'bg-slate-950 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {filterTag}
-                      </span>
-                    ))}
+                    {(() => {
+                      const cats = new Set<string>();
+                      ecomProducts.forEach(p => {
+                        if (p.category) cats.add(p.category);
+                        (p.tags || []).forEach((t: string) => cats.add(t));
+                      });
+                      return ['All', ...Array.from(cats)].slice(0, 6).map((filterTag) => (
+                        <span
+                          key={filterTag}
+                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                            filterTag === 'All'
+                              ? 'bg-slate-950 text-white'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {filterTag}
+                        </span>
+                      ));
+                    })()}
                   </div>
                 </div>
 
-                {/* Product Grid Tiles */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {(() => {
-                    let liveProds: any[] = [];
-                    try {
-                      const key = `onlypage_ecom_prods_${siteId || site?.id}`;
-                      const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-                      if (raw) liveProds = JSON.parse(raw);
-                    } catch (e) {}
-
-                    if (!liveProds || liveProds.length === 0) {
-                      liveProds = [
-                        { id: 'p1', title: 'HP Pavilion 16.1 Inch Gaming Laptop', price: '960.99', compare_at: '1199', offer_badge: 'Best Seller', alt: 'HP gaming laptop', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80' },
-                        { id: 'p2', title: 'Samsung SM-A21S Galaxy A21S', price: '350.00', compare_at: '450', offer_badge: 'Mobile', alt: 'Samsung galaxy smartphone', image: 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=500&auto=format&fit=crop&q=80' },
-                        { id: 'p3', title: 'Ultimate Ears Wonderboom Bluetooth Speaker', price: '119.99', compare_at: '150', offer_badge: '20% OFF', alt: 'Bluetooth speaker', image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&auto=format&fit=crop&q=80' }
-                      ];
-                    }
-
-                    return liveProds.map((prod) => (
+                {/* Product Grid */}
+                {ecomProducts.length === 0 ? (
+                  <div className="py-16 text-center">
+                    <ShoppingCart size={40} className="mx-auto text-slate-300 mb-3" />
+                    <p className="text-sm font-bold text-slate-500">No products added yet</p>
+                    <p className="text-xs text-slate-400 mt-1">Add products in your dashboard Store Manager to see them here.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {ecomProducts.map((prod) => (
                       <div key={prod.id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between">
                         <div className="relative aspect-4/3 bg-slate-100 overflow-hidden">
-                          <img 
-                            src={prod.image || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=80'} 
-                            alt={prod.alt || prod.title} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                          />
-                          <span className="absolute top-3 left-3 bg-emerald-500 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full uppercase shadow-xs">
-                            {prod.offer_badge || prod.badge || 'Active'}
-                          </span>
+                          {prod.image ? (
+                            <img 
+                              src={prod.image} 
+                              alt={prod.title} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                              <ShoppingCart size={32} />
+                            </div>
+                          )}
+                          {prod.offer_badge && (
+                            <span className="absolute top-3 left-3 bg-emerald-500 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full uppercase shadow-xs">
+                              {prod.offer_badge}
+                            </span>
+                          )}
                         </div>
                         <div className="p-4 space-y-2 text-left">
                           <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">{prod.title}</h4>
@@ -2482,9 +2490,9 @@ export function BuilderRenderer({
                           </div>
                         </div>
                       </div>
-                    ));
-                  })()}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
             ) : block.variant === 'offer-gallery' ? (
@@ -2505,22 +2513,34 @@ export function BuilderRenderer({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { title: 'Artisan Espresso Starter Kit', price: '1,499', original: '2,200', tag: 'OnSale', image: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500&auto=format&fit=crop&q=80' },
-                    { title: 'Stainless Steel Travel Flask', price: '899', original: '1,299', tag: 'Featured', image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=500&auto=format&fit=crop&q=80' }
-                  ].map((offer, oIdx) => (
+                  {(() => {
+                    const offerItems = ecomProducts.filter(p => p.offer_badge || p.compare_at);
+                    if (offerItems.length === 0) {
+                      return (
+                        <div className="col-span-2 py-8 text-center">
+                          <p className="text-sm font-bold text-slate-400">No offer items yet</p>
+                          <p className="text-xs text-slate-500 mt-1">Products with an offer badge or compare-at price will show here.</p>
+                        </div>
+                      );
+                    }
+                    return offerItems.slice(0, 4).map((offer, oIdx) => (
                     <div key={oIdx} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex gap-4 items-center">
-                      <img src={offer.image} alt={offer.title} className="w-20 h-20 rounded-xl object-cover" />
+                      {offer.image ? (
+                        <img src={offer.image} alt={offer.title} className="w-20 h-20 rounded-xl object-cover" />
+                      ) : (
+                        <div className="w-20 h-20 rounded-xl bg-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-slate-500" /></div>
+                      )}
                       <div className="flex-1 space-y-1">
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{offer.tag}</span>
+                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{offer.offer_badge || offer.category || 'Sale'}</span>
                         <h4 className="text-sm font-bold text-white">{offer.title}</h4>
                         <div className="flex items-center gap-2 pt-1">
                           <span className="text-sm font-black text-emerald-300">₹{offer.price}</span>
-                          <span className="text-xs text-slate-500 line-through">₹{offer.original}</span>
+                          {offer.compare_at && <span className="text-xs text-slate-500 line-through">₹{offer.compare_at}</span>}
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ));
+                  })()}
                 </div>
               </div>
 
