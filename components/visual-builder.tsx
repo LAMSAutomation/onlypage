@@ -593,6 +593,7 @@ export function VisualBuilder({
   const [globalHeader, setGlobalHeader] = useState<WebBlock | null>(null);
   const [globalFooter, setGlobalFooter] = useState<WebBlock | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSubElement, setSelectedSubElement] = useState<string | null>(null);
   const [viewport, setViewport] = useState<Viewport>("desktop");
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1166,6 +1167,11 @@ export function VisualBuilder({
                     block={globalHeader}
                     isActive={selectedId === globalHeader.id}
                     onSelect={() => setSelectedId(globalHeader.id)}
+                    selectedSubElement={selectedId === globalHeader.id ? selectedSubElement : null}
+                    onSelectSubElement={(subId) => {
+                      setSelectedId(globalHeader.id);
+                      setSelectedSubElement(subId);
+                    }}
                     site={site}
                     siteId={site.id}
                     pages={pages}
@@ -1214,6 +1220,11 @@ export function VisualBuilder({
                       block={block}
                       isActive={selectedId === block.id}
                       onSelect={() => setSelectedId(block.id)}
+                      selectedSubElement={selectedId === block.id ? selectedSubElement : null}
+                      onSelectSubElement={(subId) => {
+                        setSelectedId(block.id);
+                        setSelectedSubElement(subId);
+                      }}
                       site={site}
                       siteId={site.id}
                       pages={pages}
@@ -1242,6 +1253,11 @@ export function VisualBuilder({
                     block={globalFooter}
                     isActive={selectedId === globalFooter.id}
                     onSelect={() => setSelectedId(globalFooter.id)}
+                    selectedSubElement={selectedId === globalFooter.id ? selectedSubElement : null}
+                    onSelectSubElement={(subId) => {
+                      setSelectedId(globalFooter.id);
+                      setSelectedSubElement(subId);
+                    }}
                     site={site}
                     siteId={site.id}
                     pages={pages}

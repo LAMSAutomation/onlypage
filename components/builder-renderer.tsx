@@ -1162,11 +1162,17 @@ export function BuilderRenderer({
                         className={`relative overflow-hidden shadow-md group cursor-pointer bg-slate-900 ${aspectClass}`}
                         style={mediaStyle}
                       >
-                        <img src={imgItem.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" alt={imgItem.title} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-0 group-hover:opacity-90 transition duration-300 flex items-end p-6 text-left">
+                        <img src={imgItem.url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition duration-300" alt={imgItem.title} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent flex items-end p-6 text-left">
                           <div>
-                            <span className="text-[9px] font-extrabold uppercase tracking-widest text-blue-400">{imgItem.subtitle || 'Design Mockup'}</span>
-                            <h4 className="text-sm font-bold text-white mt-1">{imgItem.title || 'High-Fidelity Project Case'}</h4>
+                            {imgItem.subtitle && (
+                              <span className="text-[9px] font-extrabold uppercase tracking-widest text-blue-400 block mb-1 drop-shadow-sm">
+                                {imgItem.subtitle}
+                              </span>
+                            )}
+                            <h4 className="text-sm font-bold text-white tracking-tight drop-shadow-md">
+                              {imgItem.title || 'Gallery Case'}
+                            </h4>
                           </div>
                         </div>
                       </motion.div>
