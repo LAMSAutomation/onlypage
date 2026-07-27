@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Home, Layers, Files, Database, ClipboardList, Inbox, Users, MessageSquare, 
   Calendar, BarChart3, Search, Megaphone, Sparkles, Cpu, Folder, Star, Plug, 
-  Settings, CreditCard, Menu, X, Bell, User, ExternalLink, ShoppingBag
+  Settings, CreditCard, Menu, X, Bell, User, ExternalLink, ShoppingBag, Rocket, TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import type { SiteRecord } from './ui/onboarding-wizard';
@@ -18,6 +18,8 @@ export interface NavigationItem {
 }
 
 const SIDEBAR_ITEMS: NavigationItem[] = [
+  { id: 'launch', label: 'Guided Launch', icon: Rocket, badge: 'Start', badgeColor: 'bg-indigo-500 text-white' },
+  { id: 'growth', label: 'Local Growth', icon: TrendingUp, badge: 'Today', badgeColor: 'bg-emerald-500 text-white' },
   { id: 'home', label: 'Home', icon: Home },
   { id: 'builder', label: 'Website Builder', icon: Layers },
   { id: 'pages', label: 'Pages', icon: Files },
@@ -68,6 +70,7 @@ export function AppShell({
   };
 
   const items = getVisibleItems();
+  const initials = site.business_name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'OP';
 
   return (
     <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-800 antialiased overflow-hidden">
@@ -131,11 +134,11 @@ export function AppShell({
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-xs text-indigo-600 border border-indigo-200 select-none shrink-0">
-              RK
+              {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="text-xs font-bold text-slate-800 truncate leading-tight">Rathnavel Karthi</h4>
-              <span className="text-[10px] font-medium text-slate-400 block truncate">rathnavelkarthi1@gmail.com</span>
+              <h4 className="text-xs font-bold text-slate-800 truncate leading-tight">{site.business_name}</h4>
+              <span className="text-[10px] font-medium text-slate-400 block truncate">Business workspace</span>
             </div>
           </div>
           {onLogout && (
@@ -223,11 +226,11 @@ export function AppShell({
               <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-indigo-150 flex items-center justify-center font-bold text-xs text-indigo-600 border border-indigo-200 shrink-0">
-                    RK
+                    {initials}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">Rathnavel Karthi</h4>
-                    <span className="text-[10px] text-slate-400">rathnavelkarthi1@gmail.com</span>
+                    <h4 className="text-xs font-bold text-slate-800">{site.business_name}</h4>
+                    <span className="text-[10px] text-slate-400">Business workspace</span>
                   </div>
                 </div>
                 {onLogout && (
@@ -256,7 +259,7 @@ export function AppShell({
               <Menu size={20} />
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400">Subdomain:</span>
+              <span className="text-xs font-bold text-slate-400">Address:</span>
               <a 
                 href={`https://${site.subdomain}.onlypage.in`} 
                 target="_blank" 
@@ -268,7 +271,7 @@ export function AppShell({
               </a>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold rounded-full select-none ml-1">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                <span>Website Live</span>
+                <span>{site.published ? 'Published' : 'Draft'}</span>
               </span>
             </div>
           </div>
@@ -317,9 +320,9 @@ export function AppShell({
             {/* User Profile dropdown */}
             <div className="flex items-center space-x-2 border-l border-slate-200 pl-3">
               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold border border-slate-200 text-xs shadow-3xs">
-                RK
+                {initials}
               </div>
-              <span className="hidden sm:inline-block text-xs font-bold text-slate-700">Rathnavel Karthi</span>
+              <span className="hidden sm:inline-block text-xs font-bold text-slate-700">{site.business_name}</span>
             </div>
           </div>
         </header>

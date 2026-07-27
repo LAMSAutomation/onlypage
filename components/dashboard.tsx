@@ -77,8 +77,6 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
 
   const [ecomOrders, setEcomOrders] = useState<any[]>([]);
 
-  const [razorpayKeyId, setRazorpayKeyId] = useState('');
-  const [razorpaySecret, setRazorpaySecret] = useState('');
   const [stripeAccountId, setStripeAccountId] = useState('');
   const [upiVpa, setUpiVpa] = useState(`${site.subdomain || 'store'}@upi`);
 
@@ -130,8 +128,6 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
         created_at: o.created_at
       })));
       if (store) {
-        setRazorpayKeyId(store.razorpay_key_id || '');
-        setRazorpaySecret(store.razorpay_key_secret || '');
         setStripeAccountId(store.stripe_account_id || '');
         setUpiVpa(store.upi_vpa || `${site.subdomain || 'store'}@upi`);
         setWelcomeEmailSubject(store.welcome_email_subject || welcomeEmailSubject);
@@ -1969,34 +1965,33 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
             {ecomSubTab === 'gateways' && (
               <div className="space-y-6 max-w-3xl">
                 <div>
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide">Route Payments Directly to Your Account</h3>
-                  <p className="text-[11px] text-slate-500 mt-1">Configure your payment gateway API parameters. Customer funds will route directly into your merchant account.</p>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide">Payment and payout setup</h3>
+                  <p className="text-[11px] text-slate-500 mt-1">Razorpay credentials are deployment secrets. This workspace stores only safe checkout preferences such as UPI and payout details.</p>
                 </div>
 
                 <div className="space-y-4 bg-slate-50 border border-slate-200 rounded-2xl p-5">
                   <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs">
                     <CreditCard size={16} />
-                    <span>1. Razorpay Gateway Setup</span>
+                    <span>1. Razorpay Checkout</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Razorpay Key ID</label>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Razorpay Key ID (server-managed)</label>
                       <input
                         type="text"
-                        value={razorpayKeyId}
-                        onChange={(e) => setRazorpayKeyId(e.target.value)}
-                        placeholder="rzp_live_xxxxxxxxxxxxxx"
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                        value="Configured in deployment environment"
+                        disabled
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono text-slate-500 cursor-not-allowed"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Razorpay Key Secret</label>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-1">Razorpay Key Secret (never shown here)</label>
                       <input
                         type="password"
-                        value={razorpaySecret}
-                        onChange={(e) => setRazorpaySecret(e.target.value)}
+                        value="Stored only in deployment environment"
+                        disabled
                         placeholder="••••••••••••••••"
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono"
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono text-slate-500 cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -2024,8 +2019,6 @@ export function Dashboard({ activeTab, setActiveTab, dashboardMode, site }: Dash
                     await upsertStore({
                       site_id: site.id,
                       store_name: site.business_name,
-                      razorpay_key_id: razorpayKeyId,
-                      razorpay_key_secret: razorpaySecret,
                       upi_vpa: upiVpa,
                       stripe_account_id: stripeAccountId
                     });

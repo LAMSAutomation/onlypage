@@ -10,6 +10,7 @@ import { Sparkles, CheckCircle, ShieldCheck, X, ArrowRight, Globe, Zap } from 'l
 import Header from './components/Header';
 import Footer from './components/Footer';
 import HeroSection from './components/HeroSection';
+import ModernLanding from './components/ModernLanding';
 import AiBuilderSection from './components/AiBuilderSection';
 import BuiltForEveryoneSection from './components/BuiltForEveryoneSection';
 import WebsiteEditorSection from './components/WebsiteEditorSection';
@@ -150,6 +151,37 @@ export default function App() {
     );
   }
 
+  // The public product surface is intentionally compact. Older prototype
+  // sections remain available in source while the signed-out experience now
+  // leads with the real product workflow instead of a long feature demo.
+  if (!isLoggedIn) {
+    return (
+      <>
+        <ModernLanding onStart={() => setIsLoginOpen(true)} onLogin={() => setIsLoginOpen(true)} />
+        <AnimatePresence>
+          {isLoginOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 24 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-0 z-[60] overflow-hidden"
+            >
+              <LoginForm
+                onClose={() => setIsLoginOpen(false)}
+                onSuccess={(username) => {
+                  showToast(`Successfully signed in as ${username}!`);
+                  setIsLoginOpen(false);
+                  setIsLoggedIn(true);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
       {/* Floating Global Glass Header */}
@@ -202,7 +234,8 @@ export default function App() {
       {/* --- SECTION 9: PRICING PLANS --- */}
       <PricingSection 
         onPlanSelect={(planName) => {
-          showToast(`Redirecting to checkout for OnlyPage ${planName} Plan...`);
+          showToast(`Create an account to start the ${planName} plan setup.`);
+          setIsLoginOpen(true);
         }} 
       />
 
@@ -243,7 +276,7 @@ export default function App() {
 
           <div className="pt-6 text-xs text-slate-400 font-semibold select-none flex justify-center items-center gap-1">
             <ShieldCheck size={14} className="text-emerald-500" />
-            <span>Join over 12,500+ independent operators scaling online with OnlyPage</span>
+            <span>Built for independent businesses ready to grow online</span>
           </div>
         </div>
       </section>
@@ -298,34 +331,34 @@ export default function App() {
               </div>
 
               <div className="space-y-1.5">
-                <h3 className="text-lg font-bold text-slate-900">Your OnlyPage domain is reserved!</h3>
+                <h3 className="text-lg font-bold text-slate-900">Your preferred page address is ready to check</h3>
                 <p className="text-xs text-slate-500 font-medium">
-                  We have successfully held <span className="font-mono text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">{businessName}.onlypage.in</span> for you.
+                  Continue setup to check whether <span className="font-mono text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">{businessName}.onlypage.in</span> is available.
                 </p>
               </div>
 
               <p className="text-xs text-slate-400 leading-relaxed font-semibold">
-                This domain has been propagated across our live visual sandboxes. Try editing your website below, or finalize the checkout to claim it forever.
+                We will confirm availability during onboarding, then help you build the page and customer tools your business needs.
               </p>
 
               <div className="pt-2 flex flex-col gap-2">
                 <button
                   onClick={() => {
                     setShowClaimModal(false);
-                    handleScrollTo('editor');
+                    setIsLoginOpen(true);
                   }}
                   className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 rounded-lg transition-colors cursor-pointer"
                 >
-                  Configure Website in Editor
+                  Start guided setup
                 </button>
                 <button
                   onClick={() => {
                     setShowClaimModal(false);
-                    handleScrollTo('pricing');
+                    setIsLoginOpen(true);
                   }}
                   className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-lg transition-colors cursor-pointer"
                 >
-                  Go to Pricing Tiers
+                  Create my OnlyPage
                 </button>
               </div>
             </motion.div>
@@ -358,7 +391,7 @@ export default function App() {
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 font-semibold mt-0.5 hidden md:block">
-                  Your custom single-page presence is pre-generated and ready to go live.
+                  Choose this address during your guided setup.
                 </p>
               </div>
             </div>
@@ -374,7 +407,7 @@ export default function App() {
                 onClick={handleClaimDomain}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-[11px] md:text-xs rounded-xl shadow-md shadow-indigo-100 hover:scale-102 active:scale-98 transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <span>Claim domain</span>
+                <span>Start setup</span>
                 <Zap size={11} className="fill-white" />
               </button>
             </div>

@@ -67,7 +67,7 @@ export async function fetchOrders(siteId: string) {
 export async function fetchStore(siteId: string) {
   const { data, error } = await supabase
     .from('ecom_stores')
-    .select('*')
+    .select('id, site_id, store_name, currency, currency_symbol, tax_rate, shipping_fee, stripe_account_id, upi_vpa, welcome_email_subject, welcome_email_body, whatsapp_phone, whatsapp_enabled, whatsapp_welcome_msg, created_at, updated_at')
     .eq('site_id', siteId)
     .maybeSingle();
   if (error) console.error('fetchStore error:', error.message);
@@ -81,8 +81,6 @@ export async function upsertStore(store: {
   currency_symbol?: string;
   tax_rate?: number;
   shipping_fee?: number;
-  razorpay_key_id?: string;
-  razorpay_key_secret?: string;
   stripe_account_id?: string;
   upi_vpa?: string;
   welcome_email_subject?: string;
@@ -91,9 +89,11 @@ export async function upsertStore(store: {
   whatsapp_enabled?: boolean;
   whatsapp_welcome_msg?: string;
 }) {
+  // Credentials are deployment secrets. Do not persist browser-provided keys.
+  const { razorpay_key_id: _ignoredKeyId, razorpay_key_secret: _ignoredKeySecret, ...safeStore } = store as typeof store & Record<string, unknown>;
   const { data, error } = await supabase
     .from('ecom_stores')
-    .upsert(store, { onConflict: 'site_id' })
+    .upsert(safeStore, { onConflict: 'site_id' })
     .select()
     .single();
   if (error) console.error('upsertStore error:', error.message);

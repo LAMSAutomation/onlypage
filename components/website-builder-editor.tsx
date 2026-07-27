@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Laptop, Tablet, Smartphone, Search, Plus, Trash2, Copy, MoveUp, MoveDown, 
   Sparkles, Check, ChevronDown, Settings, Layers, Database, Image as ImageIcon, 
-  Sliders, ChevronRight, RotateCcw, FileText, CheckCircle2, ArrowLeft, Send, 
+  Sliders, ChevronRight, RotateCcw, FileText, CheckCircle2, ArrowLeft, ArrowRight, Send,
   Layout, Type, Palette, SlidersHorizontal, PlusCircle, Save, ExternalLink, 
   Eye, Globe, RefreshCw, X, Sliders as SliderIcon, Type as FontIcon, 
   Grid, Compass, Info, CheckSquare, MessageSquare, Briefcase, DollarSign, List,
   MapPin, Phone, Mail, Award, ThumbsUp, Star, Palette as ThemeIcon,
-  UploadCloud, Loader2, Files
+  UploadCloud, Loader2, Files, Command, PanelLeft, PanelRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP, INDUSTRY_PRESETS } from './builder-data';
@@ -91,6 +91,12 @@ export interface WebBlock {
   // Button Actions
   btnActionType?: 'scroll' | 'link' | 'external' | 'none' | string;
   btnActionValue?: string;
+  // Lead routing
+  whatsappFollowUp?: boolean;
+  successMessage?: string;
+  // Live data connections
+  bindCollectionName?: string;
+  bindFields?: Record<string, string>;
   // Map configuration
   mapAddress?: string;
   // Gallery Slide Images
@@ -147,7 +153,11 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [leftSidebarTab, setLeftSidebarTab] = useState<'add-blocks' | 'pages' | 'layers' | 'seo' | 'database'>('add-blocks');
   const [rightInspectorTab, setRightInspectorTab] = useState<'content' | 'css-styles'>('css-styles');
+  const [workspaceMode, setWorkspaceMode] = useState<'canvas' | 'studio'>('canvas');
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandQuery, setCommandQuery] = useState('');
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishSaving, setPublishSaving] = useState(false);
   const [showLivePreviewModal, setShowLivePreviewModal] = useState(false);
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [newPageName, setNewPageName] = useState('');
@@ -227,6 +237,17 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
   // States for On-Canvas AI Assistant
   const [aiAssistantBlockId, setAiAssistantBlockId] = useState<string | null>(null);
   const [aiAssistantPrompt, setAiAssistantPrompt] = useState('');
+
+  useEffect(() => {
+    const handleCommandShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleCommandShortcut);
+    return () => window.removeEventListener('keydown', handleCommandShortcut);
+  }, []);
 
   const handleUpdateCustomCollections = async (updatedCollections: any[]) => {
     const updatedTheme = {
@@ -1478,14 +1499,36 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
       ? globalFooter 
       : blocks.find(b => b.id === selectedBlockId);
 
+  const editorCommands = [
+    { label: 'Add a hero section', hint: 'Start with a clear headline and action', action: () => addBlockVariant('Hero', 'minimal') },
+    { label: 'Add a booking section', hint: 'Collect a service and preferred time', action: () => addBlockVariant('Forms', 'appointment') },
+    { label: 'Add pricing', hint: 'Show service packages clearly', action: () => addBlockVariant('Pricing', 'service-tier') },
+    { label: 'Add business services', hint: 'Present what customers can book', action: () => addBlockVariant('Business', 'packages') },
+    { label: 'Make this section more premium', hint: selectedBlock ? `Open style controls for ${selectedBlock.type}` : 'Select a section first', action: () => { if (selectedBlock) { setRightInspectorTab('css-styles'); setWorkspaceMode('studio'); } else triggerToast('Select a section first, then try again.', 'info'); } },
+    { label: 'Open Studio Mode', hint: 'Pages, layers, CMS and full design controls', action: () => setWorkspaceMode('studio') },
+    { label: 'Publish website', hint: 'Mark your website ready to publish', action: () => setShowPublishModal(true) },
+  ];
+  const matchingCommands = editorCommands.filter((command) => `${command.label} ${command.hint}`.toLowerCase().includes(commandQuery.toLowerCase()));
+
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-900 text-slate-100 font-sans overflow-hidden select-none" id="builder-root">
+      <AnimatePresence>
+        {commandOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80] flex items-start justify-center bg-slate-950/60 p-4 pt-[12vh] backdrop-blur-sm" onMouseDown={() => setCommandOpen(false)}>
+            <motion.div initial={{ opacity: 0, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.98 }} className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+              <div className="flex items-center gap-3 border-b border-slate-800 px-4"><Command size={17} className="text-blue-400" /><input autoFocus value={commandQuery} onChange={(event) => setCommandQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setCommandOpen(false); if (event.key === 'Enter' && matchingCommands[0]) { matchingCommands[0].action(); setCommandOpen(false); setCommandQuery(''); } }} placeholder="Add pricing, add booking, make this more premium…" className="h-14 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-slate-500" /><kbd className="rounded border border-slate-700 px-1.5 py-1 text-[10px] text-slate-500">ESC</kbd></div>
+              <div className="max-h-[340px] overflow-y-auto p-2">{matchingCommands.map((command) => <button key={command.label} onClick={() => { command.action(); setCommandOpen(false); setCommandQuery(''); }} className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition hover:bg-slate-800"><span><span className="block text-sm font-bold text-slate-100">{command.label}</span><span className="mt-0.5 block text-[11px] font-medium text-slate-500">{command.hint}</span></span><ArrowRight size={15} className="text-slate-600" /></button>)}{matchingCommands.length === 0 && <p className="px-3 py-8 text-center text-sm text-slate-500">No matching action. Try “booking”, “pricing”, or “Studio”.</p>}</div>
+              <div className="border-t border-slate-800 px-4 py-2.5 text-[10px] font-medium text-slate-500">Canvas Mode keeps the page clear. Studio Mode holds the advanced controls.</div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       {/* ==========================================
           TOP BAR (64px) - Figma-Like Nav
           ========================================== */}
-      <header className="h-16 border-b border-slate-800 bg-slate-950 px-6 flex items-center justify-between shrink-0 z-40" id="top-nav-bar">
+      <header className="h-16 border-b border-slate-800 bg-slate-950 px-4 sm:px-6 flex items-center justify-between shrink-0 z-40" id="top-nav-bar">
         
         {/* Left Section: Back, Brand & Active Domain */}
         <div className="flex items-center gap-4">
@@ -1503,11 +1546,11 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
           <div className="flex items-center gap-2">
             <span className="font-black text-sm tracking-tight text-white flex items-center gap-1.5">
               <span className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center font-black text-xs text-white shadow-md shadow-blue-500/20">O</span>
-              <span>OnlyPage <span className="text-[10px] text-blue-400 font-normal ml-0.5 px-1 py-0.5 bg-blue-900/30 border border-blue-500/20 rounded">Figma Mode</span></span>
+              <span>OnlyPage</span>
             </span>
             <div className="hidden md:flex items-center gap-1.5 px-2 py-1 bg-slate-900 border border-slate-800 rounded-md">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="text-[10px] text-slate-400 font-mono">my-portfolio.onlypage.in</span>
+              <span className="text-[10px] text-slate-400 font-mono">{site.subdomain}.onlypage.in</span>
               <ExternalLink size={10} className="text-slate-500 hover:text-slate-300 cursor-pointer" onClick={() => setShowPublishModal(true)} />
             </div>
           </div>
@@ -1515,6 +1558,10 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
 
         {/* Middle Section: Viewport Controls */}
         <div className="flex items-center gap-5">
+          <div className="hidden lg:flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5">
+            <button onClick={() => setWorkspaceMode('canvas')} className={`px-2.5 py-1.5 rounded-md text-[10px] font-black transition ${workspaceMode === 'canvas' ? 'bg-white text-slate-950' : 'text-slate-400 hover:text-slate-200'}`}>Canvas</button>
+            <button onClick={() => setWorkspaceMode('studio')} className={`px-2.5 py-1.5 rounded-md text-[10px] font-black transition ${workspaceMode === 'studio' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>Studio</button>
+          </div>
           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
             {[
               { id: 'desktop' as const, icon: Laptop, label: 'Desktop (100%)' },
@@ -1548,6 +1595,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
 
         {/* Right Section: Undo/Redo & Save status & Actions */}
         <div className="flex items-center gap-3">
+          <button onClick={() => setCommandOpen(true)} className="hidden xl:flex h-9 items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-3 text-[11px] font-bold text-slate-300 transition hover:bg-slate-800" title="Open command bar (Ctrl/Cmd+K)"><Command size={13} /><span>Commands</span><kbd className="rounded border border-slate-700 px-1 py-0.5 text-[9px] text-slate-500">⌘K</kbd></button>
           
           {/* Saved Status Indicator */}
           <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 font-mono bg-slate-900/60 border border-slate-800/50 px-2.5 py-1.5 rounded-lg">
@@ -1667,7 +1715,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
         {/* ==========================================
             LEFT SIDEBAR (280px) - Block selection & Layers
             ========================================== */}
-        <aside className="w-[280px] bg-slate-950 border-r border-slate-800 flex flex-col h-full shrink-0 z-10" id="left-sidebar">
+        <aside className={`${workspaceMode === 'studio' ? 'w-[280px] opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0 pointer-events-none'} bg-slate-950 border-r border-slate-800 flex flex-col h-full shrink-0 z-10 transition-[width,opacity] duration-200`} id="left-sidebar">
           
           {/* Tab Selector buttons */}
           <div className="grid grid-cols-5 border-b border-slate-800 p-1.5 bg-slate-950">
@@ -2106,7 +2154,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                       <Globe size={11} className="text-blue-400" />
                       <span>Google Preview Match</span>
                     </p>
-                    <p className="text-xs font-bold text-blue-400 truncate hover:underline cursor-pointer">https://my-portfolio.onlypage.in</p>
+                    <p className="text-xs font-bold text-blue-400 truncate hover:underline cursor-pointer">https://{site.subdomain}.onlypage.in</p>
                     <p className="text-[11px] text-emerald-500 truncate font-mono">{seoTitle || 'Default Title'}</p>
                     <p className="text-[10px] text-slate-500 leading-normal line-clamp-2">{seoDesc || 'Provide description details...'}</p>
                   </div>
@@ -2418,6 +2466,17 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
             <span className="text-blue-400">{viewportMode === 'desktop' ? 'Full Width Responsive' : viewportMode === 'tablet' ? '768px Constrained' : '390px Constrained'}</span>
           </div>
 
+          {workspaceMode === 'canvas' && (
+            <div className="absolute top-4 right-4 sm:right-6 z-20 flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/90 p-1.5 shadow-xl backdrop-blur-md">
+              {selectedBlock ? <>
+                <span className="hidden sm:inline px-2 text-[10px] font-bold text-slate-400">{selectedBlock.type} selected</span>
+                <button onClick={() => { setRightInspectorTab('content'); setWorkspaceMode('studio'); }} className="rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-black text-slate-950 transition hover:bg-slate-200">Edit content</button>
+                <button onClick={() => { setRightInspectorTab('css-styles'); setWorkspaceMode('studio'); }} className="hidden sm:inline rounded-lg bg-slate-800 px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-slate-700">Style</button>
+              </> : <span className="px-2 text-[10px] font-bold text-slate-400">Select a section to edit it</span>}
+              <button onClick={() => setCommandOpen(true)} className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-blue-500">Add section</button>
+            </div>
+          )}
+
           {/* Device Bezel Shell container */}
           <div className="flex-1 w-full py-12 px-4 flex items-start justify-center transition-all duration-300">
             
@@ -2668,7 +2727,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
         {/* ==========================================
             RIGHT SIDEBAR (300px) - Interactive CSS Inspector
             ========================================== */}
-        <aside className="w-[300px] bg-slate-950 border-l border-slate-800 flex flex-col h-full shrink-0 z-10" id="right-sidebar">
+        <aside className={`${workspaceMode === 'studio' ? 'w-[300px] opacity-100' : 'w-0 opacity-0 overflow-hidden border-l-0 pointer-events-none'} bg-slate-950 border-l border-slate-800 flex flex-col h-full shrink-0 z-10 transition-[width,opacity] duration-200`} id="right-sidebar">
           
           {/* Header */}
           <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between shrink-0">
@@ -5311,18 +5370,18 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
               <div className="w-12 h-12 bg-blue-900/30 border border-blue-500/30 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-2 animate-pulse">
                 <Globe size={24} />
               </div>
-              <h2 className="text-lg font-black text-white">Publish Website to Production</h2>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">OnlyPage handles routing, instant Cloud Run containers hosting, and edge CDN cache propagation instantly.</p>
+              <h2 className="text-lg font-black text-white">Mark your website ready to publish</h2>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">Save the published status after you have reviewed the desktop and mobile preview. Domain routing must be configured by your deployment environment.</p>
             </div>
 
             <div className="my-6 space-y-4">
               <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300">Deploy Target Target URL:</span>
-                  <span className="text-xs font-black text-emerald-400 font-mono">LIVE PRODUCTION</span>
+                  <span className="text-xs font-bold text-slate-300">Website address:</span>
+                  <span className="text-xs font-black text-emerald-400 font-mono">READY TO PUBLISH</span>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-slate-950 rounded-lg border border-slate-800">
-                  <span className="text-xs text-slate-500 font-mono select-all">https://my-portfolio.onlypage.in</span>
+                  <span className="text-xs text-slate-500 font-mono select-all">https://{site.subdomain}.onlypage.in</span>
                 </div>
               </div>
 
@@ -5341,7 +5400,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                   />
                   <button className="px-3 py-2 bg-slate-800 text-[10px] font-extrabold uppercase rounded-xl text-slate-400 cursor-not-allowed">Map DNS</button>
                 </div>
-                <p className="text-[9px] text-slate-500 leading-normal">Setup absolute custom DNS records by routing CNAME records to our server clusters.</p>
+                <p className="text-[9px] text-slate-500 leading-normal">Custom-domain DNS activation is available once your deployment infrastructure is connected.</p>
               </div>
             </div>
 
@@ -5353,13 +5412,24 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                 Cancel Draft
               </button>
               <button 
-                onClick={() => {
-                  setShowPublishModal(false);
-                  triggerToast('🚀 Congratulations! Your portfolio is now LIVE at my-portfolio.onlypage.in!', 'success');
+                disabled={publishSaving}
+                onClick={async () => {
+                  setPublishSaving(true);
+                  try {
+                    const { data, error } = await supabase.from('sites').update({ published: true }).eq('id', site.id).select().single();
+                    if (error) throw error;
+                    onUpdateSite?.((data ?? { ...site, published: true }) as SiteRecord);
+                    setShowPublishModal(false);
+                    triggerToast(`Published status saved for ${site.subdomain}.onlypage.in.`, 'success');
+                  } catch (error: any) {
+                    triggerToast(`Could not save published status: ${error.message}`, 'error');
+                  } finally {
+                    setPublishSaving(false);
+                  }
                 }}
-                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-black text-white rounded-xl shadow shadow-blue-500/20"
+                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:cursor-wait disabled:opacity-60 text-xs font-black text-white rounded-xl shadow shadow-blue-500/20"
               >
-                Deploy Live Release
+                {publishSaving ? 'Saving…' : 'Save published status'}
               </button>
             </div>
           </motion.div>

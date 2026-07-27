@@ -94,6 +94,44 @@ export function BuilderRenderer({
   ecomProducts = []
 }: BuilderRendererProps) {
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [bookingDate, setBookingDate] = useState('');
+  const [bookingTime, setBookingTime] = useState('');
+  const bookingDates = React.useMemo(() => {
+    const formatter = new Intl.DateTimeFormat('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+
+    return Array.from({ length: 8 }, (_, index) => {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() + index + 1);
+      const value = [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0'),
+      ].join('-');
+      const parts = formatter.formatToParts(date);
+
+      return {
+        value,
+        weekday: parts.find((part) => part.type === 'weekday')?.value || '',
+        day: parts.find((part) => part.type === 'day')?.value || '',
+        month: parts.find((part) => part.type === 'month')?.value || '',
+      };
+    });
+  }, []);
+  const bookingTimes = [
+    '09:30',
+    '10:30',
+    '11:30',
+    '13:00',
+    '14:30',
+    '16:00',
+    '17:30',
+    '19:00',
+  ];
   
   const resolve = (text: any): string => {
     if (text === undefined || text === null) return '';
@@ -141,7 +179,7 @@ export function BuilderRenderer({
   };
 
   // Resolve collection bindings for list features
-  if (inputBlock.type === 'Features') {
+  if (inputBlock.type === 'Features' || inputBlock.type === 'Business') {
     let featuresToRender = inputBlock.features || [];
     if ((inputBlock as any).bindCollectionName && site?.theme?.customCollections) {
       const collection = site.theme.customCollections.find(
@@ -214,6 +252,98 @@ export function BuilderRenderer({
     }));
   }
 
+  // Style-direction variants reuse the strongest structural layouts for each
+  // block type, then layer their own visual system on top. This keeps every
+  // catalog choice meaningfully different without duplicating renderer code.
+  const layoutAliases: Record<string, Record<string, string>> = {
+    Hero: {
+      "editorial-stack": "split",
+      "local-conversion": "split",
+      "quiet-luxury": "minimal",
+      "bold-poster": "3d-mesh",
+      "soft-gradient": "aurora-sky",
+      "mono-grid": "split",
+      "warm-studio": "split",
+      "glass-panel": "saas-modern",
+    },
+    Features: {
+      "editorial-stack": "alternating",
+      "local-conversion": "comparison",
+      "quiet-luxury": "bento-box",
+      "bold-poster": "icon-cards",
+      "soft-gradient": "feature-grid",
+      "mono-grid": "comparison",
+    },
+    CTA: {
+      "local-conversion": "simple-cta",
+      "quiet-luxury": "image-bg-cta",
+      "bold-poster": "simple-cta",
+      "soft-gradient": "gradient-cta",
+      "mono-grid": "simple-cta",
+      "glass-panel": "gradient-cta",
+    },
+    Gallery: {
+      "editorial-stack": "masonry",
+      "quiet-luxury": "grid-hover",
+      "bold-poster": "marquee-logos",
+      "soft-gradient": "slider",
+      "mono-grid": "grid-hover",
+      "warm-studio": "masonry",
+    },
+    Business: {
+      "local-conversion": "treatment-list",
+      "quiet-luxury": "packages",
+      "bold-poster": "offers",
+      "soft-gradient": "packages",
+      "mono-grid": "treatment-list",
+      "warm-studio": "packages",
+    },
+    Pricing: {
+      "local-conversion": "service-tier",
+      "quiet-luxury": "saas-pricing",
+      "bold-poster": "service-tier",
+      "soft-gradient": "saas-pricing",
+      "mono-grid": "comparison-pricing",
+      "glass-panel": "saas-pricing",
+    },
+    Testimonials: {
+      "editorial-stack": "wall-of-love",
+      "local-conversion": "google-review",
+      "quiet-luxury": "review-cards",
+      "soft-gradient": "wall-of-love",
+      "mono-grid": "review-cards",
+    },
+    Forms: {
+      "local-conversion": "appointment",
+      "quiet-luxury": "contact-complex",
+      "bold-poster": "newsletter",
+      "soft-gradient": "appointment",
+      "mono-grid": "contact-complex",
+      "glass-panel": "newsletter",
+    },
+    EComStore: {
+      "local-conversion": "whatsapp-widget",
+      "quiet-luxury": "product-grid-filter",
+      "bold-poster": "offer-gallery",
+      "warm-studio": "product-grid-filter",
+    },
+    Special: {
+      "editorial-stack": "steps-path",
+      "local-conversion": "faq-accordions",
+      "quiet-luxury": "steps-path",
+      "mono-grid": "stats-grid",
+      "glass-panel": "stats-grid",
+    },
+    Map: {
+      "local-conversion": "map-split",
+      "quiet-luxury": "map-classic",
+      "mono-grid": "map-split",
+      "warm-studio": "map-classic",
+    },
+  };
+  resolvedBlock.variant =
+    layoutAliases[resolvedBlock.type]?.[resolvedBlock.variant] ||
+    resolvedBlock.variant;
   const block = resolvedBlock;
   const styles = block.styles;
   const [faqOpen, setFaqOpen] = useState<Record<string, boolean>>({});
@@ -257,7 +387,7 @@ export function BuilderRenderer({
   const titleStyle: React.CSSProperties = {
     color: (styles as any).titleColor || styles.textColor,
     fontFamily: getFontFamilyStyle((styles as any).titleFontFamily || styles.fontFamily),
-    fontSize: `${(styles as any).titleFontSize || styles.titleSize}px`,
+    fontSize: `min(${(styles as any).titleFontSize || styles.titleSize}px, 12cqw)`,
     fontWeight: (styles as any).titleFontWeight === 'light' ? 300 : (styles as any).titleFontWeight === 'normal' ? 400 : (styles as any).titleFontWeight === 'semibold' ? 600 : (styles as any).titleFontWeight === 'black' ? 900 : 700,
     lineHeight: (styles as any).titleLineHeight || styles.lineHeight || 1.2,
     letterSpacing: (styles as any).titleLetterSpacing || 'normal',
@@ -269,6 +399,7 @@ export function BuilderRenderer({
     borderStyle: ((styles as any).titleBorderStyle as any) || 'solid',
     textTransform: ((styles as any).titleTransform as any) || 'none',
     textAlign: styles.textAlign,
+    overflowWrap: 'anywhere',
   };
 
   const subtitleStyle: React.CSSProperties = {
@@ -341,8 +472,7 @@ export function BuilderRenderer({
     elementId, 
     children, 
     className = "", 
-    style,
-    key
+    style
   }: { 
     elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media'; 
     children: React.ReactNode; 
@@ -356,21 +486,29 @@ export function BuilderRenderer({
     // Hijack Navigation subtitle to display dynamic site pages
     let displayChildren = children;
     if (block.type === 'Navigation' && elementId === 'subtitle') {
-      if (pages && pages.length > 0) {
+      const editableNavigationLinks =
+        (block as any).links?.length > 0
+          ? (block as any).links
+          : (pages || []).map((page: any) => ({
+              id: page.id,
+              label: page.name,
+              url: page.slug,
+            }));
+      if (editableNavigationLinks.length > 0) {
         displayChildren = (
           <div className="flex items-center gap-6">
-            {pages.map((page: any) => (
+            {editableNavigationLinks.slice(0, 5).map((link: any) => (
               <span 
-                key={page.id} 
+                key={link.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!isActive && onNavigatePage) {
-                    onNavigatePage(page.slug);
+                    handleLinkNav(link.url);
                   }
                 }}
                 className="hover:text-white cursor-pointer transition capitalize font-semibold"
               >
-                {page.name}
+                {link.label}
               </span>
             ))}
           </div>
@@ -425,19 +563,41 @@ export function BuilderRenderer({
     if (isActive) return;
     const type = (block as any).btnActionType;
     const value = (block as any).btnActionValue;
-    if (!value) return;
-    if (type === 'scroll') {
+    if (type === 'booking') {
+      const target =
+        document.querySelector('[data-block-type="Forms"]') ||
+        document.querySelector('[data-block-type="Contact"]');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (type === 'scroll' && value) {
       document.getElementById(value)?.scrollIntoView({ behavior: 'smooth' });
-    } else if (type === 'link' && onNavigatePage) {
+    } else if (type === 'link' && value && onNavigatePage) {
       onNavigatePage(value);
-    } else if (type === 'external') {
-      window.open(value, '_blank', 'noopener');
+    } else if (type === 'external' && value) {
+      const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      window.open(href, '_blank', 'noopener');
+    } else if (type === 'whatsapp') {
+      const configuredPhone = value || site?.theme?.phone || '';
+      const phone = String(configuredPhone).replace(/\D/g, '');
+      if (!phone) return;
+      const message = encodeURIComponent(`Hi ${site?.business_name || ''}, I’d like to know more.`);
+      window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener');
+    } else if (type === 'phone') {
+      const configuredPhone = value || site?.theme?.phone || '';
+      if (configuredPhone) window.location.href = `tel:${configuredPhone}`;
     }
   };
 
   // Editable footer links: real block.links when present, else sensible fallback labels.
   const footerLinks: { id: string; label: string; url?: string }[] =
     (block as any).links && (block as any).links.length > 0 ? (block as any).links : [];
+  const navigationLinks: { id: string; label: string; url?: string }[] =
+    footerLinks.length > 0
+      ? footerLinks
+      : pages.map((page: any) => ({
+          id: page.id,
+          label: page.name,
+          url: page.slug,
+        }));
 
   const bgType = (styles as any).bgType || (styles.useGradient ? 'gradient' : 'color');
   const bgImageUrl = (styles as any).bgImageUrl || '';
@@ -468,6 +628,8 @@ export function BuilderRenderer({
     textAlign: styles.textAlign,
     position: 'relative',
     cursor: clickResponse !== 'none' ? 'pointer' : 'default',
+    containerType: 'inline-size',
+    overflowX: 'clip',
   };
 
   // tap configuration based on selection
@@ -620,6 +782,7 @@ export function BuilderRenderer({
                       <SelectableElement elementId="button">
                         <Magnetic>
                           <button 
+                            onClick={runBtnAction}
                             className="font-extrabold cursor-pointer transition-all duration-300 hover:scale-[1.02]"
                             style={buttonStyle}
                           >
@@ -704,6 +867,7 @@ export function BuilderRenderer({
                   <SelectableElement elementId="button">
                     <Magnetic>
                       <button 
+                        onClick={runBtnAction}
                         className="font-extrabold cursor-pointer transition-all duration-300 shadow-2xl hover:translate-y-[-2px]"
                         style={buttonStyle}
                       >
@@ -862,7 +1026,7 @@ export function BuilderRenderer({
                 {block.btnText && (
                   <SelectableElement elementId="button">
                     <Magnetic>
-                      <button className="font-bold hover:shadow-2xl transition" style={buttonStyle}>
+                      <button onClick={runBtnAction} className="font-bold hover:shadow-2xl transition" style={buttonStyle}>
                         {block.btnText}
                       </button>
                     </Magnetic>
@@ -905,7 +1069,7 @@ export function BuilderRenderer({
                 </SelectableElement>
                 {block.btnText && (
                   <SelectableElement elementId="button">
-                    <button className="font-bold cursor-pointer hover:opacity-90 transition text-sm" style={buttonStyle}>
+                    <button onClick={runBtnAction} className="font-bold cursor-pointer hover:opacity-90 transition text-sm" style={buttonStyle}>
                       {block.btnText}
                     </button>
                   </SelectableElement>
@@ -928,20 +1092,42 @@ export function BuilderRenderer({
             </SelectableElement>
             
             {block.variant === 'marquee-logos' ? (
-              <InfiniteMarquee items={defaultLogos} speed="normal" />
+              <InfiniteMarquee
+                items={
+                  block.galleryImages?.length
+                    ? block.galleryImages.map((image) => (
+                        <div key={image.id} className="flex items-center gap-3 px-4">
+                          <img src={image.url} alt="" className="h-9 w-9 rounded-lg object-cover" />
+                          <span className="text-xs font-black uppercase tracking-wider">{image.title}</span>
+                        </div>
+                      ))
+                    : defaultLogos
+                }
+                speed="normal"
+              />
             ) : block.variant === 'slider' ? (
               // BEFORE AFTER INTERACTIVE COMPONENT
               <SelectableElement elementId="media">
                 <div className="max-w-2xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl aspect-video border border-slate-100/10 bg-slate-900" style={mediaStyle}>
                   <div className="absolute inset-0 bg-emerald-950/40 flex items-center justify-center text-white font-black z-0">
-                    AFTER: Designed with OnlyPage
+                    {block.galleryImages?.[1]?.url && (
+                      <img src={block.galleryImages[1].url} alt={block.galleryImages[1].title || 'After'} className="absolute inset-0 h-full w-full object-cover opacity-80" />
+                    )}
+                    <span className="relative z-10 rounded-lg bg-slate-950/55 px-3 py-2 text-xs">
+                      {block.galleryImages?.[1]?.title || 'AFTER'}
+                    </span>
                   </div>
                   <div 
                     className="absolute inset-y-0 left-0 bg-red-950/80 z-10 overflow-hidden"
                     style={{ width: `${activeBeforeAfter}%` }}
                   >
-                    <div className="w-[640px] h-full flex items-center justify-center text-slate-300 font-bold">
-                      BEFORE: Unstructured Raw CSS Code
+                    <div className="relative w-[640px] h-full flex items-center justify-center text-slate-300 font-bold">
+                      {block.galleryImages?.[0]?.url && (
+                        <img src={block.galleryImages[0].url} alt={block.galleryImages[0].title || 'Before'} className="absolute inset-0 h-full w-full object-cover opacity-80" />
+                      )}
+                      <span className="relative z-10 rounded-lg bg-slate-950/55 px-3 py-2 text-xs">
+                        {block.galleryImages?.[0]?.title || 'BEFORE'}
+                      </span>
                     </div>
                   </div>
                   {/* Sliders handle */}
@@ -962,23 +1148,31 @@ export function BuilderRenderer({
                   { id: 'slide-1', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600', title: 'Marketing Analytics Dashboard', subtitle: 'Advanced UI & Data visualization solutions' },
                   { id: 'slide-2', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=600', title: 'Corporate Branding Strategy', subtitle: 'Elevating online presence across modern channels' },
                   { id: 'slide-3', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=600', title: 'Interactive SaaS Platforms', subtitle: 'High-performance applications built for hyper-scale' }
-                ]).map((imgItem, index) => (
-                  <SelectableElement key={imgItem.id || index} elementId="media">
-                    <motion.div 
-                      whileHover={{ scale: 1.03 }}
-                      className="relative aspect-square overflow-hidden shadow-md group cursor-pointer bg-slate-900"
-                      style={mediaStyle}
-                    >
-                      <img src={imgItem.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" alt={imgItem.title} />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-0 group-hover:opacity-90 transition duration-300 flex items-end p-6 text-left">
-                        <div>
-                          <span className="text-[9px] font-extrabold uppercase tracking-widest text-blue-400">{imgItem.subtitle || 'Design Mockup'}</span>
-                          <h4 className="text-sm font-bold text-white mt-1">{imgItem.title || 'High-Fidelity Project Case'}</h4>
+                ]).map((imgItem, index) => {
+                  const aspectClass =
+                    imgItem.aspect === 'landscape'
+                      ? 'aspect-video'
+                      : imgItem.aspect === 'portrait'
+                        ? 'aspect-[3/4]'
+                        : 'aspect-square';
+                  return (
+                    <SelectableElement key={imgItem.id || index} elementId="media">
+                      <motion.div
+                        whileHover={{ scale: 1.03 }}
+                        className={`relative overflow-hidden shadow-md group cursor-pointer bg-slate-900 ${aspectClass}`}
+                        style={mediaStyle}
+                      >
+                        <img src={imgItem.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-300" alt={imgItem.title} />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-0 group-hover:opacity-90 transition duration-300 flex items-end p-6 text-left">
+                          <div>
+                            <span className="text-[9px] font-extrabold uppercase tracking-widest text-blue-400">{imgItem.subtitle || 'Design Mockup'}</span>
+                            <h4 className="text-sm font-bold text-white mt-1">{imgItem.title || 'High-Fidelity Project Case'}</h4>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  </SelectableElement>
-                ))}
+                      </motion.div>
+                    </SelectableElement>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1003,7 +1197,14 @@ export function BuilderRenderer({
                       </h4>
                       <p className="text-xs opacity-75 mt-1 ml-6">{feat.desc}</p>
                     </div>
-                    <span className="text-sm font-black text-blue-500 tracking-wider">RESERVE</span>
+                    <button
+                      type="button"
+                      onClick={runBtnAction}
+                      className="rounded-lg px-3 py-2 text-xs font-black tracking-wider transition hover:bg-blue-500/10"
+                      style={{ color: styles.accentColor }}
+                    >
+                      {block.btnText || 'RESERVE'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1053,7 +1254,7 @@ export function BuilderRenderer({
                       </div>
                       <div className="flex items-center gap-4 shrink-0">
                         <span className="text-xl font-black" style={{ color: styles.accentColor }}>{plan.price}</span>
-                        <button className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: styles.accentColor, color: '#fff', borderRadius: `${styles.buttonBorderRadius}px` }}>
+                        <button onClick={runBtnAction} className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: styles.accentColor, color: '#fff', borderRadius: `${styles.buttonBorderRadius}px` }}>
                           {plan.btnText}
                         </button>
                       </div>
@@ -1092,7 +1293,7 @@ export function BuilderRenderer({
                             </ul>
                           </td>
                           <td className="px-5 py-4 text-right">
-                            <button className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#fff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                            <button onClick={runBtnAction} className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#fff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
                               {plan.btnText}
                             </button>
                           </td>
@@ -1130,7 +1331,7 @@ export function BuilderRenderer({
                           ))}
                         </ul>
                       </div>
-                      <button className="w-full py-3 font-bold text-xs cursor-pointer transition-all duration-300" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#ffffff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                      <button onClick={runBtnAction} className="w-full py-3 font-bold text-xs cursor-pointer transition-all duration-300" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#ffffff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
                         {plan.btnText}
                       </button>
                     </div>
@@ -1260,7 +1461,9 @@ export function BuilderRenderer({
                 >
                   <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4 animate-bounce" />
                   <h3 className="text-xl font-bold text-emerald-400">Request Received Successfully!</h3>
-                  <p className="text-xs text-slate-400 mt-2">Our coordinators will reach out using the provided credentials shortly.</p>
+                  <p className="text-xs text-slate-400 mt-2">
+                    {(block as any).successMessage || 'Our coordinators will reach out using the provided details shortly.'}
+                  </p>
                   <button onClick={() => setFormSubmitted(false)} className="mt-6 text-xs text-blue-500 font-extrabold hover:underline">
                     Submit Another Query
                   </button>
@@ -1282,7 +1485,7 @@ export function BuilderRenderer({
                           name: name || 'Anonymous',
                           email: email || 'no-email@example.com',
                           phone: '',
-                          status: 'lead',
+                          status: (block as any).whatsappFollowUp === false ? 'lead' : 'New',
                           amount: null,
                           source: 'Contact Form: ' + (block.title || 'General Query')
                         });
@@ -1360,17 +1563,49 @@ export function BuilderRenderer({
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-md mx-auto p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center"
+                  className="max-w-xl mx-auto overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.07] p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.14)] sm:p-10"
                 >
-                  <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-bold text-emerald-400">Action Confirmed Successfully!</h3>
-                  <p className="text-xs text-slate-400 mt-2">The request data was processed and recorded securely into the local JSON cache.</p>
-                  <button onClick={() => setFormSubmitted(false)} className="mt-6 text-xs text-blue-500 font-extrabold hover:underline">
-                    Reset Form
+                  <span className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                    <CheckCircle2 size={26} />
+                  </span>
+                  <h3 className="text-2xl font-black tracking-tight">
+                    {block.variant === 'appointment' ? 'Your slot is reserved' : 'You’re all set'}
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-sm text-sm leading-6 opacity-65">
+                    {(block as any).successMessage || (block.variant === 'appointment'
+                      ? 'We’ll send the appointment details and any updates to your WhatsApp number.'
+                      : 'Your request has been received. The team will get back to you shortly.')}
+                  </p>
+                  {block.variant === 'appointment' && bookingDate && bookingTime && (
+                    <div className="mx-auto mt-6 flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.06] px-4 py-3 text-sm font-bold">
+                      <Calendar size={16} className="text-emerald-500" />
+                      {new Intl.DateTimeFormat('en-IN', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'long',
+                      }).format(new Date(`${bookingDate}T12:00:00`))}
+                      <span className="opacity-30">·</span>
+                      {new Intl.DateTimeFormat('en-IN', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      }).format(new Date(`2020-01-01T${bookingTime}:00`))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormSubmitted(false);
+                      setBookingDate('');
+                      setBookingTime('');
+                    }}
+                    className="mt-7 rounded-xl border border-current/15 px-4 py-2.5 text-xs font-extrabold transition hover:bg-current/[0.06]"
+                  >
+                    {block.variant === 'appointment' ? 'Book another slot' : 'Submit another response'}
                   </button>
                 </motion.div>
               ) : (
-                <div className="max-w-md mx-auto">
+                <div className={block.variant === 'appointment' ? 'mx-auto max-w-2xl' : 'mx-auto max-w-md'}>
                   {block.variant === 'newsletter' ? (
                     // NEWSLETTER BAR
                     <form 
@@ -1385,7 +1620,7 @@ export function BuilderRenderer({
                             name: 'Newsletter Subscriber',
                             email: email || 'no-email@example.com',
                             phone: '',
-                            status: 'lead',
+                            status: (block as any).whatsappFollowUp === false ? 'lead' : 'New',
                             amount: null,
                             source: 'Newsletter Subscribe'
                           });
@@ -1417,7 +1652,7 @@ export function BuilderRenderer({
                             name: name || 'Anonymous Contact',
                             email: email || 'no-email@example.com',
                             phone: phone || '',
-                            status: 'lead',
+                            status: (block as any).whatsappFollowUp === false ? 'lead' : 'New',
                             amount: null,
                             source: 'Contact Form' + (message ? `: ${message.slice(0, 140)}` : '')
                           });
@@ -1457,8 +1692,11 @@ export function BuilderRenderer({
                         e.preventDefault();
                         const formData = new FormData(e.currentTarget);
                         const name = (formData.get('name') as string) || '';
-                        const date = (formData.get('date') as string) || '';
-                        const time = (formData.get('time') as string) || '';
+                        const phone = (formData.get('phone') as string) || '';
+                        const date = bookingDate;
+                        const time = bookingTime;
+
+                        if (!date || !time) return;
 
                         if (siteId) {
                           const slotAt = new Date(`${date}T${time}`);
@@ -1472,30 +1710,238 @@ export function BuilderRenderer({
                             slot_at: validSlotAt.toISOString(),
                             status: 'Confirmed'
                           });
+                          await supabase.from('leads').insert({
+                            site_id: siteId,
+                            name: name || 'Anonymous Guest',
+                            email: 'no-email@example.com',
+                            phone: phone ? `+91${phone.replace(/\D/g, '')}` : '',
+                            status: (block as any).whatsappFollowUp === false ? 'lead' : 'New',
+                            amount: null,
+                            source: 'Website Booking: ' + (block.title || 'Session')
+                          });
                           await saveToCustomCollection(formData);
                         }
                         setFormSubmitted(true);
                       }}
-                      className="p-8 text-left space-y-4"
-                      style={{ backgroundColor: styles.cardBgColor, borderRadius: `${styles.cardBorderRadius}px` }}
+                      className="overflow-hidden border border-white/10 text-left shadow-[0_28px_90px_rgba(0,0,0,0.22)]"
+                      style={{
+                        backgroundColor: styles.cardBgColor,
+                        borderColor: styles.cardBorderColor || `${styles.textColor}18`,
+                        borderRadius: `${Math.max(styles.cardBorderRadius || 0, 24)}px`,
+                      }}
                     >
-                      <div>
-                        <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">FULL NAME</label>
-                        <input required name="name" type="text" placeholder="Dr. Sonal" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div
+                        className="flex flex-col gap-4 border-b px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7"
+                        style={{ borderColor: `${styles.textColor}12` }}
+                      >
                         <div>
-                          <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">DATE</label>
-                          <input required name="date" type="date" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                          <div className="flex items-center gap-2 text-xs font-black">
+                            <span
+                              className="grid size-7 place-items-center rounded-lg"
+                              style={{
+                                backgroundColor: `${styles.accentColor}18`,
+                                color: styles.accentColor,
+                              }}
+                            >
+                              <Calendar size={14} />
+                            </span>
+                            Reserve an appointment
+                          </div>
+                          <p className="mt-1.5 text-[11px] opacity-50">
+                            Times shown in India Standard Time
+                          </p>
                         </div>
-                        <div>
-                          <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">TIME</label>
-                          <input required name="time" type="time" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                        <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-55">
+                          <span className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
+                          Live availability
                         </div>
                       </div>
-                      <button type="submit" className="w-full py-4 mt-4 font-bold text-xs cursor-pointer" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
-                        {block.btnText || 'Schedule Session'}
-                      </button>
+
+                      <div className="space-y-7 p-5 sm:p-7">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <label className="group block">
+                            <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                              Full name
+                            </span>
+                            <span className="flex h-12 items-center gap-3 rounded-xl border px-3.5 transition focus-within:ring-4"
+                              style={{
+                                borderColor: `${styles.textColor}18`,
+                                backgroundColor: `${styles.textColor}08`,
+                                ['--tw-ring-color' as string]: `${styles.accentColor}18`,
+                              }}
+                            >
+                              <Users size={16} className="shrink-0 opacity-40" />
+                              <input
+                                required
+                                autoComplete="name"
+                                name="name"
+                                type="text"
+                                placeholder="Your name"
+                                className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:opacity-35"
+                              />
+                            </span>
+                          </label>
+
+                          <label className="group block">
+                            <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                              WhatsApp number
+                            </span>
+                            <span className="flex h-12 items-center gap-2 rounded-xl border px-3.5 transition focus-within:ring-4"
+                              style={{
+                                borderColor: `${styles.textColor}18`,
+                                backgroundColor: `${styles.textColor}08`,
+                                ['--tw-ring-color' as string]: `${styles.accentColor}18`,
+                              }}
+                            >
+                              <MessageCircle size={16} className="shrink-0 text-emerald-500" />
+                              <span className="border-r pr-2 text-xs font-bold opacity-50" style={{ borderColor: `${styles.textColor}18` }}>+91</span>
+                              <input
+                                required
+                                autoComplete="tel"
+                                inputMode="numeric"
+                                maxLength={10}
+                                pattern="[6-9][0-9]{9}"
+                                name="phone"
+                                type="tel"
+                                placeholder="98765 43210"
+                                aria-describedby="booking-phone-help"
+                                className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:opacity-35"
+                              />
+                            </span>
+                            <span id="booking-phone-help" className="mt-1.5 block text-[10px] opacity-40">
+                              Used only for booking confirmation
+                            </span>
+                          </label>
+                        </div>
+
+                        <div>
+                          <div className="mb-3 flex items-end justify-between">
+                            <div>
+                              <span className="block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                                Choose a date
+                              </span>
+                              <span className="mt-1 block text-xs font-semibold opacity-75">
+                                Next available appointments
+                              </span>
+                            </div>
+                            <span className="hidden text-[10px] font-bold opacity-40 sm:block">8 days</span>
+                          </div>
+                          <input type="hidden" name="date" value={bookingDate} />
+                          <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            {bookingDates.map((date) => {
+                              const selected = bookingDate === date.value;
+                              return (
+                                <button
+                                  key={date.value}
+                                  type="button"
+                                  onClick={() => {
+                                    if (bookingDate !== date.value) {
+                                      setBookingTime('');
+                                    }
+                                    setBookingDate(date.value);
+                                  }}
+                                  aria-pressed={selected}
+                                  className="min-w-[72px] snap-start rounded-2xl border px-3 py-3 text-center transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15"
+                                  style={{
+                                    borderColor: selected ? styles.accentColor : `${styles.textColor}16`,
+                                    backgroundColor: selected ? styles.accentColor : `${styles.textColor}06`,
+                                    color: selected ? styles.buttonTextColor : styles.textColor,
+                                    boxShadow: selected ? `0 12px 28px ${styles.accentColor}28` : 'none',
+                                  }}
+                                >
+                                  <span className="block text-[9px] font-black uppercase tracking-[0.12em] opacity-60">
+                                    {date.weekday}
+                                  </span>
+                                  <span className="mt-1 block text-xl font-black leading-none">{date.day}</span>
+                                  <span className="mt-1 block text-[9px] font-bold uppercase opacity-55">{date.month}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="mb-3 flex items-center gap-2">
+                            <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                              Choose a time
+                            </span>
+                            {!bookingDate && (
+                              <span className="rounded-full px-2 py-1 text-[9px] font-bold opacity-45" style={{ backgroundColor: `${styles.textColor}08` }}>
+                                Select a date first
+                              </span>
+                            )}
+                          </div>
+                          <input type="hidden" name="time" value={bookingTime} />
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                            {bookingTimes.map((time) => {
+                              const selected = bookingTime === time;
+                              const label = new Intl.DateTimeFormat('en-IN', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true,
+                              }).format(new Date(`2020-01-01T${time}:00`));
+                              return (
+                                <button
+                                  key={time}
+                                  type="button"
+                                  disabled={!bookingDate}
+                                  onClick={() => setBookingTime(time)}
+                                  aria-pressed={selected}
+                                  className="rounded-xl border px-3 py-3 text-xs font-extrabold transition duration-200 enabled:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15 disabled:cursor-not-allowed disabled:opacity-30"
+                                  style={{
+                                    borderColor: selected ? styles.accentColor : `${styles.textColor}16`,
+                                    backgroundColor: selected ? `${styles.accentColor}18` : `${styles.textColor}05`,
+                                    color: selected ? styles.accentColor : styles.textColor,
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-4 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: `${styles.textColor}12` }}>
+                          <div className="min-h-10">
+                            {bookingDate && bookingTime ? (
+                              <>
+                                <span className="block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-45">Your appointment</span>
+                                <span className="mt-1 block text-xs font-black">
+                                  {new Intl.DateTimeFormat('en-IN', {
+                                    weekday: 'short',
+                                    day: 'numeric',
+                                    month: 'short',
+                                  }).format(new Date(`${bookingDate}T12:00:00`))}
+                                  {' · '}
+                                  {new Intl.DateTimeFormat('en-IN', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true,
+                                  }).format(new Date(`2020-01-01T${bookingTime}:00`))}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="flex items-center gap-2 text-[11px] font-semibold opacity-45">
+                                <ShieldCheck size={15} />
+                                No pre-payment required
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="submit"
+                            disabled={!bookingDate || !bookingTime}
+                            className="group flex min-h-12 items-center justify-center gap-2 px-6 text-xs font-black transition duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-52"
+                            style={{
+                              backgroundColor: styles.buttonBgColor,
+                              color: styles.buttonTextColor,
+                              borderRadius: `${Math.max(styles.buttonBorderRadius || 0, 12)}px`,
+                            }}
+                          >
+                            {block.btnText || 'Confirm appointment'}
+                            <ArrowRight size={15} className="transition-transform group-enabled:group-hover:translate-x-0.5" />
+                          </button>
+                        </div>
+                      </div>
                     </form>
                   )}
                 </div>
@@ -1508,7 +1954,14 @@ export function BuilderRenderer({
             CATEGORY: NAVIGATION (21 VARIANTS)
             ========================================================== */}
         {block.type === 'Navigation' && (
-          <div className="w-full relative select-none" style={{ fontFamily: getFontFamilyStyle(styles.fontFamily) }}>
+          <div
+            className="w-full relative select-none"
+            style={{ fontFamily: getFontFamilyStyle(styles.fontFamily) }}
+            onClickCapture={(event) => {
+              const button = (event.target as HTMLElement).closest('button');
+              if (button && !button.dataset.navigationLink) runBtnAction();
+            }}
+          >
             {/* nav-minimal */}
             {block.variant === 'nav-minimal' && (
               <div className="flex items-center justify-between p-4" style={{ backgroundColor: styles.cardBgColor, border: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}`, borderRadius: `${styles.cardBorderRadius}px` }}>
@@ -1520,10 +1973,20 @@ export function BuilderRenderer({
                   )}
                 </SelectableElement>
                 <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span className="hover:text-white cursor-pointer transition">Services</span>
-                  <span className="hover:text-white cursor-pointer transition">Features</span>
-                  <span className="hover:text-white cursor-pointer transition">Templates</span>
-                  <span className="hover:text-white cursor-pointer transition">Pricing</span>
+                  {navigationLinks.slice(0, 5).map((link) => (
+                    <button
+                      key={link.id}
+                      type="button"
+                      data-navigation-link="true"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleLinkNav(link.url);
+                      }}
+                      className="cursor-pointer transition hover:text-slate-950"
+                    >
+                      {link.label}
+                    </button>
+                  ))}
                 </SelectableElement>
                 <SelectableElement elementId="button">
                   <button className="font-extrabold cursor-pointer transition" style={{ ...buttonStyle, padding: '9px 18px', fontSize: '11px' }}>{block.btnText || 'Sign In'}</button>
@@ -1894,16 +2357,33 @@ export function BuilderRenderer({
                       <p className="text-[11px] text-slate-400 leading-relaxed">{block.subtitle || 'Build elegant websites, schedule reservation calendars and gather customer feedback easily.'}</p>
                     </SelectableElement>
                   </div>
-                  {['Products', 'Solutions', 'Legal'].map((col, cIdx) => (
-                    <div key={cIdx} className="space-y-3">
-                      <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">{col}</h5>
-                      <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
-                        <li className="hover:text-blue-400 cursor-pointer">Feature Links</li>
-                        <li className="hover:text-blue-400 cursor-pointer">Pricing Matrix</li>
-                        <li className="hover:text-blue-400 cursor-pointer">Support Desk</li>
-                      </ul>
-                    </div>
-                  ))}
+                  <div className="space-y-3">
+                    <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">Pages</h5>
+                    <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
+                      {navigationLinks.slice(0, 5).map((link) => (
+                        <li key={link.id}>
+                          <button type="button" onClick={() => handleLinkNav(link.url)} className="cursor-pointer transition hover:text-blue-400">
+                            {link.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="space-y-3">
+                    <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">Contact</h5>
+                    <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
+                      <li>{block.contactPhone || site?.theme?.phone || '+91 98765 43210'}</li>
+                      <li>{block.contactEmail || site?.theme?.email || 'hello@onlypage.in'}</li>
+                      <li>{block.contactAddress || site?.theme?.address || 'India'}</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-3">
+                    <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">Legal</h5>
+                    <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
+                      <li><button type="button" onClick={() => handleLinkNav('privacy')} className="transition hover:text-blue-400">Privacy</button></li>
+                      <li><button type="button" onClick={() => handleLinkNav('terms')} className="transition hover:text-blue-400">Terms</button></li>
+                    </ul>
+                  </div>
                 </div>
                 <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                   <span>{(block as any).copyright || `© ${new Date().getFullYear()} ONLYPAGE IN. ALL RIGHTS RESERVED.`}</span>

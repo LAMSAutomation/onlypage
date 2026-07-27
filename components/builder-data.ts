@@ -37,46 +37,95 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'saas-modern', name: 'Premium SaaS Modern', description: 'Bento-like headers with live preview mockup layouts', tags: ['Premium', 'SaaS', 'High-Convert'] },
     { id: '3d-mesh', name: 'Interactive 3D Grid Grid', description: 'Aceternity style dot-grid background with tilting elements', tags: ['3D', 'Dot-Background', 'Animation'] },
     { id: 'aurora-sky', name: 'Ambient Aurora Sky', description: 'Dynamic shifting backdrops with elegant text reveal filters', tags: ['Aurora', 'Warm', 'Luxury'] },
-    { id: 'video-simulate', name: 'Simulated Dark Video', description: 'Cinematic layout with a rich overlay video player mock', tags: ['Video', 'Immersive', 'Product'] }
+    { id: 'video-simulate', name: 'Simulated Dark Video', description: 'Cinematic layout with a rich overlay video player mock', tags: ['Video', 'Immersive', 'Product'] },
+    { id: 'editorial-stack', name: 'Editorial Stack', description: 'Magazine-inspired typography with generous whitespace and a refined hierarchy', tags: ['Editorial', 'Premium', 'Type'] },
+    { id: 'local-conversion', name: 'Local Conversion', description: 'Action-first direction for calls, WhatsApp enquiries, and appointment bookings', tags: ['Local', 'WhatsApp', 'Conversion'] },
+    { id: 'quiet-luxury', name: 'Quiet Luxury', description: 'Warm neutral palette, restrained accents, and high-end service positioning', tags: ['Luxury', 'Neutral', 'Elegant'] },
+    { id: 'bold-poster', name: 'Bold Poster', description: 'Oversized display type and sharp contrast for energetic launches', tags: ['Bold', 'Launch', 'Display'] },
+    { id: 'soft-gradient', name: 'Soft Gradient', description: 'Airy pastel gradients with calm spacing and approachable calls to action', tags: ['Gradient', 'Soft', 'Modern'] },
+    { id: 'mono-grid', name: 'Monochrome Grid', description: 'Structured black-and-white visual system with precise editorial rhythm', tags: ['Mono', 'Grid', 'Swiss'] },
+    { id: 'warm-studio', name: 'Warm Studio', description: 'Earthy colors and rounded shapes for human, craft-led businesses', tags: ['Warm', 'Organic', 'Friendly'] },
+    { id: 'glass-panel', name: 'Glass Panel', description: 'Layered translucent surfaces with subtle borders and atmospheric depth', tags: ['Glass', 'Layered', 'Tech'] }
   ],
   Features: [
     { id: 'feature-grid', name: 'Classic Icon Grid', description: 'Fully responsive grid layout with custom hover scale effects', tags: ['Grid', 'Modern', 'Symmetric'] },
     { id: 'bento-box', name: 'Premium Bento Grid', description: 'Asymmetric grid layout inspired by Apple and Vercel', tags: ['Bento', 'Premium', 'Minimalist'] },
     { id: 'alternating', name: 'Alternating Timelines', description: 'Alternating rows detailing a story or a timeline', tags: ['Story', 'Alternating', 'Creative'] },
     { id: 'icon-cards', name: 'Glowing Accent Cards', description: 'Figma-style custom card containers with hover borders', tags: ['Glow', 'Modern', 'Card'] },
-    { id: 'comparison', name: 'Feature Comparisons', description: 'Compare specs directly across plans side-by-side', tags: ['Table', 'SaaS', 'Data'] }
+    { id: 'comparison', name: 'Feature Comparisons', description: 'Compare specs directly across plans side-by-side', tags: ['Table', 'SaaS', 'Data'] },
+    { id: 'editorial-stack', name: 'Editorial Feature Story', description: 'A typography-led feature section with a polished magazine rhythm', tags: ['Editorial', 'Story', 'Premium'] },
+    { id: 'local-conversion', name: 'Outcome-Focused Services', description: 'Presents services around enquiries, bookings, and customer outcomes', tags: ['Local', 'Services', 'Conversion'] },
+    { id: 'quiet-luxury', name: 'Quiet Luxury Features', description: 'Understated service highlights with refined neutral styling', tags: ['Luxury', 'Elegant', 'Service'] },
+    { id: 'bold-poster', name: 'Bold Benefit Poster', description: 'High-impact benefits with oversized typography and vivid contrast', tags: ['Bold', 'Benefits', 'Display'] },
+    { id: 'soft-gradient', name: 'Soft Gradient Cards', description: 'Friendly feature cards on a calm gradient surface', tags: ['Gradient', 'Cards', 'Friendly'] },
+    { id: 'mono-grid', name: 'Monochrome Capability Grid', description: 'Crisp black-and-white capability grid for modern professional brands', tags: ['Mono', 'Grid', 'Professional'] }
   ],
   CTA: [
     { id: 'simple-cta', name: 'Minimal Conversion Panel', description: 'High-contrast banner directing focus to a primary CTA', tags: ['Minimal', 'Fast'] },
     { id: 'gradient-cta', name: 'High-Contrast Gradient Block', description: 'Glow-tinted canvas displaying high-energy newsletter setups', tags: ['Gradient', 'Modern', 'Immersive'] },
     { id: 'image-bg-cta', name: 'Immersive Dark Backdrop', description: 'Elegant overlays with full-bleed media backgrounds', tags: ['Overlay', 'Premium', 'Media'] },
-    { id: 'app-download', name: 'App Store Download Grid', description: 'Dual buttons targeted for iOS and Android downloads', tags: ['App', 'Mobile', 'Stores'] }
+    { id: 'app-download', name: 'App Store Download Grid', description: 'Dual buttons targeted for iOS and Android downloads', tags: ['App', 'Mobile', 'Stores'] },
+    { id: 'local-conversion', name: 'WhatsApp Conversion CTA', description: 'Direct, reassuring action panel optimized for local customer enquiries', tags: ['WhatsApp', 'Local', 'Conversion'] },
+    { id: 'quiet-luxury', name: 'Concierge CTA', description: 'Elegant low-pressure action area for premium services and consultations', tags: ['Luxury', 'Service', 'Elegant'] },
+    { id: 'bold-poster', name: 'Launch Poster CTA', description: 'Oversized message and bold button treatment for product launches', tags: ['Bold', 'Launch', 'Poster'] },
+    { id: 'soft-gradient', name: 'Friendly Gradient CTA', description: 'Soft color transitions and approachable conversion copy', tags: ['Gradient', 'Friendly', 'Modern'] },
+    { id: 'mono-grid', name: 'Monochrome Action Rail', description: 'Precise high-contrast call-to-action for confident brands', tags: ['Mono', 'Sharp', 'Professional'] },
+    { id: 'glass-panel', name: 'Glass Action Panel', description: 'Layered translucent CTA with a premium technology feel', tags: ['Glass', 'Tech', 'Layered'] }
   ],
   Gallery: [
     { id: 'masonry', name: 'Staggered Masonry Grid', description: 'Pinterest-style fluid layouts resizing columns gracefully', tags: ['Artistic', 'Masonry', 'Media'] },
     { id: 'slider', name: 'Before-After Comparer', description: 'Click-toggle to compare a project before and after styling', tags: ['Interactive', 'Slider', 'Design'] },
     { id: 'marquee-logos', name: 'Infinite Logo Marquee', description: 'Endless horizontal scrolling of enterprise client logos', tags: ['Marquee', 'Enterprise', 'Social-Proof'] },
-    { id: 'grid-hover', name: 'Visual Portfolio Showcase', description: 'Responsive tiles with title reveal on mouse overlay', tags: ['Portfolio', 'Hover-Glow', 'Art'] }
+    { id: 'grid-hover', name: 'Visual Portfolio Showcase', description: 'Responsive tiles with title reveal on mouse overlay', tags: ['Portfolio', 'Hover-Glow', 'Art'] },
+    { id: 'editorial-stack', name: 'Editorial Lookbook', description: 'Art-directed image presentation with a magazine-style atmosphere', tags: ['Editorial', 'Lookbook', 'Art'] },
+    { id: 'quiet-luxury', name: 'Luxury Portfolio', description: 'Restrained gallery styling for premium spaces, products, and services', tags: ['Luxury', 'Portfolio', 'Elegant'] },
+    { id: 'bold-poster', name: 'Poster Wall', description: 'High-contrast visual wall for campaigns and creative work', tags: ['Bold', 'Poster', 'Creative'] },
+    { id: 'soft-gradient', name: 'Soft Gallery Cloud', description: 'Approachable gallery direction with subtle color and rounded surfaces', tags: ['Gradient', 'Soft', 'Media'] },
+    { id: 'mono-grid', name: 'Monochrome Archive', description: 'Structured visual archive for architecture, fashion, and case studies', tags: ['Mono', 'Archive', 'Grid'] },
+    { id: 'warm-studio', name: 'Warm Studio Journal', description: 'Organic gallery direction for makers, food, hospitality, and wellness', tags: ['Warm', 'Journal', 'Organic'] }
   ],
   Business: [
     { id: 'treatment-list', name: 'Luxury Treatment Menu', description: 'Fine-detailed lists displaying treatments, times, and costs', tags: ['Salon', 'Luxury', 'Treatments'] },
     { id: 'packages', name: 'Service Packages Bento', description: 'Pre-bundled bundles featuring tick lists and accents', tags: ['Packages', 'Bespoke', 'Doctor'] },
-    { id: 'offers', name: 'Dynamic Active Offers', description: 'Flash offer tickers styled with urgency countdown elements', tags: ['Offers', 'Sales', 'Urgent'] }
+    { id: 'offers', name: 'Dynamic Active Offers', description: 'Flash offer tickers styled with urgency countdown elements', tags: ['Offers', 'Sales', 'Urgent'] },
+    { id: 'local-conversion', name: 'Local Service Menu', description: 'Action-first service list with clear enquiry and booking paths', tags: ['Local', 'Services', 'Booking'] },
+    { id: 'quiet-luxury', name: 'Private Client Services', description: 'Premium service presentation for clinics, salons, and consultants', tags: ['Luxury', 'Consultation', 'Service'] },
+    { id: 'bold-poster', name: 'High-Impact Offers', description: 'Vivid campaign styling for seasonal offers and urgent promotions', tags: ['Bold', 'Offers', 'Campaign'] },
+    { id: 'soft-gradient', name: 'Friendly Service Cards', description: 'Rounded, approachable service presentation for growing businesses', tags: ['Soft', 'Services', 'Friendly'] },
+    { id: 'mono-grid', name: 'Professional Service Index', description: 'Structured service catalog with crisp hierarchy and pricing clarity', tags: ['Mono', 'Professional', 'Catalog'] },
+    { id: 'warm-studio', name: 'Artisan Service Menu', description: 'Human, tactile visual direction for studios and independent professionals', tags: ['Warm', 'Artisan', 'Organic'] }
   ],
   Pricing: [
     { id: 'saas-pricing', name: 'Standard SaaS 3-Tiers', description: 'Standard billing tiers highlighting a recommended choice', tags: ['SaaS', 'Tiers', 'Checklist'] },
     { id: 'service-tier', name: 'Simple Service Pricer', description: 'Local business packages with individual CTA buttons', tags: ['Service', 'Minimal', 'Compact'] },
-    { id: 'comparison-pricing', name: 'Full Matrix Pricing', description: 'A highly structured pricing spreadsheet layout', tags: ['Enterprise', 'Matrix', 'Compare'] }
+    { id: 'comparison-pricing', name: 'Full Matrix Pricing', description: 'A highly structured pricing spreadsheet layout', tags: ['Enterprise', 'Matrix', 'Compare'] },
+    { id: 'local-conversion', name: 'Local Business Pricing', description: 'Clear rupee-first packages with direct enquiry and booking actions', tags: ['India', 'Local', 'Conversion'] },
+    { id: 'quiet-luxury', name: 'Premium Service Pricing', description: 'Refined packages for high-value consultations and services', tags: ['Luxury', 'Service', 'Premium'] },
+    { id: 'bold-poster', name: 'Launch Offer Pricing', description: 'Confident high-contrast pricing built for limited-time campaigns', tags: ['Bold', 'Offer', 'Launch'] },
+    { id: 'soft-gradient', name: 'Friendly Plan Cards', description: 'Approachable pricing with gentle colors and clear decisions', tags: ['Gradient', 'Plans', 'Friendly'] },
+    { id: 'mono-grid', name: 'Transparent Rate Card', description: 'Precise monochrome pricing for agencies and professional services', tags: ['Mono', 'Rates', 'Agency'] },
+    { id: 'glass-panel', name: 'Glass Subscription Plans', description: 'Layered futuristic plan cards for software and digital products', tags: ['Glass', 'SaaS', 'Tech'] }
   ],
   Testimonials: [
     { id: 'review-cards', name: 'Classic Review Tiles', description: 'Polished client statement blocks with dynamic star ratings', tags: ['Clean', 'Grid'] },
     { id: 'google-review', name: 'Google Stars & Badging', description: 'Trust-focused layout integrating Google Maps badges', tags: ['Google', 'Trust', 'Local-SEO'] },
-    { id: 'wall-of-love', name: 'Masonry Wall of Love', description: 'A massive visual array of community appreciation letters', tags: ['WallOfLove', 'Premium'] }
+    { id: 'wall-of-love', name: 'Masonry Wall of Love', description: 'A massive visual array of community appreciation letters', tags: ['WallOfLove', 'Premium'] },
+    { id: 'editorial-stack', name: 'Editorial Customer Stories', description: 'Long-form, human testimonials with a polished publication feel', tags: ['Editorial', 'Stories', 'Premium'] },
+    { id: 'local-conversion', name: 'Local Trust Stories', description: 'Trust-focused review direction for neighbourhood businesses', tags: ['Local', 'Trust', 'Conversion'] },
+    { id: 'quiet-luxury', name: 'Private Client Notes', description: 'Understated testimonials for premium and confidential services', tags: ['Luxury', 'Elegant', 'Service'] },
+    { id: 'soft-gradient', name: 'Friendly Review Cloud', description: 'Warm approachable reviews with soft color and rounded surfaces', tags: ['Soft', 'Reviews', 'Friendly'] },
+    { id: 'mono-grid', name: 'Case Study Quotes', description: 'Crisp testimonial system for agencies, studios, and B2B teams', tags: ['Mono', 'Case Study', 'B2B'] }
   ],
   Forms: [
     { id: 'appointment', name: 'Lead Form & Booking', description: 'Fully styled reservation boxes capturing names, emails, and slots', tags: ['Interactive', 'Forms', 'Booking'] },
     { id: 'newsletter', name: 'High-Impact Subscriber Bar', description: 'One-click newsletter subscriptions with custom validations', tags: ['Subscribers', 'Bar'] },
-    { id: 'contact-complex', name: 'Detailed Contact Grid', description: 'Direct contact form flanked by interactive maps and contact details', tags: ['Forms', 'Detailed', 'Contact'] }
+    { id: 'contact-complex', name: 'Detailed Contact Grid', description: 'Direct contact form flanked by interactive maps and contact details', tags: ['Forms', 'Detailed', 'Contact'] },
+    { id: 'local-conversion', name: 'WhatsApp Lead Form', description: 'Compact enquiry flow designed to continue the conversation on WhatsApp', tags: ['WhatsApp', 'Lead', 'Local'] },
+    { id: 'quiet-luxury', name: 'Private Consultation Form', description: 'Refined intake experience for premium appointments and enquiries', tags: ['Luxury', 'Consultation', 'Form'] },
+    { id: 'bold-poster', name: 'Campaign Signup Form', description: 'High-energy lead capture for launches, events, and limited offers', tags: ['Bold', 'Campaign', 'Lead'] },
+    { id: 'soft-gradient', name: 'Friendly Enquiry Form', description: 'Approachable rounded form styling that reduces visual friction', tags: ['Soft', 'Friendly', 'Form'] },
+    { id: 'mono-grid', name: 'Professional Brief Form', description: 'Structured intake for agencies, consultants, and B2B services', tags: ['Mono', 'Brief', 'Professional'] },
+    { id: 'glass-panel', name: 'Glass Waitlist Form', description: 'Layered high-end signup panel for digital products and communities', tags: ['Glass', 'Waitlist', 'Tech'] }
   ],
   EComStore: [
     { id: 'shop-header', name: 'Shopify Style Header & Announcement', description: 'Top announcement bar + brand logo + shop links + search & cart pill', tags: ['Header', 'Shopify', 'Nav'] },
@@ -85,12 +134,21 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'interactive-feature', name: 'Interactive React Feature Canvas', description: 'Mouse-follow card glow, image tilt, reveal animations & marquee', tags: ['FramerMotion', 'MouseGlow', 'Interactive'] },
     { id: 'whatsapp-widget', name: 'Floating WhatsApp Store Button', description: 'Direct WhatsApp action button linking to merchant phone number', tags: ['WhatsApp', 'Floating', 'Automated'] },
     { id: 'customer-auth', name: 'Storefront Customer Login & Signup', description: 'Shopify Canvas Light / Cream customer sign-in & registration template', tags: ['Auth', 'Login', 'Signup'] },
-    { id: 'store-legal', name: 'Store Terms & Refund Policies', description: 'Terms of Service, Shipping, and Privacy Policy page layout', tags: ['Legal', 'Terms', 'Compliance'] }
+    { id: 'store-legal', name: 'Store Terms & Refund Policies', description: 'Terms of Service, Shipping, and Privacy Policy page layout', tags: ['Legal', 'Terms', 'Compliance'] },
+    { id: 'local-conversion', name: 'WhatsApp Commerce Shelf', description: 'Local storefront direction built around chat-to-buy and UPI intent', tags: ['WhatsApp', 'UPI', 'Local'] },
+    { id: 'quiet-luxury', name: 'Luxury Product Edit', description: 'Restrained high-end product presentation for boutique brands', tags: ['Luxury', 'Boutique', 'Product'] },
+    { id: 'bold-poster', name: 'Drop Launch Store', description: 'Bold campaign treatment for new drops and limited inventory', tags: ['Launch', 'Drop', 'Bold'] },
+    { id: 'warm-studio', name: 'Maker Market', description: 'Warm organic storefront direction for handmade and independent brands', tags: ['Maker', 'Warm', 'Organic'] }
   ],
   Special: [
     { id: 'faq-accordions', name: 'FAQ Interactive Drawers', description: 'Interactive accordion list maximizing space gracefully', tags: ['Accordions', 'Interactive'] },
     { id: 'steps-path', name: 'Step Process Roadmap', description: 'Horizontal paths mapping the user journey', tags: ['Timeline', 'Roadmap'] },
-    { id: 'stats-grid', name: 'Performance Counters Grid', description: 'Animated numeric metrics describing growth accomplishments', tags: ['Numbers', 'Counters'] }
+    { id: 'stats-grid', name: 'Performance Counters Grid', description: 'Animated numeric metrics describing growth accomplishments', tags: ['Numbers', 'Counters'] },
+    { id: 'editorial-stack', name: 'Editorial Information Stack', description: 'Typography-led supporting content with refined visual pacing', tags: ['Editorial', 'Content', 'Premium'] },
+    { id: 'local-conversion', name: 'Local Action Utility', description: 'Practical conversion support for calls, enquiries, and directions', tags: ['Local', 'Action', 'Utility'] },
+    { id: 'quiet-luxury', name: 'Luxury Detail Panel', description: 'Understated supporting content for premium brand stories', tags: ['Luxury', 'Detail', 'Elegant'] },
+    { id: 'mono-grid', name: 'Monochrome Data Panel', description: 'Structured facts and process content with strong information hierarchy', tags: ['Mono', 'Data', 'Grid'] },
+    { id: 'glass-panel', name: 'Glass Utility Panel', description: 'Atmospheric layered surface for technology and product details', tags: ['Glass', 'Tech', 'Utility'] }
   ],
   Navigation: [
     { id: 'nav-minimal', name: '01. Minimal Left Brand', description: 'Simple brand text, centered clean links, and a solid outline action button.', tags: ['Minimal', 'Light'] },
@@ -138,7 +196,11 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'footer-copyright-only', name: '21. Super-Minimal Copyright Rail', description: 'Single elegant thin line containing copyright text and absolutely nothing else.', tags: ['Minimalist'] }
   ],
   Map: [
-    { id: 'map-classic', name: 'Interactive Location Map', description: 'Fully custom Google Map of your business location', tags: ['Location', 'Interactive', 'Google Maps'] }
+    { id: 'map-classic', name: 'Interactive Location Map', description: 'Fully custom Google Map of your business location', tags: ['Location', 'Interactive', 'Google Maps'] },
+    { id: 'local-conversion', name: 'Visit & Contact', description: 'Location details paired with direct call, directions, and WhatsApp actions', tags: ['Local', 'Directions', 'WhatsApp'] },
+    { id: 'quiet-luxury', name: 'Destination Address', description: 'Refined location presentation for hotels, clinics, and premium studios', tags: ['Luxury', 'Address', 'Elegant'] },
+    { id: 'mono-grid', name: 'Location Directory', description: 'Structured monochrome address block for multi-location businesses', tags: ['Mono', 'Directory', 'Locations'] },
+    { id: 'warm-studio', name: 'Neighbourhood Guide', description: 'Warm, welcoming location direction for hospitality and local services', tags: ['Warm', 'Local', 'Guide'] }
   ]
 };
 

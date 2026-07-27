@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { AppShell, DashboardMode } from '@/components/app-shell';
 import { Dashboard } from '@/components/dashboard';
-import { WebsiteBuilderEditor } from "@/components/website-builder-editor";
+import { VisualBuilder } from "@/components/visual-builder";
+import { LaunchMode } from '@/components/launch-mode';
+import { GrowthMode } from '@/components/growth-mode';
 import type { SiteRecord } from '@/components/ui/onboarding-wizard';
 
 interface EfferdDashboard2Props {
@@ -11,21 +13,43 @@ interface EfferdDashboard2Props {
 }
 
 export function EfferdDashboard2({ onLogout, site, onUpdateSite }: EfferdDashboard2Props) {
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeTab, setActiveTab] = useState<string>('launch');
   const initialMode = (site.theme?.mode as DashboardMode) || 'business';
   const [dashboardMode] = useState<DashboardMode>(initialMode);
 
   // If the active tab is 'builder' (Website Builder), render the full screen website builder workspace
   if (activeTab === 'builder') {
     return (
-      <WebsiteBuilderEditor 
+      <VisualBuilder
         site={site}
         onUpdateSite={onUpdateSite}
+        onNavigateModule={setActiveTab}
         onExit={() => {
           // Instead of logging out, return back to the main dashboard workspace Command Center
           setActiveTab('home');
         }} 
       />
+    );
+  }
+
+  if (activeTab === 'launch') {
+    return (
+      <AppShell activeTab={activeTab} setActiveTab={setActiveTab} dashboardMode={dashboardMode} onLogout={onLogout} site={site}>
+        <LaunchMode
+          site={site}
+          onUpdateSite={onUpdateSite}
+          onOpenStudio={() => setActiveTab('builder')}
+          onNavigate={setActiveTab}
+        />
+      </AppShell>
+    );
+  }
+
+  if (activeTab === 'growth') {
+    return (
+      <AppShell activeTab={activeTab} setActiveTab={setActiveTab} dashboardMode={dashboardMode} onLogout={onLogout} site={site}>
+        <GrowthMode site={site} onNavigate={setActiveTab} />
+      </AppShell>
     );
   }
 

@@ -152,10 +152,10 @@ export default function HeroSection({ businessName, setBusinessName, onClaimDoma
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 font-bold">OnlyPage Engine v1.2</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500 font-bold">OnlyPage for local business</span>
           <div className="w-px h-3 bg-slate-200" />
           <span className="text-indigo-600 flex items-center gap-1">
-            Now live with Google Workspace integrations <Sparkles size={11} className="fill-indigo-100 animate-spin" style={{ animationDuration: '6s' }} />
+            Website, leads, bookings, and customer follow-up <Sparkles size={11} className="fill-indigo-100 animate-spin" style={{ animationDuration: '6s' }} />
           </span>
         </motion.div>
 
@@ -177,7 +177,7 @@ export default function HeroSection({ businessName, setBusinessName, onClaimDoma
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mt-6 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed"
         >
-          Replace website builders, dynamic databases, feedback forms, local pipelines, slot bookings, and WhatsApp automation bots in under 2 minutes.
+          Launch a fast business page, capture enquiries, take bookings, and prepare your customer follow-up from one workspace.
         </motion.p>
 
         {/* Claim Subdomain Command Center */}
@@ -192,6 +192,7 @@ export default function HeroSection({ businessName, setBusinessName, onClaimDoma
               <Globe className="text-slate-400 shrink-0 mr-2" size={16} />
               <input
                 type="text"
+                aria-label="Preferred OnlyPage address"
                 value={inputValue}
                 onChange={handleTextChange}
                 placeholder="salon-de-lux"
@@ -212,7 +213,7 @@ export default function HeroSection({ businessName, setBusinessName, onClaimDoma
           {/* Subdomain validation feedback */}
           <div className="mt-4 flex items-center justify-center space-x-1.5 text-[11px] text-slate-500 font-semibold font-mono">
             <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            <span>https://{inputValue || 'yourname'}.onlypage.in is available for free. SSL guaranteed.</span>
+            <span>We will confirm this address during your guided account setup.</span>
           </div>
         </motion.div>
 

@@ -2,11 +2,13 @@ import express from "express";
 import path from "path";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { createPaymentOrder, processRazorpayWebhook, verifyRazorpaySignature } from "./api/_lib/payments";
+import { getWhatsAppConnection, isValidAutomationSecret, runNewLeadFollowUps, sendLeadFollowUp } from "./api/_lib/whatsapp";
 
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ verify: (req, _res, buffer) => { (req as any).rawBody = buffer.toString('utf8'); } }));
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -258,83 +260,65 @@ Always keep structural properties like block ids and block types intact. Return 
 // E-COMMERCE PAYMENT ROUTING & LEADS API
 // ==========================================
 
-// 1. Create Payment Order (Routes payment dynamically to vendor credentials)
+// 1. Create Payment Order (server-calculated totals; no browser payment secrets)
 app.post("/api/ecom/create-payment-order", async (req, res) => {
-  const { site_id, amount, currency, gateway, items, customer } = req.body;
-
-  if (!site_id || !amount || !items || !customer) {
-    return res.status(400).json({ error: "Missing required order parameters (site_id, amount, items, customer)." });
+  try {
+    const result = await createPaymentOrder(req.body);
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Payment order creation failed', error);
+    return res.status(500).json({ error: 'Could not prepare checkout. Please try again.' });
   }
-
-  // Generate simulated or live order payloads for Razorpay, Stripe, and UPI
-  const orderNumber = Math.floor(100000 + Math.random() * 900000);
-  const selectedGateway = gateway || 'razorpay';
-
-  if (selectedGateway === 'razorpay') {
-    const razorpayOrderId = `order_rzp_${Date.now()}_${orderNumber}`;
-    return res.json({
-      success: true,
-      gateway: 'razorpay',
-      order_id: razorpayOrderId,
-      key_id: req.body.razorpay_key_id || "rzp_test_onlypage_default",
-      amount: Math.round(amount * 100), // amount in paise
-      currency: currency || 'INR',
-      notes: { site_id, customer_email: customer.email }
-    });
-  } else if (selectedGateway === 'stripe') {
-    const stripeClientSecret = `pi_stripe_${Date.now()}_secret_${Math.random().toString(36).substring(7)}`;
-    return res.json({
-      success: true,
-      gateway: 'stripe',
-      client_secret: stripeClientSecret,
-      amount: Math.round(amount * 100),
-      currency: currency || 'USD'
-    });
-  } else if (selectedGateway === 'upi') {
-    const upiVpa = req.body.upi_vpa || 'merchant@upi';
-    const upiPayLink = `upi://pay?pa=${encodeURIComponent(upiVpa)}&pn=OnlyPage%20Store&am=${amount}&cu=INR&tn=Order%20${orderNumber}`;
-    return res.json({
-      success: true,
-      gateway: 'upi',
-      upi_vpa: upiVpa,
-      upi_link: upiPayLink,
-      order_number: orderNumber
-    });
-  }
-
-  return res.status(400).json({ error: "Unsupported payment gateway requested." });
 });
 
-// 2. E-Commerce Webhook (Updates order status & automatically inserts lead into CRM)
+// 2. Razorpay webhook (HMAC verified and idempotent)
 app.post("/api/ecom/webhook", async (req, res) => {
-  const { site_id, order_id, customer_name, customer_email, customer_phone, total_amount, payment_id, items } = req.body;
-
-  if (!site_id || !customer_email) {
-    return res.status(400).json({ error: "Invalid webhook payload." });
+  try {
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+    const signature = req.header('x-razorpay-signature');
+    if (!verifyRazorpaySignature(rawBody, signature)) return res.status(401).json({ error: 'Invalid webhook signature.' });
+    const result = await processRazorpayWebhook(req.body);
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Razorpay webhook failed', error);
+    return res.status(400).json({ error: 'Invalid webhook payload.' });
   }
+});
 
-  // Simulated lead capture payload confirming CRM sync
-  const leadSync = {
-    site_id,
-    name: customer_name || 'Store Customer',
-    email: customer_email,
-    phone: customer_phone || '',
-    status: 'Customer',
-    amount: total_amount || 0,
-    source: 'E-Commerce Storefront',
-    synced_at: new Date().toISOString()
-  };
+// WhatsApp follow-ups use Evolution API from the server only. The browser never
+// sees the instance token or provider API key.
+app.post('/api/whatsapp/send-follow-up', async (req, res) => {
+  try {
+    const result = await sendLeadFollowUp(req.body, req.header('authorization'));
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('WhatsApp follow-up failed', error);
+    return res.status(500).json({ error: 'Could not prepare the WhatsApp follow-up.' });
+  }
+});
 
-  return res.json({
-    success: true,
-    message: "Order payment verified, customer lead recorded in CRM contacts.",
-    lead: leadSync,
-    order: {
-      order_id: order_id || `ord_${Date.now()}`,
-      payment_status: 'paid',
-      payment_id: payment_id || `pay_${Date.now()}`
-    }
-  });
+app.get('/api/whatsapp/status', async (req, res) => {
+  try {
+    const siteId = typeof req.query.site_id === 'string' ? req.query.site_id : '';
+    const result = await getWhatsAppConnection(siteId, req.header('authorization'));
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('WhatsApp connection status failed', error);
+    return res.status(500).json({ error: 'Could not check the WhatsApp connection.' });
+  }
+});
+
+app.post('/api/whatsapp/run-automation', async (req, res) => {
+  if (!isValidAutomationSecret(req.header('x-automation-secret'))) {
+    return res.status(401).json({ error: 'Invalid automation secret.' });
+  }
+  try {
+    const result = await runNewLeadFollowUps();
+    return res.status(result.status).json(result.body);
+  } catch (error) {
+    console.error('Automatic WhatsApp follow-ups failed', error);
+    return res.status(500).json({ error: 'Automatic WhatsApp follow-ups failed.' });
+  }
 });
 
 // 3. E-Commerce Notifications (Order confirmation email + Store owner alert)

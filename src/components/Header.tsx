@@ -26,12 +26,9 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
 
   const navItems = [
     { label: 'AI Builder', id: 'ai-demo' },
-    { label: 'Everyone', id: 'everyone' },
-    { label: 'Editor', id: 'editor' },
-    { label: 'Dashboard', id: 'dashboard' },
-    { label: 'WhatsApp', id: 'whatsapp' },
-    { label: 'Features', id: 'features' },
-    { label: 'Blueprints', id: 'spec-explorer' },
+    { label: 'Use cases', id: 'everyone' },
+    { label: 'How it works', id: 'editor' },
+    { label: 'Business tools', id: 'features' },
     { label: 'Pricing', id: 'pricing' },
   ];
 
@@ -47,7 +44,9 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div 
+            <button
+              type="button"
+              aria-label="OnlyPage home"
               className="flex items-center space-x-2 cursor-pointer group"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
@@ -55,18 +54,19 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
                 <div className="w-4 h-4 bg-white rounded-xs"></div>
               </div>
               <span className="font-bold text-xl tracking-tight text-slate-900">OnlyPage</span>
-            </div>
+            </button>
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center space-x-1">
               {navItems.map((item) => (
-                <button
+                <a
                   key={item.id}
-                  onClick={() => onScrollTo(item.id)}
+                  href={`#${item.id}`}
+                  onClick={(event) => { event.preventDefault(); onScrollTo(item.id); }}
                   className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-indigo-600 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   {item.label}
-                </button>
+                </a>
               ))}
             </nav>
 
@@ -79,7 +79,7 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
                 Sign In
               </button>
               <button
-                onClick={() => onScrollTo('pricing')}
+                onClick={onLoginClick}
                 className="group relative inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-all shadow-xs overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-1.5">
@@ -92,7 +92,7 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
             {/* Mobile Menu Button */}
             <div className="md:hidden flex items-center space-x-2">
               <button
-                onClick={() => onScrollTo('pricing')}
+                onClick={onLoginClick}
                 className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-all"
               >
                 Start
@@ -120,16 +120,18 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
           >
             <nav className="flex flex-col space-y-3">
               {navItems.map((item) => (
-                <button
+                <a
                   key={item.id}
-                  onClick={() => {
+                  href={`#${item.id}`}
+                  onClick={(event) => {
+                    event.preventDefault();
                     setMobileMenuOpen(false);
                     onScrollTo(item.id);
                   }}
                   className="w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-lg transition-colors"
                 >
                   {item.label}
-                </button>
+                </a>
               ))}
               <div className="h-px bg-slate-100 my-2"></div>
               <div className="flex items-center justify-between pt-2">
@@ -145,7 +147,7 @@ export default function Header({ onScrollTo, onLoginClick }: HeaderProps) {
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    onScrollTo('pricing');
+                    onLoginClick();
                   }}
                   className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-all shadow-xs"
                 >
