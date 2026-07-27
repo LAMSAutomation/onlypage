@@ -71,7 +71,7 @@ interface BuilderRendererProps {
   isActive: boolean;
   onSelect: () => void;
   selectedSubElement?: string | null;
-  onSelectSubElement?: (elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media') => void;
+  onSelectSubElement?: (elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media' | string) => void;
   siteId?: string;
   pages?: any[];
   onNavigatePage?: (slug: string) => void;
@@ -474,7 +474,7 @@ export function BuilderRenderer({
     className = "", 
     style
   }: { 
-    elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media'; 
+    elementId: 'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media' | string; 
     children: React.ReactNode; 
     className?: string;
     style?: React.CSSProperties;
@@ -482,6 +482,7 @@ export function BuilderRenderer({
   }) => {
     const isSubActive = selectedSubElement === elementId;
     const isSelectedBlock = isActive;
+    const badgeLabel = elementId.split(':')[0].toUpperCase();
     
     // Hijack Navigation subtitle to display dynamic site pages
     let displayChildren = children;
@@ -539,14 +540,12 @@ export function BuilderRenderer({
             ? 'bg-blue-500 text-white opacity-100'
             : 'bg-blue-400/80 text-white opacity-0 group-hover/subel:opacity-100'
         }`}>
-          {elementId}
+          {badgeLabel}
         </div>
         {displayChildren}
       </div>
     );
   };
-
-  // Resolve a link target: external URL opens in new tab, otherwise treat as page slug and navigate.
   // No-op while editing (isActive) so clicks select instead of navigate.
   const handleLinkNav = (url?: string) => {
     if (isActive || !url || url === '#') return;
@@ -1156,7 +1155,7 @@ export function BuilderRenderer({
                         ? 'aspect-[3/4]'
                         : 'aspect-square';
                   return (
-                    <SelectableElement key={imgItem.id || index} elementId="media">
+                    <SelectableElement key={imgItem.id || index} elementId={`media:${index}`}>
                       <motion.div
                         whileHover={{ scale: 1.03 }}
                         className={`relative overflow-hidden shadow-md group cursor-pointer bg-slate-900 ${aspectClass}`}

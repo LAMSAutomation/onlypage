@@ -1404,6 +1404,7 @@ export function VisualBuilder({
                   />
                   <BlockContentEditor
                     block={selected}
+                    selectedSubElement={selectedSubElement}
                     onChange={updateSelected}
                   />
                 </Tabs.Content>
@@ -2307,11 +2308,18 @@ export function BuilderDataConnections({
 
 export function BlockContentEditor({
   block,
+  selectedSubElement,
   onChange,
 }: {
   block: WebBlock;
+  selectedSubElement?: string | null;
   onChange: (patch: Partial<WebBlock>) => void;
 }) {
+  const selectedIndex =
+    selectedSubElement && selectedSubElement.includes(":")
+      ? Number(selectedSubElement.split(":")[1])
+      : -1;
+
   const setItems = (key: keyof WebBlock, items: any[]) =>
     onChange({ [key]: items } as Partial<WebBlock>);
   const updateItem = (
@@ -2364,6 +2372,7 @@ export function BlockContentEditor({
             key={image.id}
             index={index}
             label={image.title || `Image ${index + 1}`}
+            isSelected={index === selectedIndex}
             onDuplicate={() =>
               duplicateItem("galleryImages", images, index)
             }
@@ -2461,6 +2470,7 @@ export function BlockContentEditor({
             key={item.id}
             index={index}
             label={item.title}
+            isSelected={index === selectedIndex}
             onDuplicate={() => duplicateItem("features", items, index)}
             onDelete={() => removeItem("features", items, index)}
           >
@@ -2520,6 +2530,7 @@ export function BlockContentEditor({
             key={item.id}
             index={index}
             label={item.tier}
+            isSelected={index === selectedIndex}
             onDuplicate={() => duplicateItem("pricing", items, index)}
             onDelete={() => removeItem("pricing", items, index)}
           >
@@ -3051,6 +3062,7 @@ function InspectorDetails({
 function InspectorItem({
   index,
   label,
+  isSelected = false,
   onDuplicate,
   onDelete,
   children,
@@ -3058,22 +3070,38 @@ function InspectorItem({
   key?: React.Key;
   index: number;
   label: string;
+  isSelected?: boolean;
   onDuplicate: () => void;
   onDelete: () => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(index === 0);
+  const [open, setOpen] = useState(index === 0 || isSelected);
+
+  useEffect(() => {
+    if (isSelected) {
+      setOpen(true);
+    }
+  }, [isSelected]);
+
   return (
     <details
       open={open}
       onToggle={(event) => setOpen(event.currentTarget.open)}
-      className="group overflow-hidden rounded-xl border border-slate-200 bg-white"
+      className={`group overflow-hidden rounded-xl border transition-all ${
+        isSelected
+          ? "border-lime-500 ring-2 ring-lime-200 bg-white shadow-sm"
+          : "border-slate-200 bg-white"
+      }`}
     >
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-3">
-        <span className="grid size-5 shrink-0 place-items-center rounded-md bg-slate-100 text-[9px] font-black text-slate-500">
+        <span className={`grid size-5 shrink-0 place-items-center rounded-md text-[9px] font-black ${
+          isSelected ? "bg-lime-600 text-white" : "bg-slate-100 text-slate-500"
+        }`}>
           {index + 1}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[11px] font-black text-slate-700">
+        <span className={`min-w-0 flex-1 truncate text-[11px] font-black ${
+          isSelected ? "text-lime-950" : "text-slate-700"
+        }`}>
           {label || `Item ${index + 1}`}
         </span>
         <ChevronDown
