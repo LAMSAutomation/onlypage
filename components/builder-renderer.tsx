@@ -6,7 +6,7 @@ import {
   Users, CheckCircle2, MessageSquare, Calendar, ChevronDown, ArrowRight,
   UploadCloud, ShieldCheck, Star, Play, ArrowUpRight, CheckSquare,
   ThumbsUp, Menu, Search, Sparkles,
-  Twitter, Instagram, Github, Lock, CreditCard, ShoppingCart,
+  Twitter, Instagram, Github, Lock, CreditCard, ShoppingCart, ShoppingBag,
   MessageCircle, ArrowUp, Rocket
 } from 'lucide-react';
 import { 
@@ -2843,7 +2843,91 @@ export function BuilderRenderer({
             ========================================================== */}
         {block.type === 'EComStore' && (
           <div className="w-full text-left space-y-6">
-            {block.variant === 'shop-header' ? (
+            {block.variant === 'single-product-hero' ? (
+              /* Single Product Landing Buy Card Layout */
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-elevation-2 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                {/* Product Image Preview */}
+                <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-100 group">
+                  <SelectableElement elementId="media">
+                    <img 
+                      src={(block as any).mediaUrl || ecomProducts?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800'}
+                      alt=""
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </SelectableElement>
+                  <span className="absolute top-4 left-4 bg-emerald-600 text-white font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                    In Stock
+                  </span>
+                </div>
+
+                {/* Product Details & Instant Buy Action */}
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1 text-amber-500 text-xs">
+                      ★★★★★ <span className="text-slate-400 text-[10px] font-bold ml-1">(4.9/5 from 120+ reviews)</span>
+                    </div>
+                    <SelectableElement elementId="title">
+                      <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight" style={titleStyle}>
+                        {resolve(block.title) || ecomProducts?.[0]?.title || 'Signature Wireless Headphones'}
+                      </h2>
+                    </SelectableElement>
+                    <SelectableElement elementId="subtitle">
+                      <p className="text-xs text-slate-500 leading-relaxed" style={subtitleStyle}>
+                        {resolve(block.subtitle) || ecomProducts?.[0]?.description || 'Premium active noise-canceling headphones engineered for crystal clear audio, 40-hour battery life, and ultra-light memory foam comfort.'}
+                      </p>
+                    </SelectableElement>
+                  </div>
+
+                  <div className="flex items-baseline gap-3 pt-2">
+                    <span className="text-3xl font-black text-slate-900 tracking-tight">
+                      {ecomProducts?.[0]?.price ? `₹${ecomProducts[0].price}` : '₹2,499'}
+                    </span>
+                    <span className="text-sm font-bold text-slate-400 line-through">₹3,999</span>
+                    <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      37% OFF
+                    </span>
+                  </div>
+
+                  <ul className="space-y-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
+                    <li className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">✓</span>
+                      <span>Free Express Shipping across India</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">✓</span>
+                      <span>7-Day Replacement & 1-Year Brand Warranty</span>
+                    </li>
+                  </ul>
+
+                  <div className="space-y-2.5 pt-4">
+                    <SelectableElement elementId="button">
+                      <button 
+                        onClick={runBtnAction}
+                        className="w-full button-primary-pill py-3.5 bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                        style={buttonStyle}
+                      >
+                        <ShoppingBag size={16} />
+                        <span>Buy Now — Instant Checkout</span>
+                      </button>
+                    </SelectableElement>
+                    
+                    {(block as any).contactPhone && (
+                      <button 
+                        onClick={() => {
+                          const phone = String((block as any).contactPhone).replace(/\D/g, '');
+                          window.open(`https://wa.me/${phone}?text=${encodeURIComponent('Hi, I want to order this product!')}`, '_blank');
+                        }}
+                        className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <MessageCircle size={15} />
+                        <span>Order via WhatsApp Chat</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+            ) : block.variant === 'shop-header' ? (
               /* Shopify Style Header & Top Announcement Bar */
               <div className="space-y-4">
                 {/* Announcement Bar */}

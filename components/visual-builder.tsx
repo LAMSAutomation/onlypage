@@ -53,7 +53,7 @@ import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP } from "./builder-data";
 import { BuilderRenderer } from "./builder-renderer";
 import type { BlockCSSStyles, WebBlock } from "./website-builder-editor";
 import { supabase } from "@/lib/supabase";
-import { fetchProducts } from "@/lib/ecom-queries";
+import { fetchProducts, upsertProduct } from "@/lib/ecom-queries";
 import type { SiteRecord } from "./ui/onboarding-wizard";
 
 type Viewport = "desktop" | "tablet" | "mobile";
@@ -2971,18 +2971,159 @@ export function BlockContentEditor({
 
   if (block.type === "EComStore") {
     return (
-      <InspectorDetails icon={Phone} title="Store contact">
-        <MiniField
-          label="WhatsApp number"
-          value={block.contactPhone || ""}
-          onChange={(value) => onChange({ contactPhone: value })}
-          placeholder="919876543210"
-        />
-        <p className="mt-2 text-[9px] leading-4 text-slate-400">
-          Products, prices, inventory, and offers are edited in Store → Product
-          catalog. This section controls how that catalog is presented.
-        </p>
-      </InspectorDetails>
+      <div className="space-y-4">
+        <InspectorDetails icon={ShoppingBag} title="Store settings">
+          <MiniField
+            label="Section Title"
+            value={block.title || ""}
+            onChange={(value) => onChange({ title: value })}
+            placeholder="Featured Collection"
+          />
+          <MiniField
+            label="Section Subtitle"
+            value={block.subtitle || ""}
+            onChange={(value) => onChange({ subtitle: value })}
+            placeholder="Explore our latest arrivals"
+          />
+          <MiniField
+            label="WhatsApp Ordering Phone"
+            value={block.contactPhone || ""}
+            onChange={(value) => onChange({ contactPhone: value })}
+            placeholder="919876543210"
+          />
+          {block.variant === "single-product-hero" && (
+            <MiniField
+              label="Product Showcase Image"
+              value={(block as any).mediaUrl || ""}
+              onChange={(value) => onChange({ mediaUrl: value } as any)}
+              placeholder="https://..."
+              allowUpload
+            />
+          )}
+        </InspectorDetails>
+
+        <div className="rounded-2xl border border-lime-200 bg-lime-50/70 p-3.5 space-y-2.5">
+          <div className="flex items-center gap-2">
+            <span className="grid size-7 place-items-center rounded-lg bg-lime-600 text-white">
+              <Database size={14} />
+            </span>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-lime-950">
+                Store Catalog Quick Tools
+              </p>
+              <p className="text-[9px] text-lime-800/80">
+                Import CSV or seed 5 sample products into your Supabase database.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <button
+              type="button"
+              onClick={async () => {
+                const sampleProducts = [
+                  {
+                    title: "Wireless ANC Headphones",
+                    description: "Active noise-canceling headphones with 40h battery.",
+                    price: 2499,
+                    category: "Electronics",
+                    images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800"],
+                    stock: 50,
+                    status: "active"
+                  },
+                  {
+                    title: "Minimalist Smart Watch",
+                    description: "Sleek AMOLED fitness watch with heart-rate sensor.",
+                    price: 3499,
+                    category: "Electronics",
+                    images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800"],
+                    stock: 25,
+                    status: "active"
+                  },
+                  {
+                    title: "Organic Artisan Coffee Beans",
+                    description: "100% Arabica single-origin roasted coffee.",
+                    price: 599,
+                    category: "Food & Beverage",
+                    images: ["https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&q=80&w=800"],
+                    stock: 100,
+                    status: "active"
+                  },
+                  {
+                    title: "Handcrafted Leather Wallet",
+                    description: "Genuine full-grain bifold leather wallet.",
+                    price: 1299,
+                    category: "Accessories",
+                    images: ["https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&q=80&w=800"],
+                    stock: 40,
+                    status: "active"
+                  },
+                  {
+                    title: "Canvas Everyday Tote Bag",
+                    description: "Durable eco-friendly cotton canvas bag.",
+                    price: 899,
+                    category: "Fashion",
+                    images: ["https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=800"],
+                    stock: 75,
+                    status: "active"
+                  }
+                ];
+
+                for (const p of sampleProducts) {
+                  await upsertProduct({
+                    site_id: (block as any).siteId || "default",
+                    ...p
+                  });
+                }
+                alert("✓ 5 Sample E-Commerce products imported successfully into Supabase!");
+              }}
+              className="rounded-xl border border-lime-300 bg-white px-2.5 py-2 text-center text-[10px] font-black text-lime-900 transition hover:bg-lime-100 cursor-pointer"
+            >
+              ⚡ Add Sample Items
+            </button>
+
+            <label className="rounded-xl border border-lime-300 bg-white px-2.5 py-2 text-center text-[10px] font-black text-lime-900 transition hover:bg-lime-100 cursor-pointer block">
+              <input
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const text = await file.text();
+                  const lines = text.split("\n").filter(Boolean);
+                  let imported = 0;
+                  for (let i = 1; i < lines.length; i++) {
+                    const parts = lines[i].split(",");
+                    if (parts.length >= 2) {
+                      const title = parts[0]?.trim();
+                      const price = Number(parts[1]?.trim()) || 0;
+                      const description = parts[2]?.trim() || "";
+                      const category = parts[3]?.trim() || "General";
+                      const image = parts[4]?.trim() || "";
+                      if (title && price) {
+                        await upsertProduct({
+                          site_id: (block as any).siteId || "default",
+                          title,
+                          price,
+                          description,
+                          category,
+                          images: image ? [image] : [],
+                          stock: 10,
+                          status: "active"
+                        });
+                        imported++;
+                      }
+                    }
+                  }
+                  alert(`✓ ${imported} CSV Products imported into store catalog!`);
+                }}
+              />
+              <span>📁 Import CSV File</span>
+            </label>
+          </div>
+        </div>
+      </div>
     );
   }
 

@@ -124,10 +124,10 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'quiet-luxury', name: 'Private Consultation Form', description: 'Refined intake experience for premium appointments and enquiries', tags: ['Luxury', 'Consultation', 'Form'] },
     { id: 'bold-poster', name: 'Campaign Signup Form', description: 'High-energy lead capture for launches, events, and limited offers', tags: ['Bold', 'Campaign', 'Lead'] },
     { id: 'soft-gradient', name: 'Friendly Enquiry Form', description: 'Approachable rounded form styling that reduces visual friction', tags: ['Soft', 'Friendly', 'Form'] },
-    { id: 'mono-grid', name: 'Professional Brief Form', description: 'Structured intake for agencies, consultants, and B2B services', tags: ['Mono', 'Brief', 'Professional'] },
-    { id: 'glass-panel', name: 'Glass Waitlist Form', description: 'Layered high-end signup panel for digital products and communities', tags: ['Glass', 'Waitlist', 'Tech'] }
+    { id: 'mono-grid', name: 'Professional Brief Form', description: 'Structured intake for agencies, consultants, and B2B services', tags: ['Mono', 'Brief', 'Professional'] }
   ],
   EComStore: [
+    { id: 'single-product-hero', name: 'Single Product Landing Buy Card', description: 'Hero product showcase card with instant Buy Now button for single-item landing pages', tags: ['LandingPage', 'SingleProduct', 'BuyNow'] },
     { id: 'shop-header', name: 'Shopify Style Header & Announcement', description: 'Top announcement bar + brand logo + shop links + search & cart pill', tags: ['Header', 'Shopify', 'Nav'] },
     { id: 'product-grid-filter', name: 'Untitled UI Filterable Product Catalog', description: 'Category pills, tag filters, price range, sorting & SEO alt tags', tags: ['Catalog', 'UntitledUI', 'Shop'] },
     { id: 'offer-gallery', name: 'Featured Offers & Flash Sales Gallery', description: 'Shows products tagged OnSale/Featured with offer badges & countdown', tags: ['Offers', 'Sales', 'Badges'] },

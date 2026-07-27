@@ -24,6 +24,7 @@ interface OnboardingWizardProps {
 type ProjectType = { id: DashboardMode; label: string; desc: string; icon: React.ComponentType<any>; pages: string[] };
 
 const PROJECT_TYPES: ProjectType[] = [
+  { id: 'store', label: 'E-Commerce Store', desc: 'Online shop, product catalog & instant checkout', icon: Store, pages: ['Home', 'Shop', 'Cart', 'Policies'] },
   { id: 'business', label: 'Business / Service', desc: 'Agencies, consultants, local services', icon: Building2, pages: ['Home', 'About', 'Services', 'Contact'] },
   { id: 'salon', label: 'Salon / Wellness', desc: 'Salons, spas, clinics, studios', icon: Scissors, pages: ['Home', 'Services', 'Bookings', 'Contact'] },
   { id: 'creator', label: 'Creator / Portfolio', desc: 'Artists, freelancers, personal brands', icon: Palette, pages: ['Home', 'Work', 'About', 'Contact'] },

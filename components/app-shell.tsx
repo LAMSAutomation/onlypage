@@ -42,7 +42,7 @@ const SIDEBAR_ITEMS: NavigationItem[] = [
   { id: 'billing', label: 'Billing', icon: CreditCard }
 ];
 
-export type DashboardMode = 'business' | 'student' | 'salon' | 'creator';
+export type DashboardMode = 'store' | 'business' | 'student' | 'salon' | 'creator';
 
 interface AppShellProps {
   children: React.ReactNode;
