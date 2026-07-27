@@ -43,6 +43,8 @@ import {
   Tablet,
   Trash2,
   Type,
+  UploadCloud,
+  Loader2,
   Users,
   Star,
   WandSparkles,
@@ -3138,20 +3140,114 @@ function MiniField({
   onChange,
   placeholder,
   multiline = false,
+  allowUpload,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  allowUpload?: boolean;
 }) {
+  const [uploading, setUploading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const shouldShowUpload =
+    allowUpload ?? /url|image|photo|avatar|logo|src/i.test(label);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setStatusMessage(null);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `uploads/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from("site-assets")
+        .upload(fileName, file, { cacheControl: "3600", upsert: true });
+
+      if (error) {
+        console.warn("Supabase storage bucket upload notice:", error.message);
+        // Fallback: convert file to data URL if bucket is missing or unauthenticated
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            onChange(event.target.result as string);
+            setStatusMessage("Uploaded locally");
+            setTimeout(() => setStatusMessage(null), 3000);
+          }
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("site-assets")
+        .getPublicUrl(fileName);
+
+      if (publicUrlData?.publicUrl) {
+        onChange(publicUrlData.publicUrl);
+        setStatusMessage("Uploaded to Supabase");
+        setTimeout(() => setStatusMessage(null), 3000);
+      }
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setStatusMessage("Upload error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const className =
     "w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-medium leading-5 outline-none transition focus:border-lime-500 focus:ring-3 focus:ring-lime-100";
+
   return (
     <label className="mt-3 block first:mt-0">
-      <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-400">
-        {label}
-      </span>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="block text-[9px] font-black uppercase tracking-wider text-slate-400">
+          {label}
+        </span>
+        {shouldShowUpload && (
+          <div className="flex items-center gap-1.5">
+            {statusMessage && (
+              <span className="text-[8px] font-bold text-lime-700">
+                {statusMessage}
+              </span>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex cursor-pointer items-center gap-1 rounded border border-lime-200 bg-lime-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-lime-700 transition hover:border-lime-300 hover:bg-lime-100 disabled:opacity-50"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={10} className="animate-spin text-lime-700" />
+                  <span>Uploading…</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud size={10} className="text-lime-700" />
+                  <span>Upload Image</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
       {multiline ? (
         <textarea
           value={value}
@@ -3417,17 +3513,13 @@ function StylePanel({
           </label>
         )}
         {fillMode === "image" && (
-          <label className="mt-3 block">
-            <span className="mb-2 block text-[10px] font-bold text-slate-500">
-              Background image URL
-            </span>
-            <input
-              value={styles.bgImageUrl || ""}
-              onChange={(event) => onChange({ bgImageUrl: event.target.value })}
-              placeholder="https://..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none focus:border-lime-600"
-            />
-          </label>
+          <MiniField
+            label="Background image URL"
+            value={styles.bgImageUrl || ""}
+            onChange={(value) => onChange({ bgImageUrl: value })}
+            placeholder="https://..."
+            allowUpload
+          />
         )}
         <div className="mt-3 grid grid-cols-2 gap-3">
           <ColorField
