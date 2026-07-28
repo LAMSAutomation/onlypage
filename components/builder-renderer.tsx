@@ -2283,11 +2283,13 @@ export function BuilderRenderer({
             {/* nav-double-header */}
             {block.variant === 'nav-double-header' && (
               <div className="w-full flex flex-col border-b border-slate-800">
-                <div className="bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase py-2 px-3 text-center flex items-center justify-center gap-1.5">
-                  <Rocket size={11} />
-                  <span>NEW VERSION 2.5 BRUTALIST DESIGN KITS ARE LIVE</span>
-                  <span className="underline hover:opacity-85 cursor-pointer ml-1 flex items-center gap-0.5">EXPLORE BUNDLES <ArrowRight size={10} /></span>
-                </div>
+                {isActive && (
+                  <div className="bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase py-2 px-3 text-center flex items-center justify-center gap-1.5">
+                    <Rocket size={11} />
+                    <span>NEW VERSION 2.5 BRUTALIST DESIGN KITS ARE LIVE</span>
+                    <span className="underline hover:opacity-85 cursor-pointer ml-1 flex items-center gap-0.5">EXPLORE BUNDLES <ArrowRight size={10} /></span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between p-4 bg-slate-950">
                   <SelectableElement elementId="title">
                     <span className="font-extrabold text-sm">{block.title || 'DoubleDeck'}</span>
