@@ -27,6 +27,7 @@ import { DarkModeProvider } from '@/hooks/use-dark-mode';
 import { I18nProvider } from '@/hooks/use-i18n';
 import { Persona } from './types';
 import { PERSONAS } from './data';
+import { supabase } from '@/lib/supabase';
 import PublicSiteView from './components/PublicSiteView';
 
 const getSubdomain = (): string | null => {
