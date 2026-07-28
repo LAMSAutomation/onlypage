@@ -23,6 +23,8 @@ import PricingSection from './components/PricingSection';
 import LoginForm from '@/components/ui/login-form';
 import EfferdDashboard2 from '@/components/ui/efferd-dashboard-2';
 import OnboardingWizard, { SiteRecord } from '@/components/ui/onboarding-wizard';
+import { DarkModeProvider } from '@/hooks/use-dark-mode';
+import { I18nProvider } from '@/hooks/use-i18n';
 import { Persona } from './types';
 import { PERSONAS } from './data';
 import { supabase } from '@/lib/supabase';
@@ -139,15 +141,19 @@ export default function App() {
       return <OnboardingWizard onComplete={(created) => setSite(created)} />;
     }
     return (
-      <EfferdDashboard2
-        site={site}
-        onUpdateSite={(updatedSite) => setSite(updatedSite)}
-        onLogout={async () => {
-          await supabase.auth.signOut();
-          setSite(null);
-          setIsLoggedIn(false);
-        }}
-      />
+      <DarkModeProvider>
+        <I18nProvider>
+          <EfferdDashboard2
+            site={site}
+            onUpdateSite={(updatedSite) => setSite(updatedSite)}
+            onLogout={async () => {
+              await supabase.auth.signOut();
+              setSite(null);
+              setIsLoggedIn(false);
+            }}
+          />
+        </I18nProvider>
+      </DarkModeProvider>
     );
   }
 

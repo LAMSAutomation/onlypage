@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles, ArrowRight, ArrowLeft, Check, Loader2, Globe, Store,
-  Scissors, Palette, GraduationCap, Building2, AlertCircle, CheckCircle2,
+  Scissors, Palette, GraduationCap, Building2, AlertCircle, CheckCircle2, FileText,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getLegalPagesForBusiness, dashboardModeToCategory } from '@/lib/legal-templates';
 import type { DashboardMode } from '@/components/app-shell';
 
 export interface SiteRecord {
@@ -48,6 +49,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
   const [selectedPages, setSelectedPages] = useState<string[]>(PROJECT_TYPES[0].pages);
   const [subdomain, setSubdomain] = useState('');
   const [subEdited, setSubEdited] = useState(false);
+  const [includeLegal, setIncludeLegal] = useState(true);
 
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -122,14 +124,40 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       }
 
       // Seed the chosen starter pages.
-      if (selectedPages.length) {
-        const rows = selectedPages.map((name, i) => ({
+      const allPages = [...selectedPages];
+      if (includeLegal) {
+        const category = dashboardModeToCategory(projectType.id);
+        const legalPages = getLegalPagesForBusiness(businessName, category);
+        for (const lp of legalPages) {
+          // Only add if not already selected
+          if (!allPages.some(p => p.toLowerCase() === lp.slug.toLowerCase())) {
+            allPages.push(lp.title);
+          }
+        }
+      }
+      if (allPages.length) {
+        const rows = allPages.map((name, i) => ({
           site_id: site.id,
           name,
           slug: i === 0 ? 'home' : slugify(name),
           position: i,
         }));
         await supabase.from('pages').insert(rows);
+      }
+
+      // Also store the legal content as page blocks in the theme
+      if (includeLegal) {
+        const category = dashboardModeToCategory(projectType.id);
+        const legalPages = getLegalPagesForBusiness(businessName, category);
+        const legalContent: Record<string, string> = {};
+        for (const lp of legalPages) {
+          legalContent[lp.slug] = lp.content;
+        }
+        // Store legal content in site theme so CMS can display them
+        await supabase
+          .from('sites')
+          .update({ theme: { ...site.theme, legalPages: legalContent } })
+          .eq('id', site.id);
       }
 
       onComplete(site as SiteRecord);
@@ -240,6 +268,30 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 mx-auto"><Globe size={22} /></div>
                   <h2 className="text-2xl font-bold text-slate-900">Claim your address</h2>
                   <p className="text-sm text-slate-500 font-medium">This is where your page will live.</p>
+                </div>
+
+                {/* Legal pages toggle */}
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl p-4 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                    <FileText size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeLegal}
+                        onChange={(e) => setIncludeLegal(e.target.checked)}
+                        className="accent-indigo-600 rounded"
+                      />
+                      <span className="text-xs font-extrabold text-slate-800">Auto-add legal pages</span>
+                    </label>
+                    <p className="text-[10px] text-slate-500 font-medium mt-1 leading-tight">
+                      We'll create ready-to-use Terms &amp; Conditions and Privacy Policy pages. 
+                      {projectType.id === 'store' && ' For ecommerce, we also add Shipping and Refund policies (required by Indian law).'}
+                      {projectType.id === 'salon' || projectType.id === 'business' ? ' We also add a Cancellation/Refund policy.' : ''}
+                      You can edit them anytime.
+                    </p>
+                  </div>
                 </div>
 
                 <div>

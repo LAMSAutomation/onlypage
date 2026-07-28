@@ -68,7 +68,7 @@ export function MovingBorder({
   className?: string;
   containerClassName?: string;
 }) {
-  const pathRef = useRef<any>();
+  const pathRef = useRef<any>(null);
   const progress = useAnimation();
 
   useEffect(() => {
@@ -322,7 +322,7 @@ export function TextReveal({ text, className = "" }: { text: string; className?:
 
   const childVariants = {
     hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
-    visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.4, ease: "easeOut" } },
+    visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.4, ease: "easeInOut" as any } },
   };
 
   return (

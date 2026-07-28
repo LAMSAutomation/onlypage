@@ -1,4 +1,5 @@
 import { INDUSTRY_PRESETS } from '@/components/builder-data';
+import { getLegalPagesForBusiness, launchTypeToCategory } from '@/lib/legal-templates';
 
 export type LaunchBusinessType = 'local-service' | 'salon' | 'clinic' | 'creator' | 'real-estate';
 export type LaunchStyle = 'Modern' | 'Warm' | 'Bold';
@@ -153,6 +154,38 @@ export function createLaunchPages(businessName: string, kit: LaunchKitConfig): L
   });
   if (kit.tools.includes('bookings')) pages.push({ name: 'Bookings', slug: 'bookings', seoTitle: `Book ${businessName}`, seoDesc: `Request a booking with ${businessName}.`, blocks: [formBlock('Request a booking', 'Choose your preferred service and time. We will confirm shortly.', 'Request booking', 'appointment')] });
   if (kit.tools.includes('payments')) pages.push({ name: 'Shop', slug: 'shop', seoTitle: `${businessName} Shop`, seoDesc: `Shop products from ${businessName}.`, blocks: [clone(homeBlocks.find((block) => block.type === 'EComStore') || formBlock(`Shop ${businessName}`, 'Products will appear here after you add them.', 'Open products'))] });
+
+  // Add legal pages (pre-built templates, no AI needed)
+  const bizCategory = launchTypeToCategory(kit.businessType);
+  const legalTemplates = getLegalPagesForBusiness(businessName, bizCategory);
+  for (const lp of legalTemplates) {
+    // Only add if not already present
+    if (!pages.some(p => p.slug === lp.slug)) {
+      pages.push({
+        name: lp.title,
+        slug: lp.slug,
+        seoTitle: lp.seoTitle,
+        seoDesc: lp.seoDesc,
+        blocks: [{
+          type: 'Text',
+          variant: 'article-body',
+          badge: 'LEGAL',
+          title: lp.title,
+          content: lp.content,
+          styles: {
+            backgroundColor: '#ffffff',
+            textColor: '#0f172a',
+            subtitleColor: '#475569',
+            fontFamily: 'Inter',
+            titleSize: 32,
+            bodySize: 14,
+            paddingTop: 60,
+            paddingBottom: 60,
+          },
+        }],
+      });
+    }
+  }
 
   return pages;
 }

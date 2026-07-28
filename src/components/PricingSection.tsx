@@ -5,8 +5,8 @@
 
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { PRICING_PLANS } from '../data';
-import { Check, Info, ShieldCheck, Sparkles } from 'lucide-react';
+import { PRICING_PLANS, ADDONS } from '../data';
+import { Check, Info, ShieldCheck, Sparkles, Plus } from 'lucide-react';
 
 interface PricingSectionProps {
   onPlanSelect: (planName: string) => void;
@@ -51,18 +51,15 @@ export default function PricingSection({ onPlanSelect }: PricingSectionProps) {
               style={{ x: billingInterval === 'annual' ? 20 : 0 }}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             />
-          </button>
-          <div className="flex items-center space-x-1.5">
+          </button>              <div className="flex items-center space-x-1.5">
             <span className={`text-xs font-bold ${billingInterval === 'annual' ? 'text-slate-900' : 'text-slate-400'}`}>
               Billed Annually
             </span>
             <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-700 border border-emerald-200/50 px-2 py-0.5 rounded-full select-none uppercase tracking-wide animate-pulse-subtle">
-              Save 20%
+              Save 25%
             </span>
           </div>
-        </div>
-
-        {/* Pricing Cards Grid */}
+        </div>          {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
           {PRICING_PLANS.map((plan) => {
             const displayPrice = billingInterval === 'annual' ? plan.priceAnnual : plan.price;
@@ -98,9 +95,16 @@ export default function PricingSection({ onPlanSelect }: PricingSectionProps) {
                     <span className="text-4xl font-extrabold text-slate-900 tracking-tight">{displayPrice}</span>
                     <span className="text-xs font-semibold text-slate-400">/ month</span>
                   </div>
-                  {billingInterval === 'annual' && plan.name !== 'Free' && (
-                    <p className="text-[10px] text-emerald-600 font-bold font-mono mt-1">Billed annually (Save ₹600/yr)</p>
-                  )}
+                  {billingInterval === 'annual' && plan.name !== 'Free' && (() => {
+                    const monthly = parseInt(plan.price.replace(/[^0-9]/g, ''));
+                    const annual = parseInt(plan.priceAnnual.replace(/[^0-9]/g, ''));
+                    const savingPerYear = (monthly - annual) * 12;
+                    return (
+                      <p className="text-[10px] text-emerald-600 font-bold font-mono mt-1">
+                        Billed annually (Save ₹{savingPerYear.toLocaleString('en-IN')}/yr)
+                      </p>
+                    );
+                  })()}
 
                   <hr className="my-6 border-slate-100" />
 
@@ -154,6 +158,61 @@ export default function PricingSection({ onPlanSelect }: PricingSectionProps) {
             <ShieldCheck size={14} className="text-emerald-500" />
             7-day risk-free trial
           </span>
+        </div>
+
+        {/* --- ADD-ONS SECTION --- */}
+        <div className="mt-20 max-w-5xl mx-auto">
+          <div className="mb-8">
+            <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full inline-flex items-center gap-1">
+              <Plus size={12} /> Add-ons
+            </span>
+            <h3 className="text-2xl font-extrabold text-slate-900 mt-3 tracking-tight">
+              Pay only for what you need
+            </h3>
+            <p className="text-sm text-slate-500 mt-2 font-medium max-w-xl">
+              Add these extras to any plan. Only pay for what your business actually uses.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {ADDONS.map((addon) => (
+              <motion.div
+                key={addon.name}
+                whileHover={{ y: -2 }}
+                className="bg-white border border-slate-200/70 rounded-xl p-4 text-left hover:border-indigo-200/50 hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-sm font-bold text-slate-900 leading-tight">{addon.name}</h4>
+                  <span className="shrink-0 text-xs font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100/50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                    {addon.price}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5 font-medium leading-relaxed">
+                  {addon.description}
+                </p>
+                <div className="mt-2.5 flex flex-wrap gap-1">
+                  {addon.availableOn.map((plan) => (
+                    <span
+                      key={plan}
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                        plan === 'Free'
+                          ? 'bg-slate-100 text-slate-500'
+                          : plan === 'Starter'
+                          ? 'bg-indigo-50 text-indigo-600'
+                          : 'bg-emerald-50 text-emerald-700'
+                      }`}
+                    >
+                      {plan}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <p className="mt-6 text-[11px] text-slate-400 font-semibold text-center">
+            Add-ons are billed monthly alongside your plan. Cancel any add-on anytime from your dashboard.
+          </p>
         </div>
 
       </div>

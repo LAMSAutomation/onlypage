@@ -59,7 +59,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-3.6-flash",
       contents: `You are an expert design and copywriter agent for the OnlyPage builder. 
 Transform the styles and/or content properties of the following JSON array of sections to fit the user's request.
 User request: "${prompt}"

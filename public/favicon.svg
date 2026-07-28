@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18201d" />
+      <stop offset="100%" stop-color="#0a0f0d" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d9f99d" />
+      <stop offset="50%" stop-color="#bef264" />
+      <stop offset="100%" stop-color="#84cc16" />
+    </linearGradient>
+  </defs>
+  <!-- Background Squircle -->
+  <rect x="16" y="16" width="480" height="480" rx="120" fill="url(#bgGrad)" />
+  <rect x="20" y="20" width="472" height="472" rx="116" fill="none" stroke="#bef264" stroke-width="6" stroke-opacity="0.25" />
+  
+  <!-- Stylized 'O' Page Icon -->
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M256 120C181.167 120 120 181.167 120 256C120 330.833 181.167 392 256 392C330.833 392 392 330.833 392 256C392 181.167 330.833 120 256 120ZM184 256C184 216.235 216.235 184 256 184C295.765 184 328 216.235 328 256C328 295.765 295.765 328 256 328C216.235 328 184 295.765 184 256Z" fill="url(#accentGrad)" />
+  
+  <!-- Active Green Pulse Dot -->
+  <circle cx="340" cy="172" r="32" fill="#bef264" />
+  <circle cx="340" cy="172" r="20" fill="#18201d" />
+  <circle cx="340" cy="172" r="12" fill="#bef264" />
+</svg>

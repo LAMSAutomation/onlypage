@@ -7,7 +7,7 @@ import {
   Eye, Globe, RefreshCw, X, Sliders as SliderIcon, Type as FontIcon, 
   Grid, Compass, Info, CheckSquare, MessageSquare, Briefcase, DollarSign, List,
   MapPin, Phone, Mail, Award, ThumbsUp, Star, Palette as ThemeIcon,
-  UploadCloud, Loader2, Files, Command, PanelLeft, PanelRight
+  UploadCloud, Loader2, Files, Command, PanelLeft, PanelRight, Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP, INDUSTRY_PRESETS } from './builder-data';
@@ -81,10 +81,11 @@ export interface BlockCSSStyles {
 
 export interface WebBlock {
   id: string;
-  type: 'Hero' | 'Features' | 'Pricing' | 'Testimonials' | 'Contact' | 'Footer' | 'Gallery' | 'Business' | 'Forms' | 'Special' | 'CTA' | 'Navigation' | 'Map' | 'EComStore';
+  type: 'Text' | 'Hero' | 'Features' | 'Pricing' | 'Testimonials' | 'Contact' | 'Footer' | 'Gallery' | 'Business' | 'Forms' | 'Special' | 'CTA' | 'Navigation' | 'Map' | 'EComStore';
   title: string;
   subtitle: string;
   badge?: string;
+  showBadge?: boolean;
   imageUrl?: string;
   btnText?: string;
   variant?: string;
@@ -146,7 +147,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
   // --- CORE STATE ---
   const [blocks, setBlocks] = useState<WebBlock[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [selectedSubElement, setSelectedSubElement] = useState<'background' | 'badge' | 'title' | 'subtitle' | 'button' | 'card' | 'media' | null>(null);
+  const [selectedSubElement, setSelectedSubElement] = useState<any>(null);
   const [hoveredBlockId, setHoveredBlockId] = useState<string | null>(null);
   
   // Navigation & Workspace Preferences
@@ -483,8 +484,10 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
               borderStyle: 'solid',
               boxShadow: 'none',
               buttonBorderRadius: 8,
-              buttonHoverScale: true
-            }
+              buttonHoverScale: true,
+              backgroundGradient: '',
+              lineHeight: 'normal'
+            } as any
           });
         }
 
@@ -532,8 +535,10 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
               borderStyle: 'solid',
               boxShadow: 'none',
               buttonBorderRadius: 8,
-              buttonHoverScale: true
-            }
+              buttonHoverScale: true,
+              backgroundGradient: '',
+              lineHeight: 'normal'
+            } as any
           });
         }
 
@@ -1013,8 +1018,8 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
   };
 
   // Single image upload to Supabase Storage
-  const handleSingleImageUpload = async (file: File, target: 'content' | 'style', fieldName: any) => {
-    if (!selectedBlockId || !file) return;
+  const handleSingleImageUpload = async (file: File, target?: 'content' | 'style', fieldName?: any): Promise<string | null> => {
+    if (!selectedBlockId || !file) return null;
     setUploadingImage(true);
     try {
       const fileExt = file.name.split('.').pop();
@@ -1032,15 +1037,17 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
 
       const url = publicUrlData.publicUrl;
 
-      if (target === 'content') {
+      if (target === 'content' && fieldName) {
         handleUpdateBlockContent(fieldName, url);
-      } else {
+      } else if (target === 'style' && fieldName) {
         handleUpdateBlockStyle(fieldName, url);
       }
       triggerToast('Image uploaded successfully!', 'success');
+      return url;
     } catch (err: any) {
       console.error(err);
-      triggerToast('Failed to upload image: ' + err.message, 'error');
+      triggerToast('Upload failed: ' + (err.message || 'Error saving file'), 'error');
+      return null;
     } finally {
       setUploadingImage(false);
     }
@@ -1152,8 +1159,8 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
     const isDark = ['gradient-glow', 'saas-modern', '3d-mesh', 'aurora-sky', 'video-simulate', 'bento-box', 'gradient-cta', 'app-download'].includes(variantKey);
     
     const blockStyles: BlockCSSStyles = {
-      paddingTop: 80,
-      paddingBottom: 80,
+      paddingTop: category === 'Navigation' ? 12 : 80,
+      paddingBottom: category === 'Navigation' ? 12 : 80,
       paddingLeft: 24,
       paddingRight: 24,
       gapSize: 24,
@@ -3292,6 +3299,96 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                           </div>
                         )}
 
+                        {/* 5.5 BADGE CONTROLS */}
+                        {selectedSubElement === 'badge' && (
+                          <div className="space-y-3.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/80">
+                            <p className="text-[10px] font-extrabold uppercase text-lime-400 tracking-wider flex items-center gap-1.5 pb-2 border-b border-slate-800">
+                              <Tag size={11} />
+                              <span>Style Badge & Eyebrow Pill</span>
+                            </p>
+
+                            <div className="flex items-center justify-between">
+                              <label className="text-[10px] font-bold text-slate-400">Badge Visibility</label>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBlockContent('showBadge' as any, selectedBlock.showBadge === false ? true : false)}
+                                className={`px-2 py-0.5 rounded text-[10px] font-black uppercase transition ${
+                                  selectedBlock.showBadge !== false ? 'bg-lime-500/20 text-lime-400 border border-lime-500/40' : 'bg-slate-800 text-slate-400'
+                                }`}
+                              >
+                                {selectedBlock.showBadge !== false ? 'Visible' : 'Hidden'}
+                              </button>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 block">Badge Alignment</label>
+                              <select 
+                                value={(selectedBlock.styles as any).badgeAlign || 'left'}
+                                onChange={(e) => handleUpdateBlockStyle('badgeAlign' as any, e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-300 outline-none cursor-pointer"
+                              >
+                                <option value="left">Align Left</option>
+                                <option value="center">Align Center</option>
+                                <option value="right">Align Right</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 block">Shape & Container Style</label>
+                              <select 
+                                value={(selectedBlock.styles as any).badgeShape || 'pill'}
+                                onChange={(e) => handleUpdateBlockStyle('badgeShape' as any, e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-300 outline-none cursor-pointer"
+                              >
+                                <option value="pill">Rounded Pill (Default)</option>
+                                <option value="square">Sharp Tag (Square)</option>
+                                <option value="soft">Soft Tag (Rounded corners)</option>
+                                <option value="outline">Bordered Outline</option>
+                                <option value="plain">Plain Eyebrow Text (No container)</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 block">Text Size</label>
+                              <select 
+                                value={(selectedBlock.styles as any).badgeSize || 'sm'}
+                                onChange={(e) => handleUpdateBlockStyle('badgeSize' as any, e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-xs text-slate-300 outline-none cursor-pointer"
+                              >
+                                <option value="sm">Small (10px)</option>
+                                <option value="md">Medium (12px)</option>
+                                <option value="lg">Large (14px)</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 block">Badge Background Color</label>
+                              <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded p-1">
+                                <input 
+                                  type="color" 
+                                  value={selectedBlock.styles.badgeBgColor || '#1e293b'}
+                                  onChange={(e) => handleUpdateBlockStyle('badgeBgColor', e.target.value)}
+                                  className="w-5 h-5 border-0 rounded cursor-pointer p-0 bg-transparent"
+                                />
+                                <span className="text-[10px] font-mono text-slate-300 uppercase">{selectedBlock.styles.badgeBgColor || '#1e293b'}</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-bold text-slate-400 block">Badge Text Color</label>
+                              <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded p-1">
+                                <input 
+                                  type="color" 
+                                  value={selectedBlock.styles.badgeTextColor || '#38bdf8'}
+                                  onChange={(e) => handleUpdateBlockStyle('badgeTextColor', e.target.value)}
+                                  className="w-5 h-5 border-0 rounded cursor-pointer p-0 bg-transparent"
+                                />
+                                <span className="text-[10px] font-mono text-slate-300 uppercase">{selectedBlock.styles.badgeTextColor || '#38bdf8'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* 6. MEDIA CONTROLS */}
                         {selectedSubElement === 'media' && (
                           <div className="space-y-3.5 bg-slate-900/40 p-3.5 rounded-xl border border-slate-800/80">
@@ -4066,19 +4163,84 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                       </div>
                     </div>
                     
-                    {/* Badge Copy */}
-                    {selectedBlock.badge !== undefined && (
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide">Header Badge Text</label>
-                        <input 
-                          type="text" 
-                          value={selectedBlock.badge}
-                          onChange={(e) => handleUpdateBlockContent('badge', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 outline-none focus:border-blue-500"
-                          placeholder="EXCLUSIVITY BADGE"
-                        />
+                    {/* Badge Copy & Visibility Controls */}
+                    <div className="space-y-2 p-3 bg-slate-900/60 border border-slate-800 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-extrabold uppercase text-slate-300 tracking-wide flex items-center gap-1.5">
+                          <Award size={12} className="text-amber-400" />
+                          <span>Header Badge Pill</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase cursor-pointer flex items-center gap-1.5 select-none">
+                            <span>{selectedBlock.showBadge !== false && Boolean(selectedBlock.badge) ? 'Visible' : 'Hidden'}</span>
+                            <input 
+                              type="checkbox"
+                              checked={selectedBlock.showBadge !== false && Boolean(selectedBlock.badge)}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                if (isChecked) {
+                                  handleUpdateBlockContent('showBadge', true);
+                                  if (!selectedBlock.badge) {
+                                    handleUpdateBlockContent('badge', 'FEATURED SECTION');
+                                  }
+                                } else {
+                                  handleUpdateBlockContent('showBadge', false);
+                                }
+                              }}
+                              className="w-3.5 h-3.5 accent-blue-500 rounded cursor-pointer"
+                            />
+                          </label>
+                        </div>
                       </div>
-                    )}
+
+                      {selectedBlock.showBadge !== false && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              value={selectedBlock.badge || ''}
+                              onChange={(e) => {
+                                handleUpdateBlockContent('badge', e.target.value);
+                                if (e.target.value && selectedBlock.showBadge === false) {
+                                  handleUpdateBlockContent('showBadge', true);
+                                }
+                              }}
+                              className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-blue-500 font-medium"
+                              placeholder="e.g. INSTANT RESERVATION or SPECIALTIES"
+                            />
+                            {selectedBlock.badge ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleUpdateBlockContent('badge', '');
+                                  handleUpdateBlockContent('showBadge', false);
+                                }}
+                                className="px-2.5 py-1.5 bg-red-950/50 hover:bg-red-900/60 border border-red-800/50 rounded-lg text-[10px] font-extrabold text-red-300 transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                                title="Remove badge text and turn off"
+                              >
+                                <Trash2 size={11} />
+                                <span>Turn Off</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleUpdateBlockContent('badge', 'FEATURED');
+                                  handleUpdateBlockContent('showBadge', true);
+                                }}
+                                className="px-2.5 py-1.5 bg-blue-950/50 hover:bg-blue-900/60 border border-blue-800/50 rounded-lg text-[10px] font-extrabold text-blue-300 transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                              >
+                                <Plus size={11} />
+                                <span>Add Badge</span>
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-[8.5px] text-slate-500 leading-normal">
+                            Edit pill text, or click "Turn Off" / uncheck box to hide badge from top of section.
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Title Copy */}
                     <div className="space-y-1.5">
@@ -4896,6 +5058,183 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                                     }}
                                     className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 resize-none outline-none"
                                   />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 7. GALLERY & MARQUEE LOGOS ITEM EDITOR */}
+                    {(selectedBlock.type === 'Gallery' || selectedBlock.variant === 'marquee-logos' || selectedBlock.galleryImages) && (
+                      <div className="space-y-3.5 pt-4 border-t border-slate-800">
+                        <div className="flex justify-between items-center">
+                          <p className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wide flex items-center gap-1">
+                            <Sparkles size={11} className="text-amber-400" />
+                            <span>Marquee Ticker & Gallery Items ({
+                              (selectedBlock.galleryImages || [
+                                { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                              ]).length
+                            })</span>
+                          </p>
+                          <button 
+                            onClick={() => {
+                              const currentImages = selectedBlock.galleryImages || [
+                                { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                              ];
+                              const newId = `img-${Date.now()}`;
+                              const newImg = { 
+                                id: newId, 
+                                title: 'NEW BRAND BADGE', 
+                                subtitle: 'Featured Badge',
+                                url: 'https://images.unsplash.com/photo-1522542550221-31fd19575a2d?auto=format&fit=crop&q=80&w=150' 
+                              };
+                              handleUpdateBlockContent('galleryImages', [...currentImages, newImg]);
+                            }}
+                            className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 font-extrabold cursor-pointer uppercase bg-blue-950/40 border border-blue-900/40 px-2 py-1 rounded"
+                          >
+                            <Plus size={10} /> Add Item
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {(selectedBlock.galleryImages || [
+                            { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                            { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                            { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                          ]).map((imgItem, index) => (
+                            <div key={imgItem.id || index} className="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 space-y-2.5 relative">
+                              <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                                <span className="text-[9px] font-extrabold text-blue-500 uppercase">MARQUEE ITEM 0{index + 1}</span>
+                                <div className="flex items-center gap-1">
+                                  {index > 0 && (
+                                    <button 
+                                      onClick={() => {
+                                        const currentImages = selectedBlock.galleryImages || [
+                                          { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                          { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                          { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                                        ];
+                                        const copy = [...currentImages];
+                                        const temp = copy[index];
+                                        copy[index] = copy[index - 1];
+                                        copy[index - 1] = temp;
+                                        handleUpdateBlockContent('galleryImages', copy);
+                                      }}
+                                      className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 cursor-pointer"
+                                      title="Move Up"
+                                    >
+                                      <MoveUp size={10} />
+                                    </button>
+                                  )}
+                                  {index < (selectedBlock.galleryImages || []).length - 1 && (
+                                    <button 
+                                      onClick={() => {
+                                        const currentImages = selectedBlock.galleryImages || [
+                                          { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                          { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                          { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                                        ];
+                                        const copy = [...currentImages];
+                                        const temp = copy[index];
+                                        copy[index] = copy[index + 1];
+                                        copy[index + 1] = temp;
+                                        handleUpdateBlockContent('galleryImages', copy);
+                                      }}
+                                      className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-slate-200 cursor-pointer"
+                                      title="Move Down"
+                                    >
+                                      <MoveDown size={10} />
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={() => {
+                                      const currentImages = selectedBlock.galleryImages || [
+                                        { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                        { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                        { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                                      ];
+                                      const copy = currentImages.filter(img => img.id !== imgItem.id);
+                                      handleUpdateBlockContent('galleryImages', copy);
+                                    }}
+                                    className="p-1 hover:bg-red-900/40 rounded text-slate-400 hover:text-red-400 cursor-pointer"
+                                    title="Delete Item"
+                                  >
+                                    <Trash2 size={10} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-bold text-slate-500 uppercase">Item Title / Badge Text</label>
+                                  <input 
+                                    type="text" 
+                                    value={imgItem.title || ''}
+                                    onChange={(e) => {
+                                      const currentImages = selectedBlock.galleryImages || [
+                                        { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                        { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                        { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                                      ];
+                                      const copy = [...currentImages];
+                                      copy[index] = { ...copy[index], title: e.target.value };
+                                      handleUpdateBlockContent('galleryImages', copy);
+                                    }}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded p-1.5 text-[10px] text-slate-200 outline-none font-bold tracking-wide"
+                                    placeholder="e.g. THOUGHTFUL DETAILS"
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-[8px] font-bold text-slate-500 uppercase">Thumbnail Image URL</label>
+                                  <div className="flex gap-1.5">
+                                    <input 
+                                      type="text" 
+                                      value={imgItem.url || ''}
+                                      onChange={(e) => {
+                                        const currentImages = selectedBlock.galleryImages || [
+                                          { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                                          { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                                          { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                                        ];
+                                        const copy = [...currentImages];
+                                        copy[index] = { ...copy[index], url: e.target.value };
+                                        handleUpdateBlockContent('galleryImages', copy);
+                                      }}
+                                      className="flex-1 bg-slate-950 border border-slate-800 rounded p-1.5 text-[9px] text-slate-200 font-mono outline-none"
+                                      placeholder="https://..."
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const input = document.createElement('input');
+                                        input.type = 'file';
+                                        input.accept = 'image/*';
+                                        input.onchange = async (e: any) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            const url = await handleSingleImageUpload(file);
+                                            if (url) {
+                                              const currentImages = selectedBlock.galleryImages || [];
+                                              const copy = [...currentImages];
+                                              copy[index] = { ...copy[index], url };
+                                              handleUpdateBlockContent('galleryImages', copy);
+                                            }
+                                          }
+                                        };
+                                        input.click();
+                                      }}
+                                      className="px-2 py-1 bg-blue-950 hover:bg-blue-900 border border-blue-800 rounded text-[9px] font-bold text-blue-300 transition-all cursor-pointer shrink-0"
+                                    >
+                                      Upload
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             </div>

@@ -14,6 +14,7 @@ export interface BlockCategory {
 }
 
 export const BLOCK_CATEGORIES: BlockCategory[] = [
+  { id: 'Text', name: 'Text & Article', icon: 'Type', description: 'Headings, paragraphs & quote blocks' },
   { id: 'Navigation', name: 'Header Menus', icon: 'Layout', description: 'Premium navbar designs' },
   { id: 'Hero', name: 'Hero Sections', icon: 'Sparkles', description: 'Premium header templates' },
   { id: 'Features', name: 'Feature Sections', icon: 'Grid', description: 'Showcase grids & bento boxes' },
@@ -30,6 +31,11 @@ export const BLOCK_CATEGORIES: BlockCategory[] = [
 ];
 
 export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
+  Text: [
+    { id: 'article-body', name: 'Rich Article Paragraph', description: 'Clean readable text block with custom subheaders and leading', tags: ['Article', 'Paragraph', 'Minimal'] },
+    { id: 'quote-callout', name: 'Editorial Quote Callout', description: 'Highlighted quote box with accent border and author subtext', tags: ['Quote', 'Callout', 'Editorial'] },
+    { id: 'heading-minimal', name: 'Centered Heading & Subtext', description: 'Standalone headline with subtext and alignment controls', tags: ['Heading', 'Text', 'Clean'] },
+  ],
   Hero: [
     { id: 'minimal', name: 'Simple Minimalist', description: 'Clean layout centering typography & call-to-actions', tags: ['Minimal', 'Light', 'Corporate'] },
     { id: 'split', name: 'Interactive Image Split', description: 'Side-by-side text & responsive image preview layout', tags: ['Split', 'SaaS', 'Startup'] },

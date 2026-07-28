@@ -48,8 +48,17 @@ import {
   Users,
   Star,
   WandSparkles,
+  Tag,
+  Crop,
+  RotateCw,
+  ZoomIn,
+  ZoomOut,
+  X,
+  Sliders,
+  Maximize2,
 } from "lucide-react";
 import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP } from "./builder-data";
+import { VariantMiniPreview } from "./ui/variant-preview";
 import { BuilderRenderer } from "./builder-renderer";
 import type { BlockCSSStyles, WebBlock } from "./website-builder-editor";
 import { supabase } from "@/lib/supabase";
@@ -2348,6 +2357,26 @@ export function BlockContentEditor({
       ...items.slice(index + 1),
     ]);
 
+  if (block.type === "Text") {
+    return (
+      <InspectorDetails icon={Type} title="Text Block Content">
+        <MiniField
+          label="Heading / Title"
+          value={block.title || ""}
+          onChange={(value) => onChange({ title: value })}
+          placeholder="Section Heading"
+        />
+        <MiniField
+          label="Body Text / Article Content"
+          value={block.subtitle || ""}
+          onChange={(value) => onChange({ subtitle: value })}
+          placeholder="Write paragraphs or article content here..."
+          multiline
+        />
+      </InspectorDetails>
+    );
+  }
+
   if (block.type === "Gallery") {
     const images = block.galleryImages || [];
     return (
@@ -2432,11 +2461,67 @@ export function BlockContentEditor({
                 }
                 className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-bold outline-none focus:border-lime-500"
               >
-                <option value="square">Square</option>
-                <option value="landscape">Landscape</option>
-                <option value="portrait">Portrait</option>
+                <option value="square">Square (1:1)</option>
+                <option value="landscape">Landscape (16:9)</option>
+                <option value="portrait">Portrait (3:4)</option>
+                <option value="circle">Circle (Round Mask)</option>
               </select>
             </label>
+
+            <div className="mt-2.5 grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="mb-1 block text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  Resolution Size
+                </span>
+                <select
+                  value={(image as any).resolution || "auto"}
+                  onChange={(event) => {
+                    const res = event.target.value;
+                    let newUrl = image.url;
+                    if (res !== "auto" && newUrl && newUrl.includes("unsplash.com")) {
+                      try {
+                        const u = new URL(newUrl);
+                        u.searchParams.set("w", res);
+                        u.searchParams.set("q", "80");
+                        newUrl = u.toString();
+                      } catch {}
+                    }
+                    updateItem("galleryImages", images, index, {
+                      resolution: res,
+                      url: newUrl,
+                    });
+                  }}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-bold outline-none focus:border-lime-500"
+                >
+                  <option value="auto">Auto / Original</option>
+                  <option value="1920">Full HD (1920px)</option>
+                  <option value="1200">Standard (1200px)</option>
+                  <option value="800">Medium (800px)</option>
+                  <option value="400">Thumbnail (400px)</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  Auto Crop Focus
+                </span>
+                <select
+                  value={(image as any).objectPosition || "center"}
+                  onChange={(event) =>
+                    updateItem("galleryImages", images, index, {
+                      objectPosition: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[10px] font-bold outline-none focus:border-lime-500"
+                >
+                  <option value="center">Center Focus</option>
+                  <option value="top">Top Focus</option>
+                  <option value="bottom">Bottom Focus</option>
+                  <option value="left">Left Focus</option>
+                  <option value="right">Right Focus</option>
+                </select>
+              </label>
+            </div>
           </InspectorItem>
         ))}
       </InspectorCollection>
@@ -3275,6 +3360,378 @@ function InspectorItem({
   );
 }
 
+function ImageCropModal({
+  imageUrl,
+  onSave,
+  onClose,
+}: {
+  imageUrl: string;
+  onSave: (newUrl: string) => void;
+  onClose: () => void;
+}) {
+  const [aspect, setAspect] = useState<string>("1:1");
+  const [rotation, setRotation] = useState<number>(0);
+  const [zoom, setZoom] = useState<number>(100);
+  const [targetWidth, setTargetWidth] = useState<number>(1200);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const imgRef = React.useRef<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setImageError(false);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      imgRef.current = img;
+      setLoading(false);
+    };
+    img.onerror = () => {
+      const fallbackImg = new Image();
+      fallbackImg.onload = () => {
+        imgRef.current = fallbackImg;
+        setLoading(false);
+      };
+      fallbackImg.onerror = () => {
+        setLoading(false);
+        setImageError(true);
+      };
+      fallbackImg.src = imageUrl;
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  const drawPreview = React.useCallback(() => {
+    const canvas = canvasRef.current;
+    const img = imgRef.current;
+    if (!canvas || !img) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const containerWidth = 440;
+    const containerHeight = 300;
+    canvas.width = containerWidth;
+    canvas.height = containerHeight;
+
+    ctx.clearRect(0, 0, containerWidth, containerHeight);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, containerWidth, containerHeight);
+
+    ctx.save();
+    ctx.translate(containerWidth / 2 + position.x, containerHeight / 2 + position.y);
+    ctx.rotate((rotation * Math.PI) / 180);
+    const scale = (zoom / 100) * Math.min(containerWidth / img.width, containerHeight / img.height);
+    ctx.scale(scale, scale);
+    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ctx.restore();
+
+    let cropW = 240;
+    let cropH = 240;
+    if (aspect === "16:9") { cropW = 340; cropH = 191; }
+    else if (aspect === "4:3") { cropW = 300; cropH = 225; }
+    else if (aspect === "3:4") { cropW = 195; cropH = 260; }
+    else if (aspect === "21:9") { cropW = 360; cropH = 154; }
+    else if (aspect === "free") { cropW = 320; cropH = 220; }
+
+    const cropX = (containerWidth - cropW) / 2;
+    const cropY = (containerHeight - cropH) / 2;
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.65)";
+    ctx.fillRect(0, 0, containerWidth, cropY);
+    ctx.fillRect(0, cropY + cropH, containerWidth, containerHeight - (cropY + cropH));
+    ctx.fillRect(0, cropY, cropX, cropH);
+    ctx.fillRect(cropX + cropW, cropY, containerWidth - (cropX + cropW), cropH);
+
+    ctx.strokeStyle = "#84cc16";
+    ctx.lineWidth = 2.5;
+
+    if (aspect === "circle") {
+      ctx.beginPath();
+      ctx.arc(containerWidth / 2, containerHeight / 2, cropW / 2, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(cropX, cropY, cropW, cropH);
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cropX + cropW / 3, cropY);
+      ctx.lineTo(cropX + cropW / 3, cropY + cropH);
+      ctx.moveTo(cropX + (2 * cropW) / 3, cropY);
+      ctx.lineTo(cropX + (2 * cropW) / 3, cropY + cropH);
+      ctx.moveTo(cropX, cropY + cropH / 3);
+      ctx.lineTo(cropX + cropW, cropY + cropH / 3);
+      ctx.moveTo(cropX, cropY + (2 * cropH) / 3);
+      ctx.lineTo(cropX + cropW, cropY + (2 * cropH) / 3);
+      ctx.stroke();
+    }
+  }, [aspect, rotation, zoom, position]);
+
+  useEffect(() => {
+    if (!loading && !imageError) {
+      drawPreview();
+    }
+  }, [loading, imageError, drawPreview]);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDragging) return;
+    setPosition({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleSave = async () => {
+    const img = imgRef.current;
+    if (!img) return;
+
+    setSaving(true);
+    try {
+      let cropAspectVal = 1;
+      if (aspect === "16:9") cropAspectVal = 16 / 9;
+      else if (aspect === "4:3") cropAspectVal = 4 / 3;
+      else if (aspect === "3:4") cropAspectVal = 3 / 4;
+      else if (aspect === "21:9") cropAspectVal = 21 / 9;
+      else if (aspect === "free") cropAspectVal = img.width / img.height;
+
+      const outW = targetWidth || 1200;
+      const outH = Math.round(outW / cropAspectVal);
+
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = outW;
+      exportCanvas.height = outH;
+      const ctx = exportCanvas.getContext("2d");
+
+      if (ctx) {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, outW, outH);
+
+        ctx.save();
+        ctx.translate(outW / 2, outH / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+
+        const containerW = 440;
+        const containerH = 300;
+        let guideW = 240;
+        let guideH = 240;
+        if (aspect === "16:9") { guideW = 340; guideH = 191; }
+        else if (aspect === "4:3") { guideW = 300; guideH = 225; }
+        else if (aspect === "3:4") { guideW = 195; guideH = 260; }
+        else if (aspect === "21:9") { guideW = 360; guideH = 154; }
+        else if (aspect === "free") { guideW = 320; guideH = 220; }
+
+        const previewScale = (zoom / 100) * Math.min(containerW / img.width, containerH / img.height);
+        const scaleFactor = outW / guideW;
+
+        const drawX = position.x * scaleFactor;
+        const drawY = position.y * scaleFactor;
+        const drawW = img.width * previewScale * scaleFactor;
+        const drawH = img.height * previewScale * scaleFactor;
+
+        ctx.drawImage(img, -drawW / 2 + drawX, -drawH / 2 + drawY, drawW, drawH);
+        ctx.restore();
+
+        const croppedDataUrl = exportCanvas.toDataURL("image/jpeg", 0.88);
+
+        try {
+          const res = await fetch(croppedDataUrl);
+          const blob = await res.blob();
+          const fileName = `crops/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.jpg`;
+          const { error } = await supabase.storage.from("site-assets").upload(fileName, blob, { contentType: "image/jpeg", upsert: true });
+          if (!error) {
+            const { data: publicUrlData } = supabase.storage.from("site-assets").getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              onSave(publicUrlData.publicUrl);
+              onClose();
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn("Storage upload fallback:", e);
+        }
+
+        onSave(croppedDataUrl);
+        onClose();
+      }
+    } catch (err) {
+      console.error("Crop save error:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-xl rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl text-slate-100 animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="rounded-lg bg-lime-500/10 p-2 text-lime-400">
+              <Crop size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">Crop & Resize Image</h3>
+              <p className="text-[11px] text-slate-400">Drag image to adjust framing and select output resolution</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-col items-center">
+          <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950 cursor-grab active:cursor-grabbing shadow-inner">
+            {loading ? (
+              <div className="grid h-[300px] w-[440px] place-items-center text-slate-400">
+                <Loader2 size={24} className="animate-spin text-lime-400" />
+              </div>
+            ) : imageError ? (
+              <div className="grid h-[300px] w-[440px] place-items-center text-rose-400 text-xs font-semibold">
+                Failed to load image for cropping
+              </div>
+            ) : (
+              <canvas
+                ref={canvasRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                className="block select-none"
+              />
+            )}
+            <div className="absolute bottom-2 left-2 rounded-md bg-slate-900/80 px-2 py-0.5 text-[9px] font-bold text-slate-300 backdrop-blur">
+              ↔ Drag to Reposition
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <div>
+            <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Aspect Ratio
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { id: "1:1", label: "1:1 Square" },
+                { id: "16:9", label: "16:9 Landscape" },
+                { id: "4:3", label: "4:3 Standard" },
+                { id: "3:4", label: "3:4 Portrait" },
+                { id: "21:9", label: "21:9 Ultrawide" },
+                { id: "circle", label: "Circle" },
+                { id: "free", label: "Freeform" },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setAspect(item.id)}
+                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition ${
+                    aspect === item.id
+                      ? "bg-lime-500 text-slate-950 shadow"
+                      : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-1">
+            <div>
+              <div className="mb-1 flex justify-between text-[10px] font-bold text-slate-400">
+                <span className="flex items-center gap-1"><ZoomIn size={12} /> Zoom Scale</span>
+                <span className="text-lime-400">{zoom}%</span>
+              </div>
+              <input
+                type="range"
+                min="50"
+                max="300"
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-lime-400"
+              />
+            </div>
+
+            <div>
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Export Resolution
+              </span>
+              <select
+                value={targetWidth}
+                onChange={(e) => setTargetWidth(Number(e.target.value))}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-bold text-slate-200 outline-none focus:border-lime-500"
+              >
+                <option value={1920}>Full HD (1920px width)</option>
+                <option value={1200}>Standard Web (1200px width)</option>
+                <option value={800}>Medium (800px width)</option>
+                <option value={400}>Thumbnail (400px width)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+            <button
+              type="button"
+              onClick={() => {
+                setRotation((prev) => (prev + 90) % 360);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700 transition"
+            >
+              <RotateCw size={14} />
+              <span>Rotate 90°</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg px-3 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-800 hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving || loading || imageError}
+                onClick={handleSave}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-lime-500 px-4 py-1.5 text-xs font-black text-slate-950 hover:bg-lime-400 disabled:opacity-50 transition shadow-lg shadow-lime-500/20"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Saving Crop…</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} />
+                    <span>Save Cropped Image</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MiniField({
   label,
   value,
@@ -3291,6 +3748,7 @@ function MiniField({
   allowUpload?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -3314,7 +3772,6 @@ function MiniField({
 
       if (error) {
         console.warn("Supabase storage bucket upload notice:", error.message);
-        // Fallback: convert file to data URL if bucket is missing or unauthenticated
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target?.result) {
@@ -3368,6 +3825,17 @@ function MiniField({
               className="hidden"
               onChange={handleFileUpload}
             />
+            {value && (
+              <button
+                type="button"
+                onClick={() => setShowCropModal(true)}
+                className="inline-flex cursor-pointer items-center gap-1 rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-700 transition hover:border-slate-300 hover:bg-slate-200"
+                title="Crop & Resize Image"
+              >
+                <Crop size={10} className="text-slate-600" />
+                <span>Crop</span>
+              </button>
+            )}
             <button
               type="button"
               disabled={uploading}
@@ -3404,7 +3872,121 @@ function MiniField({
           className={className}
         />
       )}
+
+      {showCropModal && (
+        <ImageCropModal
+          imageUrl={value}
+          onSave={(newUrl) => {
+            onChange(newUrl);
+            setStatusMessage("Cropped");
+            setTimeout(() => setStatusMessage(null), 3000);
+          }}
+          onClose={() => setShowCropModal(false)}
+        />
+      )}
     </label>
+  );
+}
+
+// Describes what the layout variant shows — uses type+variantId compound keys to avoid duplicates
+function getLayoutDescription(type: string, variantId: string): string {
+  const key = `${type}_${variantId}`;
+  const layoutMap: Record<string, string> = {
+    'Hero_minimal': 'Centered heading + subtitle + CTA button',
+    'Hero_split': 'Split: image on left, text content on right',
+    'Hero_saas-modern': 'Split with feature highlights on right pane',
+    'Hero_video-simulate': 'Video showcase area with text overlay',
+    'Hero_editorial-stack': 'Stacked editorial layout, text blocks',
+    'Hero_local-conversion': 'Left-aligned text with trust badges',
+    'Hero_quiet-luxury': 'Dark minimal hero with elegant serif type',
+    'Hero_bold-poster': 'Large bold typography as visual focal point',
+    'Hero_soft-gradient': 'Soft gradient background, centered stack',
+    'Hero_mono-grid': 'Monospace font, sharp grid-aligned layout',
+    'Hero_warm-studio': 'Warm earthy tones, curved card elements',
+    'Hero_glass-panel': 'Glassmorphism cards on dark gradient',
+    'Hero_3d-mesh': '3D mesh wireframe background effect',
+    'Hero_aurora-sky': 'Aurora animated gradient background',
+    'Hero_gradient-glow': 'Glowing gradient backdrop with particles',
+    // Features / Business
+    'Features_3-col-grid': '3-column feature cards with icons',
+    'Features_4-col-grid': '4-column compact feature cards',
+    'Features_bento-box': 'Bento grid with mixed card sizes',
+    'Features_alternating': 'Alternating image-text rows',
+    'Features_icon-cards': 'Icon + text stacked card layout',
+    'Features_comparison': 'Side-by-side comparison table',
+    'Business_3-col-grid': '3-column business feature cards',
+    'Business_4-col-grid': '4-column business feature cards',
+    'Business_bento-box': 'Bento grid for service highlights',
+    'Business_alternating': 'Alternating rows for services',
+    'Business_icon-cards': 'Service cards with icon + description',
+    'Business_comparison': 'Service comparison table',
+    // CTA
+    'CTA_gradient-cta': 'Full-width gradient CTA banner',
+    'CTA_soft-gradient': 'Soft gradient CTA with text',
+    'CTA_image-bg': 'Image background CTA overlay',
+    'CTA_split-cta': 'Split: image half, text + button half',
+    // Pricing
+    'Pricing_3-tier': '3-column pricing tier cards',
+    'Pricing_4-tier': '4-column pricing tier cards',
+    'Pricing_matrix': 'Feature comparison matrix table',
+    'Pricing_glass-panel': 'Glassmorphism pricing cards',
+    'Pricing_mono-grid': 'Monospace grid pricing layout',
+    // Testimonials
+    'Testimonials_carousel': 'Carousel slider with customer cards',
+    'Testimonials_wall-of-love': 'Wall of customer quote cards',
+    'Testimonials_featured': 'Single featured testimonial card',
+    'Testimonials_editorial-stack': 'Stacked editorial review layout',
+    // Gallery
+    'Gallery_grid': '2×2 image grid with thumbnails',
+    'Gallery_masonry': 'Pinterest-style masonry waterfall',
+    'Gallery_marquee-logos': 'Auto-scrolling logo marquee bar',
+    'Gallery_carousel': 'Image carousel with navigation',
+    // Forms
+    'Forms_whatsapp': 'WhatsApp chat widget bubble',
+    'Forms_contact-complex': 'Full contact form with fields',
+    'Forms_booking': 'Appointment booking form',
+    'Forms_newsletter': 'Minimal email signup form',
+    'Forms_quiet-luxury': 'Dark elegant inquiry form',
+    'Forms_local-conversion': 'Local business inquiry form',
+    // Navigation
+    'Navigation_nav-minimal': 'Logo + nav links + CTA button',
+    'Navigation_nav-glass': 'Glass blurred translucent navbar',
+    'Navigation_nav-pill': 'Pill/capsule shaped navigation',
+    'Navigation_nav-mega': 'Mega menu with dropdown columns',
+    'Navigation_nav-3d': '3D tilted perspective navbar',
+    'Navigation_nav-aurora': 'Aurora gradient animated navbar',
+    // Footer
+    'Footer_footer-classic': 'Logo + link columns + copyright',
+    'Footer_footer-minimal': 'Centered copyright line only',
+    'Footer_footer-bento': 'Bento grid footer layout',
+    'Footer_footer-map': 'Footer with embedded map',
+    'Footer_footer-glass': 'Glass translucent footer',
+    'Footer_footer-3d': '3D perspective footer design',
+    'Footer_footer-aurora': 'Aurora gradient footer',
+    // Special
+    'Special_faq-accordions': 'Collapsible Q&A accordion list',
+    'Special_stats-grid': 'Animated stat counters grid',
+    'Special_steps-path': 'Step-by-step numbered guide',
+    'Special_editorial-stack': 'Stacked content accordion',
+    // Map
+    'Map_minimal': 'Map with pin marker',
+    // Text
+    'Text_minimal': 'Heading + paragraph text block',
+    'Text_quote-callout': 'Pull quote with vertical accent bar',
+    // EComStore
+    'EComStore_single-product-hero': 'Product image + details + CTA',
+    'EComStore_product-grid': 'Product grid with thumbnails',
+    'EComStore_whatsapp-store': 'WhatsApp catalog store view',
+  };
+  return layoutMap[key] || `${type} · ${variantId}`;
+}
+
+function VariantPreview({ type, variantId, index }: { type: string; variantId?: string; index: number }) {
+  const s = 'w-12 h-9';
+  return (
+    <span className={`${s} rounded-md overflow-hidden border border-slate-200 flex-shrink-0`}>
+      <VariantMiniPreview type={type} variantId={variantId} index={index} />
+    </span>
   );
 }
 
@@ -3418,22 +4000,13 @@ function VariantPicker({
   onChange: (value: string) => void;
 }) {
   const variants = BLOCK_VARIANTS_MAP[type] || [];
+  const [hoveredVariant, setHoveredVariant] = useState<typeof variants[0] | null>(null);
   const selectedVariant =
     variants.find((variant) => variant.id === value) || variants[0];
-  const previewPalettes = [
-    ["#f8fafc", "#0f172a", "#84cc16"],
-    ["#18181b", "#fafafa", "#d6b66b"],
-    ["#eef2ff", "#312e81", "#8b5cf6"],
-    ["#fff7ed", "#431407", "#f97316"],
-    ["#ecfeff", "#164e63", "#06b6d4"],
-    ["#fdf4ff", "#701a75", "#d946ef"],
-  ];
   const selectedIndex = Math.max(
     0,
     variants.findIndex((variant) => variant.id === selectedVariant?.id),
   );
-  const selectedPalette =
-    previewPalettes[selectedIndex % previewPalettes.length];
 
   return (
     <Popover.Root>
@@ -3442,23 +4015,7 @@ function VariantPicker({
           type="button"
           className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 text-left transition hover:border-slate-300 hover:shadow-sm data-[state=open]:border-lime-500 data-[state=open]:ring-2 data-[state=open]:ring-lime-100"
         >
-          <span
-            className="relative h-10 w-14 shrink-0 overflow-hidden rounded-lg border border-black/10"
-            style={{ backgroundColor: selectedPalette[0] }}
-          >
-            <i
-              className="absolute inset-x-2 top-2 h-1.5 rounded-full"
-              style={{ backgroundColor: selectedPalette[1] }}
-            />
-            <i
-              className="absolute left-2 right-5 top-5 h-1 rounded-full opacity-30"
-              style={{ backgroundColor: selectedPalette[1] }}
-            />
-            <i
-              className="absolute bottom-2 left-2 h-1.5 w-5 rounded-full"
-              style={{ backgroundColor: selectedPalette[2] }}
-            />
-          </span>
+          <VariantPreview type={type} variantId={selectedVariant?.id} index={selectedIndex} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-xs font-black">
               {selectedVariant?.name || "Choose a layout"}
@@ -3478,7 +4035,7 @@ function VariantPicker({
           align="end"
           sideOffset={8}
           collisionPadding={12}
-          className="z-[110] w-[340px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
+          className="z-[110] w-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.18)]"
         >
           <Command>
             <div className="flex items-center gap-2 border-b border-slate-100 px-3">
@@ -3488,65 +4045,100 @@ function VariantPicker({
                 className="h-12 flex-1 bg-transparent text-xs font-semibold outline-none placeholder:text-slate-400"
               />
             </div>
-            <Command.List className="max-h-[410px] overflow-y-auto p-2">
-              <Command.Empty className="p-6 text-center text-xs text-slate-400">
-                No matching layout.
-              </Command.Empty>
-              {variants.map((variant, index) => {
-                const palette = previewPalettes[index % previewPalettes.length];
-                const active = variant.id === value;
-                return (
-                  <Popover.Close asChild key={variant.id}>
-                    <Command.Item
-                      value={`${variant.name} ${variant.description} ${variant.tags.join(" ")}`}
-                      onSelect={() => onChange(variant.id)}
-                      className={`group flex cursor-pointer items-center gap-3 rounded-xl p-2.5 outline-none data-[selected=true]:bg-slate-50 ${
-                        active ? "bg-lime-50" : ""
-                      }`}
-                    >
-                      <span
-                        className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-black/10"
-                        style={{ backgroundColor: palette[0] }}
+            <div className="flex min-h-0 flex-1">
+              <Command.List className="flex-1 overflow-y-auto p-2 max-h-[320px]">
+                <Command.Empty className="p-6 text-center text-xs text-slate-400">
+                  No matching layout.
+                </Command.Empty>
+                {variants.map((variant, index) => {
+                  const active = variant.id === value;
+                  const isHovered = hoveredVariant?.id === variant.id;
+                  return (
+                    <Popover.Close asChild key={variant.id}>
+                      <Command.Item
+                        value={`${variant.name} ${variant.description} ${variant.tags.join(" ")}`}
+                        onSelect={() => onChange(variant.id)}
+                        onMouseEnter={() => setHoveredVariant(variant)}
+                        onMouseLeave={() => setHoveredVariant(null)}
+                        className={`group flex cursor-pointer items-center gap-3 rounded-xl p-2.5 outline-none transition-colors data-[selected=true]:bg-slate-50 ${
+                          active ? 'bg-lime-50' : isHovered ? 'bg-slate-50' : ''
+                        }`}
                       >
-                        <i
-                          className="absolute left-2 right-2 top-2 h-2 rounded-sm"
-                          style={{ backgroundColor: palette[1] }}
-                        />
-                        <i
-                          className="absolute left-2 right-6 top-6 h-1 rounded-full opacity-40"
-                          style={{ backgroundColor: palette[1] }}
-                        />
-                        <i
-                          className="absolute left-2 right-10 top-9 h-1 rounded-full opacity-25"
-                          style={{ backgroundColor: palette[1] }}
-                        />
-                        <i
-                          className="absolute bottom-2 left-2 h-2 w-7 rounded-sm"
-                          style={{ backgroundColor: palette[2] }}
-                        />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span className="truncate text-xs font-black text-slate-800">
-                            {variant.name}
-                          </span>
-                          {active && (
-                            <span className="grid size-4 place-items-center rounded-full bg-lime-600 text-white">
-                              <Check size={10} strokeWidth={3} />
+                        <VariantPreview type={type} variantId={variant.id} index={index} />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="truncate text-xs font-black text-slate-800">
+                              {variant.name}
                             </span>
-                          )}
+                            {active && (
+                              <span className="grid size-4 place-items-center rounded-full bg-lime-600 text-white shrink-0">
+                                <Check size={10} strokeWidth={3} />
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-0.5 line-clamp-2 text-[10px] leading-4 text-slate-400">
+                            {variant.description}
+                          </span>
                         </span>
-                        <span className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-400">
-                          {variant.description}
-                        </span>
+                      </Command.Item>
+                    </Popover.Close>
+                  );
+                })}
+              </Command.List>
+              {/* Hover preview panel — LARGER with layout annotations */}
+              {hoveredVariant && (
+                <div className="w-60 shrink-0 border-l border-slate-100 p-3 flex flex-col gap-2 bg-slate-50/50 overflow-y-auto">
+                  {/* BIG preview mockup — shows the actual layout structure */}
+                  <div className="w-full rounded-lg overflow-hidden border border-slate-200 bg-white shadow-sm">
+                    <VariantMiniPreview type={type} variantId={hoveredVariant.id} index={variants.findIndex(v => v.id === hoveredVariant.id)} size="lg" />
+                  </div>
+                  {/* Layout details */}
+                  <div>
+                    <p className="text-xs font-black text-slate-800 leading-tight">{hoveredVariant.name}</p>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-lime-100 text-lime-800">
+                        {type}
                       </span>
-                    </Command.Item>
-                  </Popover.Close>
-                );
-              })}
-            </Command.List>
+                      <span className="text-[8px] text-slate-400">●</span>
+                      <span className="text-[9px] font-semibold text-slate-500">
+                        {getLayoutDescription(type, hoveredVariant.id)}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[10px] text-slate-500 leading-relaxed line-clamp-2">{hoveredVariant.description}</p>
+                    {hoveredVariant.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {hoveredVariant.tags.slice(0, 5).map(tag => (
+                          <span key={tag} className="px-1.5 py-0.5 rounded-md text-[7px] font-bold uppercase tracking-wide bg-slate-100 text-slate-500">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {/* Mini visual legend showing what each element represents */}
+                  <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 rounded-lg bg-white p-2 border border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-0.5 rounded-sm bg-slate-800" />
+                      <span className="text-[7px] text-slate-400">Heading</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-0.5 rounded-sm bg-slate-300" />
+                      <span className="text-[7px] text-slate-400">Text</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-1 rounded-sm" style={{ backgroundColor: '#65a30d' }} />
+                      <span className="text-[7px] text-slate-400">Button</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: '#e2e8f0' }} />
+                      <span className="text-[7px] text-slate-400">Card</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="border-t border-slate-100 px-3 py-2.5 text-[10px] font-medium text-slate-400">
-              Search by layout name, style, or use case.
+              {variants.length} layouts · Hover right panel for preview
             </div>
           </Command>
           <Popover.Arrow className="fill-white" />

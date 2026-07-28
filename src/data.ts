@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Persona, Template, PricingPlan, FeatureCard } from './types';
+import { Persona, Template, PricingPlan, FeatureCard, Addon } from './types';
 
 export const PERSONAS: Persona[] = [
   {
@@ -120,31 +120,37 @@ export const PRICING_PLANS: PricingPlan[] = [
     name: 'Free',
     price: '₹0',
     priceAnnual: '₹0',
-    description: 'Perfect for exploring your online presence or starting a temporary hobby project.',
+    description: 'Try OnlyPage risk-free. Build one page, see how it works — upgrade when you\'re ready for real results.',
     features: [
-      'onlypage.in/yourname sub-domain',
-      'Standard template layouts',
-      'Simple Web Editor',
-      'Up to 50 leads per month',
-      'Basic page analytics',
-      'Standard hosting'
+      '1 page only (yourname.onlypage.in)',
+      'Basic template designs',
+      'Simple page editor',
+      '10 leads captured total (lifetime)',
+      'Lead details blurred — upgrade to view',
+      'Basic analytics (visitor count only)',
+      'Standard hosting',
+      'OnlyPage branding shown'
     ],
     cta: 'Get Started for Free',
     popular: false
   },
   {
     name: 'Starter',
-    price: '₹249',
-    priceAnnual: '₹199',
-    description: 'Designed for single creators, freelancers, and small local businesses.',
+    price: '₹399',
+    priceAnnual: '₹299',
+    description: 'Unlock everything your business needs — view leads, add pages, connect WhatsApp, and start converting.',
     features: [
-      'Connect Custom Domain (yourname.com)',
-      'Remove OnlyPage Branding',
-      'Pro Website Editor & Sections',
+      'Unlimited pages',
+      'Remove OnlyPage branding',
+      'Connect custom domain (yourname.com)',
+      'Full lead view — see names, phone, email',
       'Up to 1,000 leads per month',
+      'Full analytics dashboard',
+      'WhatsApp Chat button & auto-reply',
+      'Booking enquiry form',
+      'AI Copywriter & Assistant (50 uses/mo)',
+      'Basic CRM (view & tag contacts)',
       'SEO audit tools & optimization',
-      'AI Copywriter & Assistant (50 uses)',
-      'WhatsApp Chat button trigger',
       'SSL security included'
     ],
     cta: 'Start 7-Day Free Trial',
@@ -152,22 +158,74 @@ export const PRICING_PLANS: PricingPlan[] = [
   },
   {
     name: 'Business',
-    price: '₹599',
-    priceAnnual: '₹499',
-    description: 'For growing businesses requiring automation, bookings, and powerful CRM features.',
+    price: '₹799',
+    priceAnnual: '₹599',
+    description: 'For growing businesses needing automation, online payments, ecommerce, and a full CRM suite.',
     features: [
       'Everything in Starter plan',
+      'Free .in domain (1 year)',
       'Unlimited leads & page views',
-      'Interactive Booking Engine integration',
-      'AI-Powered WhatsApp Auto-responder',
-      'Full CRM dashboard & tag manager',
-      'Custom database forms & CMS pages',
-      'Advanced Multi-step forms',
-      'Priority 24/7 Slack support',
-      'Team members access (3 accounts)'
+      'Online Booking Engine with payments (Razorpay/UPI)',
+      'AI-Powered WhatsApp auto-responder',
+      'Full CRM dashboard & lead tagging',
+      'Ecommerce storefront (up to 10 products)',
+      'Custom forms & database CMS',
+      'Team accounts (3 users)',
+      'Priority email & WhatsApp support'
     ],
     cta: 'Go Business Pro',
     popular: false
+  }
+];
+
+export const ADDONS: Addon[] = [
+  {
+    name: 'Custom Domain',
+    price: '₹199/mo',
+    description: 'Connect your own domain (yourbusiness.com) to your OnlyPage site.',
+    availableOn: ['Free', 'Starter']
+  },
+  {
+    name: 'WhatsApp Automation Pack',
+    price: '₹199/mo',
+    description: '1,000 AI auto-replies per month for customer enquiries via WhatsApp.',
+    availableOn: ['Starter', 'Business']
+  },
+  {
+    name: 'Ecommerce Boost',
+    price: '₹299/mo',
+    description: 'Unlimited products, inventory management, and order tracking.',
+    availableOn: ['Business']
+  },
+  {
+    name: 'Booking + Payments',
+    price: '₹249/mo',
+    description: 'Online payments with deposit support via Razorpay/UPI for bookings.',
+    availableOn: ['Starter', 'Business']
+  },
+  {
+    name: 'AI Content Credits (100 extra)',
+    price: '₹99/mo',
+    description: 'Additional AI copywriting generations beyond your plan limit.',
+    availableOn: ['Free', 'Starter', 'Business']
+  },
+  {
+    name: 'Extra Team Member',
+    price: '₹149/mo/user',
+    description: 'Add more team accounts beyond the 3 included in Business plan.',
+    availableOn: ['Business']
+  },
+  {
+    name: 'Priority Support',
+    price: '₹99/mo',
+    description: 'WhatsApp and chat response within 1 hour during business hours.',
+    availableOn: ['Free', 'Starter', 'Business']
+  },
+  {
+    name: 'Weekly Backup & Restore',
+    price: '₹49/mo',
+    description: 'Automated weekly backups of your site and customer data.',
+    availableOn: ['Starter', 'Business']
   }
 ];
 

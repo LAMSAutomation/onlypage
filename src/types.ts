@@ -35,6 +35,13 @@ export interface PricingPlan {
   popular: boolean;
 }
 
+export interface Addon {
+  name: string;
+  price: string;
+  description: string;
+  availableOn: string[];
+}
+
 export interface FeatureCard {
   id: string;
   title: string;

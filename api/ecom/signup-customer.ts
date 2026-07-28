@@ -1,3 +1,5 @@
+import { sendEmail } from "../_lib/email";
+
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -19,14 +21,14 @@ export default async function handler(req: any, res: any) {
     .replace(/\{\{store_name\}\}/g, resolvedStoreName)
     .replace(/\{\{customer_name\}\}/g, customerName);
 
-  console.log(`[Branded Email Engine]: Sent customized Welcome Email to ${email} for store "${resolvedStoreName}"`);
-  console.log(`[WhatsApp Engine]: Dispatched WhatsApp Welcome Message to ${phone || "customer"}`);
+  const welcome = await sendEmail({ to: email, subject, text: body });
 
   return res.json({
-    success: true,
+    success: welcome.dispatched,
     customer: { name: customerName, email, phone: phone || "" },
-    email_dispatched: true,
-    whatsapp_dispatched: true,
+    email_dispatched: welcome.dispatched,
+    whatsapp_dispatched: false,
+    email_error: welcome.dispatched ? undefined : welcome.reason,
     subject,
     body,
   });

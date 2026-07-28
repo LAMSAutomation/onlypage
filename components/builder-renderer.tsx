@@ -609,10 +609,14 @@ export function BuilderRenderer({
 
   const [ripples, setRipples] = useState<{ x: number; y: number; id: number }[]>([]);
 
+  const isNavBlock = block.type === 'Navigation';
+  const effectivePaddingTop = isNavBlock ? Math.min(styles.paddingTop ?? 12, 16) : styles.paddingTop;
+  const effectivePaddingBottom = isNavBlock ? Math.min(styles.paddingBottom ?? 12, 16) : styles.paddingBottom;
+
   // Build the outer container styles
   const containerStyle: React.CSSProperties = {
-    paddingTop: `${styles.paddingTop}px`,
-    paddingBottom: `${styles.paddingBottom}px`,
+    paddingTop: `${effectivePaddingTop}px`,
+    paddingBottom: `${effectivePaddingBottom}px`,
     paddingLeft: `${styles.paddingLeft}px`,
     paddingRight: `${styles.paddingRight}px`,
     backgroundColor: bgType === 'color' ? styles.backgroundColor : undefined,
@@ -735,21 +739,101 @@ export function BuilderRenderer({
       <div className="mx-auto relative z-10" style={{ maxWidth: `${styles.maxWidth}px`, width: '100%' }}>
         
         {/* ==================== BADGE ==================== */}
-        {block.badge && (
+        {block.badge && block.showBadge !== false && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-block mb-4"
+            className={`w-full mb-4 ${
+              (styles as any).badgeAlign === 'center'
+                ? 'text-center'
+                : (styles as any).badgeAlign === 'right'
+                  ? 'text-right'
+                  : 'text-left'
+            }`}
           >
             <SelectableElement elementId="badge">
               <span 
-                className="inline-block text-[10px] uppercase tracking-widest font-extrabold px-3 py-1 rounded-full border shadow-sm"
+                className={`inline-block uppercase tracking-widest font-extrabold shadow-sm ${
+                  (styles as any).badgeSize === 'lg'
+                    ? 'text-[13px] px-4 py-1.5'
+                    : (styles as any).badgeSize === 'md'
+                      ? 'text-[11px] px-3.5 py-1'
+                      : 'text-[9.5px] px-3 py-1'
+                } ${
+                  (styles as any).badgeShape === 'square'
+                    ? 'rounded-none border'
+                    : (styles as any).badgeShape === 'soft'
+                      ? 'rounded-md border'
+                      : (styles as any).badgeShape === 'outline'
+                        ? 'rounded-full border-2 bg-transparent'
+                        : (styles as any).badgeShape === 'plain'
+                          ? 'bg-transparent border-0 shadow-none px-0 py-0'
+                          : 'rounded-full border'
+                }`}
                 style={badgeStyle}
               >
                 {block.badge}
               </span>
             </SelectableElement>
           </motion.div>
+        )}
+
+        {/* ==========================================================
+            CATEGORY: TEXT / ARTICLE
+            ========================================================== */}
+        {block.type === 'Text' && (
+          <div className={`space-y-4 ${
+            styles.textAlign === 'center' ? 'text-center' : styles.textAlign === 'right' ? 'text-right' : 'text-left'
+          }`}>
+            {block.variant === 'quote-callout' ? (
+              <blockquote className="border-l-4 border-lime-500 pl-6 py-3 my-4 bg-slate-900/40 rounded-r-xl">
+                <SelectableElement elementId="title">
+                  <h3 className="text-xl md:text-2xl font-bold italic" style={titleStyle}>
+                    "{block.title || 'Quote Title'}"
+                  </h3>
+                </SelectableElement>
+                {block.subtitle && (
+                  <SelectableElement elementId="subtitle" className="mt-3">
+                    <p className="text-sm font-medium opacity-80" style={subtitleStyle}>
+                      — {block.subtitle}
+                    </p>
+                  </SelectableElement>
+                )}
+              </blockquote>
+            ) : block.variant === 'heading-minimal' ? (
+              <div className="py-4">
+                <SelectableElement elementId="title">
+                  <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4" style={titleStyle}>
+                    {block.title || 'Heading Title'}
+                  </h2>
+                </SelectableElement>
+                {block.subtitle && (
+                  <SelectableElement elementId="subtitle">
+                    <p className="text-base md:text-lg opacity-85 leading-relaxed max-w-2xl mx-auto" style={subtitleStyle}>
+                      {block.subtitle}
+                    </p>
+                  </SelectableElement>
+                )}
+              </div>
+            ) : (
+              <div className="max-w-3xl mx-auto space-y-4 py-2">
+                {block.title && (
+                  <SelectableElement elementId="title">
+                    <h2 className="text-2xl md:text-4xl font-bold tracking-tight" style={titleStyle}>
+                      {block.title}
+                    </h2>
+                  </SelectableElement>
+                )}
+                {block.subtitle && (
+                  <SelectableElement elementId="subtitle">
+                    <div className="text-base md:text-lg leading-relaxed whitespace-pre-line opacity-90" style={subtitleStyle}>
+                      {block.subtitle}
+                    </div>
+                  </SelectableElement>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* ==========================================================
@@ -1084,26 +1168,33 @@ export function BuilderRenderer({
         {block.type === 'Gallery' && (
           <div>
             <SelectableElement elementId="title">
-              <h2 style={titleStyle}>{block.title}</h2>
+              <h2 style={titleStyle} className="tracking-tight">{block.title}</h2>
             </SelectableElement>
             <SelectableElement elementId="subtitle" className="mb-12">
               <p style={subtitleStyle} className="max-w-2xl mx-auto">{block.subtitle}</p>
             </SelectableElement>
             
             {block.variant === 'marquee-logos' ? (
-              <InfiniteMarquee
-                items={
-                  block.galleryImages?.length
-                    ? block.galleryImages.map((image) => (
-                        <div key={image.id} className="flex items-center gap-3 px-4">
-                          <img src={image.url} alt="" className="h-9 w-9 rounded-lg object-cover" />
-                          <span className="text-xs font-black uppercase tracking-wider">{image.title}</span>
-                        </div>
-                      ))
-                    : defaultLogos
-                }
-                speed="normal"
-              />
+              <SelectableElement elementId="card">
+                <InfiniteMarquee
+                  items={
+                    (block.galleryImages && block.galleryImages.length > 0
+                      ? block.galleryImages
+                      : [
+                          { id: 'm-1', title: 'THOUGHTFUL DETAILS', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=150' },
+                          { id: 'm-2', title: 'CUSTOMER RESULTS', url: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=150' },
+                          { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
+                        ]
+                    ).map((image) => (
+                      <div key={image.id} className="flex items-center gap-3 px-6 py-2 bg-slate-900/40 border border-slate-800/80 rounded-2xl">
+                        {image.url && <img src={image.url} alt="" className="h-9 w-9 rounded-lg object-cover shrink-0" />}
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">{image.title}</span>
+                      </div>
+                    ))
+                  }
+                  speed="normal"
+                />
+              </SelectableElement>
             ) : block.variant === 'slider' ? (
               // BEFORE AFTER INTERACTIVE COMPONENT
               <SelectableElement elementId="media">
@@ -1188,46 +1279,58 @@ export function BuilderRenderer({
             ========================================================== */}
         {block.type === 'Business' && (
           <div>
-            <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-            <p className="mb-12 max-w-2xl mx-auto" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
+            <SelectableElement elementId="title">
+              <h2 style={titleStyle} className="tracking-tight">{block.title}</h2>
+            </SelectableElement>
+            <SelectableElement elementId="subtitle" className="mb-12">
+              <p style={subtitleStyle} className="max-w-2xl mx-auto">{block.subtitle}</p>
+            </SelectableElement>
             
             {block.variant === 'treatment-list' ? (
               // LUXURY DETAILED LIST
               <div className="max-w-2xl mx-auto space-y-4 text-left">
                 {block.features?.map(feat => (
-                  <div key={feat.id} className="p-5 flex justify-between items-center border-b border-slate-200/10 hover:bg-slate-500/5 rounded-xl transition duration-300">
-                    <div>
-                      <h4 className="text-base font-extrabold flex items-center gap-2">
-                        <DynamicIcon name={feat.icon || 'CheckCircle2'} size={16} className="text-blue-500" /> {feat.title}
-                      </h4>
-                      <p className="text-xs opacity-75 mt-1 ml-6">{feat.desc}</p>
+                  <SelectableElement key={feat.id} elementId="card">
+                    <div className="p-5 flex justify-between items-center border-b border-slate-200/10 hover:bg-slate-500/5 rounded-xl transition duration-300">
+                      <div>
+                        <h4 className="text-base font-extrabold flex items-center gap-2">
+                          <DynamicIcon name={feat.icon || 'CheckCircle2'} size={16} className="text-blue-500" /> {feat.title}
+                        </h4>
+                        <p className="text-xs opacity-75 mt-1 ml-6">{feat.desc}</p>
+                      </div>
+                      <SelectableElement elementId="button">
+                        <button
+                          type="button"
+                          onClick={runBtnAction}
+                          className="rounded-lg px-3.5 py-2 text-xs font-black tracking-wider transition hover:bg-blue-500/10 cursor-pointer"
+                          style={{ color: styles.accentColor }}
+                        >
+                          {block.btnText || 'RESERVE'}
+                        </button>
+                      </SelectableElement>
                     </div>
-                    <button
-                      type="button"
-                      onClick={runBtnAction}
-                      className="rounded-lg px-3 py-2 text-xs font-black tracking-wider transition hover:bg-blue-500/10"
-                      style={{ color: styles.accentColor }}
-                    >
-                      {block.btnText || 'RESERVE'}
-                    </button>
-                  </div>
+                  </SelectableElement>
                 ))}
               </div>
             ) : (
               // ACTIVE OFFERS / FLASH DISCOUNT
-              <div className="max-w-xl mx-auto p-8 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 text-center">
-                <span className="bg-red-500 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">FLASH ACTIVE OFFER</span>
-                <h3 className="text-2xl font-black mt-4 text-red-500">30% OFF YOUR FIRST RESERVATION</h3>
-                <p className="text-xs opacity-80 my-4">Claim this code to activate a 30% discount automatically applied during clinic or salon consultation reservations.</p>
-                <button 
-                  onClick={() => setActiveOfferClaimed(true)}
-                  className={`px-6 py-3 font-bold text-xs rounded-xl transition-all duration-300 ${
-                    activeOfferClaimed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white hover:shadow-lg'
-                  }`}
-                >
-                  {activeOfferClaimed ? '✓ CODE ACTIVATED' : 'CLAIM D50-DISCOUNT CODE'}
-                </button>
-              </div>
+              <SelectableElement elementId="card">
+                <div className="max-w-xl mx-auto p-8 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 text-center">
+                  <span className="bg-red-500 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">FLASH ACTIVE OFFER</span>
+                  <h3 className="text-2xl font-black mt-4 text-red-500">30% OFF YOUR FIRST RESERVATION</h3>
+                  <p className="text-xs opacity-80 my-4">Claim this code to activate a 30% discount automatically applied during clinic or salon consultation reservations.</p>
+                  <SelectableElement elementId="button">
+                    <button 
+                      onClick={() => setActiveOfferClaimed(true)}
+                      className={`px-6 py-3 font-bold text-xs rounded-xl transition-all duration-300 cursor-pointer ${
+                        activeOfferClaimed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white hover:shadow-lg'
+                      }`}
+                    >
+                      {activeOfferClaimed ? '✓ CODE ACTIVATED' : 'CLAIM D50-DISCOUNT CODE'}
+                    </button>
+                  </SelectableElement>
+                </div>
+              </SelectableElement>
             )}
           </div>
         )}
@@ -1453,8 +1556,12 @@ export function BuilderRenderer({
             ========================================================== */}
         {block.type === 'Contact' && (
           <div>
-            <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-            <p className="mb-12 max-w-2xl mx-auto" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
+            <SelectableElement elementId="title">
+              <h2 style={titleStyle} className="tracking-tight">{block.title}</h2>
+            </SelectableElement>
+            <SelectableElement elementId="subtitle" className="mb-12">
+              <p style={subtitleStyle} className="max-w-2xl mx-auto">{block.subtitle}</p>
+            </SelectableElement>
             
             <AnimatePresence mode="wait">
               {formSubmitted ? (
@@ -1560,8 +1667,12 @@ export function BuilderRenderer({
             ========================================================== */}
         {block.type === 'Forms' && (
           <div>
-            <h2 style={{ fontSize: `${styles.titleSize}px`, fontWeight: 'bold' }}>{block.title}</h2>
-            <p className="mb-12 max-w-2xl mx-auto" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle}</p>
+            <SelectableElement elementId="title">
+              <h2 style={titleStyle} className="tracking-tight">{block.title}</h2>
+            </SelectableElement>
+            <SelectableElement elementId="subtitle" className="mb-12">
+              <p style={subtitleStyle} className="max-w-2xl mx-auto">{block.subtitle}</p>
+            </SelectableElement>
 
             <AnimatePresence mode="wait">
               {formSubmitted ? (
@@ -1932,19 +2043,21 @@ export function BuilderRenderer({
                               </span>
                             )}
                           </div>
-                          <button
-                            type="submit"
-                            disabled={!bookingDate || !bookingTime}
-                            className="group flex min-h-12 items-center justify-center gap-2 px-6 text-xs font-black transition duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-52"
-                            style={{
-                              backgroundColor: styles.buttonBgColor,
-                              color: styles.buttonTextColor,
-                              borderRadius: `${Math.max(styles.buttonBorderRadius || 0, 12)}px`,
-                            }}
-                          >
-                            {block.btnText || 'Confirm appointment'}
-                            <ArrowRight size={15} className="transition-transform group-enabled:group-hover:translate-x-0.5" />
-                          </button>
+                          <SelectableElement elementId="button">
+                            <button
+                              type="submit"
+                              disabled={!bookingDate || !bookingTime}
+                              className="group flex min-h-12 items-center justify-center gap-2 px-6 text-xs font-black transition duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-52"
+                              style={{
+                                backgroundColor: styles.buttonBgColor,
+                                color: styles.buttonTextColor,
+                                borderRadius: `${Math.max(styles.buttonBorderRadius || 0, 12)}px`,
+                              }}
+                            >
+                              {block.btnText || 'Confirm appointment'}
+                              <ArrowRight size={15} className="transition-transform group-enabled:group-hover:translate-x-0.5" />
+                            </button>
+                          </SelectableElement>
                         </div>
                       </div>
                     </form>
