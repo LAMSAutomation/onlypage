@@ -37,7 +37,8 @@ const getSubdomain = (): string | null => {
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
     hostname === 'onlypage.in' ||
-    hostname === 'www.onlypage.in'
+    hostname === 'www.onlypage.in' ||
+    hostname.endsWith('.vercel.app')
   ) {
     return null;
   }
@@ -45,11 +46,6 @@ const getSubdomain = (): string | null => {
   if (hostname.endsWith('.onlypage.in')) {
     const sub = hostname.replace('.onlypage.in', '').trim();
     if (sub && sub !== 'www') return sub;
-  }
-  
-  const parts = hostname.split('.');
-  if (parts.length >= 3 && parts[0] !== 'www') {
-    return parts[0];
   }
   
   return null;

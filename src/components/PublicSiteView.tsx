@@ -127,9 +127,9 @@ export default function PublicSiteView({ subdomain }: PublicSiteViewProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4 font-sans">
-        <Loader2 size={36} className="animate-spin text-lime-400" />
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Loading {subdomain}.onlypage.in...</p>
+      <div className="min-h-screen bg-[#f7f7f4] flex flex-col items-center justify-center text-slate-800 space-y-3 font-sans">
+        <Loader2 size={28} className="animate-spin text-[#008060]" />
+        <p className="text-xs font-bold tracking-wide text-slate-500">Loading website...</p>
       </div>
     );
   }
