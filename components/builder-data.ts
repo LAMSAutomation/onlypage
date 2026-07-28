@@ -227,7 +227,7 @@ export const INDUSTRY_PRESETS: Record<string, { name: string; icon: string; desc
         badge: 'AMBIENT LUXURY WELLNESS',
         title: 'Rejuvenate Your Senses. Restore Your Glow.',
         subtitle: 'Experience world-class beauty treatments curated by expert aestheticians in Bengaluru’s premier relaxation sanctuary.',
-        imageUrl: 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&q=80&w=800',
+        imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1200',
         btnText: 'Secure Your Slot',
         styles: {
           backgroundColor: '#0a0a0a',
