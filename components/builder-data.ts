@@ -38,6 +38,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
   ],
   Hero: [
     { id: 'minimal', name: 'Simple Minimalist', description: 'Clean layout centering typography & call-to-actions', tags: ['Minimal', 'Light', 'Corporate'] },
+    { id: 'shopify-growth', name: 'Shopify Growth Showcase', description: 'World-class e-commerce landing page layout with floating app mockups, mint backgrounds, and social tag overlays', tags: ['Shopify', 'ECom', 'High-Convert', 'Mint'] },
     { id: 'split', name: 'Interactive Image Split', description: 'Side-by-side text & responsive image preview layout', tags: ['Split', 'SaaS', 'Startup'] },
     { id: 'gradient-glow', name: 'Cosmic Gradient Glow', description: 'Immersive dark design with glowing radial spotlight gradients', tags: ['Dark', 'Futuristic', 'Neon'] },
     { id: 'saas-modern', name: 'Premium SaaS Modern', description: 'Bento-like headers with live preview mockup layouts', tags: ['Premium', 'SaaS', 'High-Convert'] },

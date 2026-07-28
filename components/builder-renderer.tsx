@@ -842,7 +842,7 @@ export function BuilderRenderer({
         {block.type === 'Hero' && (
           <div>
             {/* Split layout or centered layout depending on variant */}
-            {(block.variant === 'split' || block.variant === 'saas-modern' || block.variant === 'video-simulate') ? (
+            {(block.variant === 'shopify-growth' || block.variant === 'split' || block.variant === 'saas-modern' || block.variant === 'video-simulate') ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center text-left">
                 <div>
                   <SelectableElement elementId="title">
@@ -866,24 +866,71 @@ export function BuilderRenderer({
                         <Magnetic>
                           <button 
                             onClick={runBtnAction}
-                            className="font-extrabold cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                            className="font-extrabold cursor-pointer transition-all duration-300 hover:scale-[1.02] flex items-center gap-2"
                             style={buttonStyle}
                           >
-                            {block.btnText}
+                            <span>{block.btnText}</span>
+                            <ArrowRight size={14} />
                           </button>
                         </Magnetic>
                       </SelectableElement>
                     )}
-                    <button className="px-6 py-4 font-bold text-sm rounded-lg hover:bg-slate-500/10 transition flex items-center gap-1.5 opacity-90">
-                      Learn More <ArrowRight size={14} />
-                    </button>
+                    {block.variant === 'shopify-growth' && (
+                      <a href="#features" className="px-6 py-4 font-bold text-xs text-[#008060] underline underline-offset-4 hover:opacity-80 transition flex items-center gap-1">
+                        Explore features & capabilities
+                      </a>
+                    )}
                   </div>
                 </div>
 
                 {/* Right side graphical previews */}
                 <div className="relative">
                   <SelectableElement elementId="media">
-                    {block.variant === 'saas-modern' ? (
+                    {block.variant === 'shopify-growth' ? (
+                      <div className="relative flex items-center justify-center p-4">
+                        {/* Mint radial accent blur */}
+                        <div className="absolute size-72 sm:size-96 rounded-full bg-[#008060]/10 blur-2xl pointer-events-none" />
+                        <div className="relative w-full max-w-sm bg-white rounded-3xl p-4 shadow-2xl border border-slate-200/80">
+                          {/* Phone header */}
+                          <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <div className="size-6 rounded-full bg-[#008060] text-white flex items-center justify-center text-xs font-bold">f</div>
+                              <span className="text-xs font-bold text-slate-800">Facebook & Instagram</span>
+                            </div>
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Active Channel</span>
+                          </div>
+                          {/* Phone product preview card */}
+                          <div className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 p-3 space-y-3">
+                            <img 
+                              src={block.imageUrl || "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=600"} 
+                              className="w-full h-44 object-cover rounded-xl shadow-xs" 
+                              alt="Product showcase"
+                            />
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="text-xs font-black text-slate-900 block">Minimalist Pearl Earring</span>
+                                <span className="text-[10px] text-slate-500 font-medium">Synced to Instagram Shop</span>
+                              </div>
+                              <span className="text-xs font-black text-[#008060] bg-emerald-50 px-2.5 py-1 rounded-lg">₹2,499</span>
+                            </div>
+                          </div>
+                          {/* Floating social tag badge */}
+                          <motion.div 
+                            animate={{ y: [0, -6, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                            className="absolute -bottom-4 -left-4 bg-slate-900 text-white rounded-2xl p-3 shadow-xl border border-slate-800 flex items-center gap-3 text-xs"
+                          >
+                            <div className="size-8 rounded-full bg-[#008060] flex items-center justify-center font-bold text-white shrink-0">
+                              <ShoppingBag size={14} />
+                            </div>
+                            <div>
+                              <span className="font-bold block text-white">Product Tagged</span>
+                              <span className="text-[10px] text-slate-400">1-Tap Checkout via WhatsApp</span>
+                            </div>
+                          </motion.div>
+                        </div>
+                      </div>
+                    ) : block.variant === 'saas-modern' ? (
                       <MouseGlowCard className="p-1 bg-slate-800/80 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-md">
                         <div className="bg-slate-950 rounded-xl overflow-hidden aspect-video relative flex flex-col" style={mediaStyle}>
                           <div className="h-6 bg-slate-900 border-b border-slate-800 flex items-center px-3 gap-1.5">
