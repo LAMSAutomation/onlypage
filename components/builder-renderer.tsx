@@ -517,6 +517,10 @@ export function BuilderRenderer({
       }
     }
     
+    if (!isActive) {
+      return <>{displayChildren}</>;
+    }
+
     return (
       <div 
         onClick={(e) => {
@@ -534,7 +538,7 @@ export function BuilderRenderer({
             : 'hover:outline hover:outline-dashed hover:outline-1 hover:outline-blue-400 hover:outline-offset-2'
         }`}
       >
-        {/* Figma label overlay on hover/active */}
+        {/* Figma label overlay on hover/active inside editor */}
         <div className={`absolute -top-4 left-0 text-[8px] font-mono font-bold uppercase px-1 rounded pointer-events-none transition-opacity z-20 ${
           isSubActive && isSelectedBlock
             ? 'bg-blue-500 text-white opacity-100'
