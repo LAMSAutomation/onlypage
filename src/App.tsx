@@ -27,9 +27,41 @@ import { DarkModeProvider } from '@/hooks/use-dark-mode';
 import { I18nProvider } from '@/hooks/use-i18n';
 import { Persona } from './types';
 import { PERSONAS } from './data';
-import { supabase } from '@/lib/supabase';
+import PublicSiteView from './components/PublicSiteView';
+
+const getSubdomain = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const hostname = window.location.hostname.toLowerCase();
+  
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === 'onlypage.in' ||
+    hostname === 'www.onlypage.in'
+  ) {
+    return null;
+  }
+  
+  if (hostname.endsWith('.onlypage.in')) {
+    const sub = hostname.replace('.onlypage.in', '').trim();
+    if (sub && sub !== 'www') return sub;
+  }
+  
+  const parts = hostname.split('.');
+  if (parts.length >= 3 && parts[0] !== 'www') {
+    return parts[0];
+  }
+  
+  return null;
+};
 
 export default function App() {
+  const currentSubdomain = getSubdomain();
+
+  if (currentSubdomain) {
+    return <PublicSiteView subdomain={currentSubdomain} />;
+  }
+
   const [businessName, setBusinessName] = useState('yourname');
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(PERSONAS[0]); // default to salon
   const [toastMessage, setToastMessage] = useState<string | null>(null);
