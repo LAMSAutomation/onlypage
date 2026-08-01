@@ -4193,8 +4193,7 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                         </div>
                       </div>
 
-                      {selectedBlock.showBadge !== false && (
-                        <div className="space-y-1.5 pt-1">
+                      <div className="space-y-1.5 pt-1">
                           <div className="flex gap-2">
                             <input 
                               type="text" 
@@ -4208,15 +4207,14 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                               className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 outline-none focus:border-blue-500 font-medium"
                               placeholder="e.g. INSTANT RESERVATION or SPECIALTIES"
                             />
-                            {selectedBlock.badge ? (
+                            {selectedBlock.showBadge !== false && Boolean(selectedBlock.badge) ? (
                               <button
                                 type="button"
                                 onClick={() => {
-                                  handleUpdateBlockContent('badge', '');
                                   handleUpdateBlockContent('showBadge', false);
                                 }}
-                                className="px-2.5 py-1.5 bg-red-950/50 hover:bg-red-900/60 border border-red-800/50 rounded-lg text-[10px] font-extrabold text-red-300 transition-all cursor-pointer shrink-0 flex items-center gap-1"
-                                title="Remove badge text and turn off"
+                                className="px-2.5 py-1.5 bg-amber-950/50 hover:bg-amber-900/60 border border-amber-800/50 rounded-lg text-[10px] font-extrabold text-amber-300 transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                                title="Turn off badge visibility"
                               >
                                 <Trash2 size={11} />
                                 <span>Turn Off</span>
@@ -4225,21 +4223,23 @@ export function WebsiteBuilderEditor({ onExit, site, onUpdateSite }: { onExit: (
                               <button
                                 type="button"
                                 onClick={() => {
-                                  handleUpdateBlockContent('badge', 'FEATURED');
                                   handleUpdateBlockContent('showBadge', true);
+                                  if (!selectedBlock.badge) {
+                                    handleUpdateBlockContent('badge', 'FEATURED');
+                                  }
                                 }}
                                 className="px-2.5 py-1.5 bg-blue-950/50 hover:bg-blue-900/60 border border-blue-800/50 rounded-lg text-[10px] font-extrabold text-blue-300 transition-all cursor-pointer shrink-0 flex items-center gap-1"
+                                title="Turn on badge visibility"
                               >
                                 <Plus size={11} />
-                                <span>Add Badge</span>
+                                <span>Turn On</span>
                               </button>
                             )}
                           </div>
                           <p className="text-[8.5px] text-slate-500 leading-normal">
                             Edit pill text, or click "Turn Off" / uncheck box to hide badge from top of section.
                           </p>
-                        </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Title Copy */}

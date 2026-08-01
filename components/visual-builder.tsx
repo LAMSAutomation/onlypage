@@ -56,6 +56,10 @@ import {
   X,
   Sliders,
   Maximize2,
+  LayoutTemplate,
+  Pencil,
+  Redo2,
+  Undo2,
 } from "lucide-react";
 import { BLOCK_CATEGORIES, BLOCK_VARIANTS_MAP } from "./builder-data";
 import { VariantMiniPreview } from "./ui/variant-preview";
@@ -64,9 +68,18 @@ import type { BlockCSSStyles, WebBlock } from "./website-builder-editor";
 import { supabase } from "@/lib/supabase";
 import { fetchProducts, upsertProduct } from "@/lib/ecom-queries";
 import type { SiteRecord } from "./ui/onboarding-wizard";
+import { SITE_KITS, getSiteKit } from "./site-kits";
+import { useUndoRedo } from "@/hooks/use-undo-redo";
 
 type Viewport = "desktop" | "tablet" | "mobile";
-type Page = { id: string; name: string; slug: string };
+type Page = {
+  id: string;
+  name: string;
+  slug: string;
+  seo_title?: string;
+  seo_desc?: string;
+  position?: number;
+};
 
 const defaultStyles: BlockCSSStyles = {
   paddingTop: 88,
@@ -600,7 +613,15 @@ export function VisualBuilder({
 }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [activePageId, setActivePageId] = useState<string | null>(null);
-  const [blocks, setBlocks] = useState<WebBlock[]>([]);
+  const {
+    state: blocks,
+    setState: setBlocks,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset: resetBlocks,
+  } = useUndoRedo<WebBlock[]>([], { maxHistory: 60 });
   const [globalHeader, setGlobalHeader] = useState<WebBlock | null>(null);
   const [globalFooter, setGlobalFooter] = useState<WebBlock | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -612,6 +633,22 @@ export function VisualBuilder({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [ecomProducts, setEcomProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [pageManagerOpen, setPageManagerOpen] = useState(false);
+  const [siteKitsOpen, setSiteKitsOpen] = useState(false);
+  const [applyingKitId, setApplyingKitId] = useState<string | null>(null);
+  const [newPageName, setNewPageName] = useState("");
+  const [editorNotice, setEditorNotice] = useState<{
+    tone: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+
+  const notify = (
+    message: string,
+    tone: "success" | "error" | "info" = "success",
+  ) => {
+    setEditorNotice({ message, tone });
+    window.setTimeout(() => setEditorNotice(null), 4200);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -675,7 +712,7 @@ export function VisualBuilder({
       setLoaded(false);
       const { data: pageRows } = await supabase
         .from("pages")
-        .select("id, name, slug")
+        .select("id, name, slug, seo_title, seo_desc, position")
         .eq("site_id", site.id)
         .order("position");
       let nextPages = (pageRows || []) as Page[];
@@ -690,7 +727,7 @@ export function VisualBuilder({
             seo_title: site.business_name,
             seo_desc: `Welcome to ${site.business_name}.`,
           })
-          .select("id, name, slug")
+          .select("id, name, slug, seo_title, seo_desc, position")
           .single();
         if (created) nextPages = [created as Page];
       }
@@ -713,10 +750,12 @@ export function VisualBuilder({
         loadedBlocks.find((block) => block.type === "Footer") || null;
       let nextHeader =
         fromThemeBlock(site.theme?.globalHeader) ||
+        fromThemeBlock(site.theme?.header) ||
         legacyHeader ||
         createGlobalHeader(site);
       let nextFooter =
         fromThemeBlock(site.theme?.globalFooter) ||
+        fromThemeBlock(site.theme?.footer) ||
         legacyFooter ||
         createGlobalFooter(site);
       const conversionPage =
@@ -760,12 +799,12 @@ export function VisualBuilder({
       );
       setGlobalHeader(nextHeader);
       setGlobalFooter(nextFooter);
-      setBlocks(nextBlocks);
+      resetBlocks(nextBlocks);
       setSelectedId(nextBlocks[0]?.id || nextHeader.id);
       setLoaded(true);
     };
     load();
-  }, [site.id]);
+  }, [site.id, resetBlocks]);
 
   const persistPageBlocks = async (
     pageId: string,
@@ -774,9 +813,13 @@ export function VisualBuilder({
     const localBlocks = nextBlocks.filter(
       (block) => block.type !== "Navigation" && block.type !== "Footer",
     );
-    await supabase.from("blocks").delete().eq("page_id", pageId);
+    const { error: deleteError } = await supabase
+      .from("blocks")
+      .delete()
+      .eq("page_id", pageId);
+    if (deleteError) throw deleteError;
     if (localBlocks.length) {
-      await supabase.from("blocks").insert(
+      const { error: insertError } = await supabase.from("blocks").insert(
         localBlocks.map((block, position) => ({
           id: block.id,
           page_id: pageId,
@@ -785,6 +828,7 @@ export function VisualBuilder({
           config: { ...block, id: undefined },
         })),
       );
+      if (insertError) throw insertError;
     }
   };
 
@@ -792,8 +836,13 @@ export function VisualBuilder({
     if (!loaded || !activePageId) return;
     const timer = window.setTimeout(async () => {
       setSaving(true);
-      await persistPageBlocks(activePageId, blocks);
-      setSaving(false);
+      try {
+        await persistPageBlocks(activePageId, blocks);
+      } catch (error: any) {
+        notify(`Could not save this page: ${error?.message || "Unknown error"}`, "error");
+      } finally {
+        setSaving(false);
+      }
     }, 650);
     return () => window.clearTimeout(timer);
   }, [blocks, activePageId, loaded]);
@@ -806,13 +855,23 @@ export function VisualBuilder({
         ...(site.theme || {}),
         globalHeader,
         globalFooter,
+        // Keep legacy aliases during the transition so older production
+        // renderers and cached deployments display the exact same chrome.
+        header: globalHeader,
+        footer: globalFooter,
       };
-      await supabase
-        .from("sites")
-        .update({ theme: nextTheme })
-        .eq("id", site.id);
-      onUpdateSite?.({ ...site, theme: nextTheme });
-      setSaving(false);
+      try {
+        const { error } = await supabase
+          .from("sites")
+          .update({ theme: nextTheme })
+          .eq("id", site.id);
+        if (error) throw error;
+        onUpdateSite?.({ ...site, theme: nextTheme });
+      } catch (error: any) {
+        notify(`Could not save the global header/footer: ${error?.message || "Unknown error"}`, "error");
+      } finally {
+        setSaving(false);
+      }
     }, 650);
     return () => window.clearTimeout(timer);
   }, [globalHeader, globalFooter, loaded]);
@@ -834,7 +893,7 @@ export function VisualBuilder({
         (block) => block.type !== "Navigation" && block.type !== "Footer",
       );
     setActivePageId(pageId);
-    setBlocks(nextBlocks);
+    resetBlocks(nextBlocks);
     setSelectedId(nextBlocks[0]?.id || globalHeader?.id || null);
     setSaving(false);
   };
@@ -854,11 +913,29 @@ export function VisualBuilder({
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setCommandOpen(true);
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      const editingText =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      if (!editingText && (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      } else if (
+        !editingText &&
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "y"
+      ) {
+        event.preventDefault();
+        redo();
       }
     };
     window.addEventListener("keydown", openCommand);
     return () => window.removeEventListener("keydown", openCommand);
-  }, []);
+  }, [redo, undo]);
 
   const updateSelected = (patch: Partial<WebBlock>) => {
     if (!selected) return;
@@ -906,6 +983,259 @@ export function VisualBuilder({
     if (!selected || isGlobalSelected) return;
     setBlocks((current) => current.filter((block) => block.id !== selected.id));
     setSelectedId(blocks.find((block) => block.id !== selected.id)?.id || null);
+  };
+  const moveBlock = (blockId: string, direction: -1 | 1) => {
+    setBlocks((current) => {
+      const index = current.findIndex((item) => item.id === blockId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const slugify = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "page";
+
+  const createPage = async () => {
+    const name = newPageName.trim();
+    if (!name) return;
+    const slug = slugify(name);
+    if (pages.some((candidate) => candidate.slug === slug)) {
+      notify("A page with that URL already exists.", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("pages")
+        .insert({
+          site_id: site.id,
+          name,
+          slug,
+          seo_title: `${name} | ${site.business_name}`,
+          seo_desc: `Learn more about ${name.toLowerCase()} at ${site.business_name}.`,
+          position: pages.length,
+        })
+        .select("id, name, slug, seo_title, seo_desc, position")
+        .single();
+      if (error) throw error;
+      const nextPage = data as Page;
+      setPages((current) => [...current, nextPage]);
+      setNewPageName("");
+      setPageManagerOpen(false);
+      setActivePageId(nextPage.id);
+      resetBlocks([]);
+      setSelectedId(globalHeader?.id || null);
+      notify(`${name} page created.`);
+    } catch (error: any) {
+      notify(`Could not create the page: ${error?.message || "Unknown error"}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updatePage = async (pageId: string, patch: Partial<Page>) => {
+    const nextPatch = { ...patch };
+    if (typeof nextPatch.slug === "string") nextPatch.slug = slugify(nextPatch.slug);
+    setSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("pages")
+        .update(nextPatch)
+        .eq("id", pageId)
+        .select("id, name, slug, seo_title, seo_desc, position")
+        .single();
+      if (error) throw error;
+      setPages((current) =>
+        current.map((candidate) => (candidate.id === pageId ? (data as Page) : candidate)),
+      );
+      notify("Page settings saved.");
+    } catch (error: any) {
+      notify(`Could not update the page: ${error?.message || "Unknown error"}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deletePage = async (pageToDelete: Page) => {
+    if (pages.length <= 1 || pageToDelete.slug === "home") {
+      notify("The Home page cannot be deleted.", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("pages").delete().eq("id", pageToDelete.id);
+      if (error) throw error;
+      const nextPages = pages.filter((candidate) => candidate.id !== pageToDelete.id);
+      setPages(nextPages);
+      if (activePageId === pageToDelete.id) {
+        const nextPage = nextPages[0];
+        const { data: rows, error: blockError } = await supabase
+          .from("blocks")
+          .select("*")
+          .eq("page_id", nextPage.id)
+          .order("position");
+        if (blockError) throw blockError;
+        const nextBlocks = (rows || [])
+          .map(fromRow)
+          .filter((item) => item.type !== "Navigation" && item.type !== "Footer");
+        setActivePageId(nextPage.id);
+        resetBlocks(nextBlocks);
+        setSelectedId(nextBlocks[0]?.id || globalHeader?.id || null);
+      }
+      notify(`${pageToDelete.name} page deleted.`, "info");
+    } catch (error: any) {
+      notify(`Could not delete the page: ${error?.message || "Unknown error"}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const applySiteKit = async (kitId: string) => {
+    const kit = getSiteKit(kitId);
+    if (!kit) return;
+    setApplyingKitId(kitId);
+    setSaving(true);
+    try {
+      const materialized = kit.build(site.business_name);
+      const { data: existingBlockRows } = await supabase
+        .from("blocks")
+        .select("*, pages!inner(site_id)")
+        .eq("pages.site_id", site.id);
+      await supabase.from("site_history").insert({
+        site_id: site.id,
+        page_id: null,
+        blocks: existingBlockRows || [],
+        header: globalHeader,
+        footer: globalFooter,
+        seo_title: `Before applying ${kit.name}`,
+        seo_desc: "Automatic backup created by the site-kit installer.",
+      });
+
+      const nextPages: Page[] = [];
+      for (let position = 0; position < materialized.pages.length; position += 1) {
+        const kitPage = materialized.pages[position];
+        const existing = pages.find((candidate) => candidate.slug === kitPage.slug);
+        const payload = {
+          site_id: site.id,
+          name: kitPage.name,
+          slug: kitPage.slug,
+          seo_title: kitPage.seoTitle,
+          seo_desc: kitPage.seoDesc,
+          position,
+        };
+        const query = existing
+          ? supabase
+              .from("pages")
+              .update(payload)
+              .eq("id", existing.id)
+              .select("id, name, slug, seo_title, seo_desc, position")
+              .single()
+          : supabase
+              .from("pages")
+              .insert(payload)
+              .select("id, name, slug, seo_title, seo_desc, position")
+              .single();
+        const { data: savedPage, error: pageError } = await query;
+        if (pageError || !savedPage) throw pageError || new Error("Page creation failed");
+        await persistPageBlocks(savedPage.id, kitPage.blocks);
+        nextPages.push(savedPage as Page);
+      }
+
+      const retainedIds = new Set(nextPages.map((item) => item.id));
+      const obsoleteIds = pages
+        .filter((candidate) => !retainedIds.has(candidate.id))
+        .map((candidate) => candidate.id);
+      if (obsoleteIds.length) {
+        const { error: deleteError } = await supabase
+          .from("pages")
+          .delete()
+          .in("id", obsoleteIds);
+        if (deleteError) throw deleteError;
+      }
+
+      const nextTheme = {
+        ...(site.theme || {}),
+        globalHeader: materialized.header,
+        globalFooter: materialized.footer,
+        header: materialized.header,
+        footer: materialized.footer,
+        activeSiteKit: kit.id,
+      };
+      const { data: updatedSite, error: siteError } = await supabase
+        .from("sites")
+        .update({ theme: nextTheme })
+        .eq("id", site.id)
+        .select()
+        .single();
+      if (siteError) throw siteError;
+
+      if (materialized.products?.length) {
+        const { error: productDeleteError } = await supabase
+          .from("ecom_products")
+          .delete()
+          .eq("site_id", site.id);
+        if (productDeleteError) throw productDeleteError;
+        const { error: productInsertError } = await supabase
+          .from("ecom_products")
+          .insert(
+            materialized.products.map((product) => ({
+              site_id: site.id,
+              title: product.title,
+              description: product.description,
+              price: product.price,
+              compare_at_price: product.compareAtPrice || null,
+              images: [{ url: product.image, alt: product.title }],
+              stock: 50,
+              category: product.category,
+              tags: product.tags,
+              offer_badge: product.badge || null,
+              status: "active",
+              seo_title: `${product.title} | ${site.business_name}`,
+              seo_desc: product.description,
+            })),
+          );
+        if (productInsertError) throw productInsertError;
+      }
+
+      const firstPage = nextPages[0];
+      setPages(nextPages);
+      setActivePageId(firstPage.id);
+      resetBlocks(materialized.pages[0].blocks);
+      setGlobalHeader(materialized.header);
+      setGlobalFooter(materialized.footer);
+      setSelectedId(materialized.pages[0].blocks[0]?.id || materialized.header.id);
+      setSiteKitsOpen(false);
+      onUpdateSite?.((updatedSite as SiteRecord) || { ...site, theme: nextTheme });
+      const products = await fetchProducts(site.id);
+      setEcomProducts(
+        products.map((product: any) => ({
+          id: product.id,
+          title: product.title,
+          description: product.description,
+          price: String(product.price),
+          compare_at: product.compare_at_price ? String(product.compare_at_price) : "",
+          stock: product.stock,
+          category: product.category || "General",
+          tags: product.tags || [],
+          offer_badge: product.offer_badge || "",
+          status: product.status === "active" ? "Active" : "Draft",
+          image: product.images?.[0]?.url || "",
+        })),
+      );
+      notify(`${kit.name} installed across ${nextPages.length} pages.`);
+    } catch (error: any) {
+      notify(`Could not apply the site kit: ${error?.message || "Unknown error"}`, "error");
+    } finally {
+      setApplyingKitId(null);
+      setSaving(false);
+    }
   };
   const replaceVariant = (variant: string) => {
     if (!selected) return;
@@ -981,24 +1311,53 @@ export function VisualBuilder({
             {saving ? "SAVING" : "SAVED"}
           </span>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
-          {(
-            [
-              { id: "desktop", icon: Monitor },
-              { id: "tablet", icon: Tablet },
-              { id: "mobile", icon: Smartphone },
-            ] as const
-          ).map(({ id, icon: Icon }) => (
+        <div className="hidden items-center gap-2 md:flex">
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
             <button
-              key={id}
-              onClick={() => setViewport(id)}
-              className={`grid size-7 place-items-center rounded-md ${viewport === id ? "bg-white text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-700"}`}
+              type="button"
+              onClick={undo}
+              disabled={!canUndo}
+              className="grid size-7 place-items-center rounded-md text-slate-500 hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+              title="Undo (Ctrl/Cmd + Z)"
             >
-              <Icon size={14} />
+              <Undo2 size={14} />
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={redo}
+              disabled={!canRedo}
+              className="grid size-7 place-items-center rounded-md text-slate-500 hover:bg-white disabled:cursor-not-allowed disabled:opacity-30"
+              title="Redo (Ctrl/Cmd + Shift + Z)"
+            >
+              <Redo2 size={14} />
+            </button>
+          </div>
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+            {(
+              [
+                { id: "desktop", icon: Monitor },
+                { id: "tablet", icon: Tablet },
+                { id: "mobile", icon: Smartphone },
+              ] as const
+            ).map(({ id, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setViewport(id)}
+                className={`grid size-7 place-items-center rounded-md ${viewport === id ? "bg-white text-slate-950 shadow-sm" : "text-slate-400 hover:text-slate-700"}`}
+                title={`${id[0].toUpperCase()}${id.slice(1)} preview`}
+              >
+                <Icon size={14} />
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSiteKitsOpen(true)}
+            className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-lime-500 hover:text-lime-800 sm:flex"
+          >
+            <LayoutTemplate size={14} /> Site kits
+          </button>
           <button
             onClick={() => setCommandOpen(true)}
             className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-slate-300 sm:flex"
@@ -1021,26 +1380,34 @@ export function VisualBuilder({
               if (activePageId) {
                 await persistPageBlocks(activePageId, blocks);
               }
-              const nextTheme = {
-                ...(site.theme || {}),
-                globalHeader,
-                globalFooter,
-              };
-              const { data } = await supabase
-                .from("sites")
+               const nextTheme = {
+                 ...(site.theme || {}),
+                 globalHeader,
+                 globalFooter,
+                 header: globalHeader,
+                 footer: globalFooter,
+               };
+               const { data, error } = await supabase
+                 .from("sites")
                 .update({ published: true, theme: nextTheme })
                 .eq("id", site.id)
                 .select()
-                .single();
+                 .single();
+               if (error) {
+                 notify(`Publish failed: ${error.message}`, "error");
+                 setSaving(false);
+                 return;
+               }
               onUpdateSite?.(
                 (data as SiteRecord) || {
                   ...site,
                   published: true,
                   theme: nextTheme,
                 },
-              );
-              setSaving(false);
-            }}
+               );
+               setSaving(false);
+               notify("Website published with the latest header, footer, and page content.");
+             }}
             className="rounded-lg bg-[#1c2521] px-3 py-2 text-xs font-black text-white hover:bg-[#354139]"
           >
             Publish
@@ -1051,9 +1418,18 @@ export function VisualBuilder({
       <div className="flex h-[calc(100vh-4rem)]">
         <aside className="relative hidden w-[250px] shrink-0 overflow-hidden border-r border-slate-200 bg-white lg:block">
           <div className="border-b border-slate-100 p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
-              Page
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                Page
+              </p>
+              <button
+                type="button"
+                onClick={() => setPageManagerOpen(true)}
+                className="flex items-center gap-1 text-[10px] font-black text-lime-700 hover:text-lime-900"
+              >
+                <Pencil size={11} /> Manage
+              </button>
+            </div>
             <div className="relative mt-2">
               <select
                 value={activePageId || ""}
@@ -1121,23 +1497,47 @@ export function VisualBuilder({
               </button>
             </div>
             {pageBlocks.map((block, index) => (
-              <button
+              <div
                 key={block.id}
-                onClick={() => setSelectedId(block.id)}
-                className={`mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition ${selectedId === block.id ? "bg-lime-100 text-lime-950" : "text-slate-600 hover:bg-slate-50"}`}
+                className={`group/layer mb-1 flex items-center rounded-lg transition ${selectedId === block.id ? "bg-lime-100 text-lime-950" : "text-slate-600 hover:bg-slate-50"}`}
               >
-                <span className="grid size-5 place-items-center rounded bg-white text-[9px] font-black shadow-sm">
-                  {index + 1}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-bold">
-                    {block.title || block.type}
+                <button
+                  onClick={() => setSelectedId(block.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+                >
+                  <span className="grid size-5 shrink-0 place-items-center rounded bg-white text-[9px] font-black shadow-sm">
+                    {index + 1}
                   </span>
-                  <span className="block text-[10px] text-slate-400">
-                    {block.type}
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-bold">
+                      {block.title || block.type}
+                    </span>
+                    <span className="block text-[10px] text-slate-400">
+                      {block.type}
+                    </span>
                   </span>
-                </span>
-              </button>
+                </button>
+                <div className="mr-1 hidden items-center gap-0.5 group-hover/layer:flex">
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    onClick={() => moveBlock(block.id, -1)}
+                    className="grid size-6 place-items-center rounded text-slate-400 hover:bg-white hover:text-slate-800 disabled:opacity-25"
+                    title="Move section up"
+                  >
+                    <ChevronDown size={12} className="rotate-180" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === pageBlocks.length - 1}
+                    onClick={() => moveBlock(block.id, 1)}
+                    className="grid size-6 place-items-center rounded text-slate-400 hover:bg-white hover:text-slate-800 disabled:opacity-25"
+                    title="Move section down"
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
           <div className="absolute bottom-0 w-[250px] border-t border-slate-100 bg-white p-3">
@@ -1346,11 +1746,67 @@ export function VisualBuilder({
                   value="content"
                   className="min-h-0 flex-1 overflow-y-auto p-4"
                 >
-                  <Field
-                    label="Eyebrow"
-                    value={selected.badge || ""}
-                    onChange={(value) => updateSelected({ badge: value })}
-                  />
+                  <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500 flex items-center gap-1.5 select-none">
+                        <Tag size={12} className="text-lime-600" />
+                        <span>Badge / Eyebrow</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const isBadgeActive = selected.showBadge !== false && Boolean(selected.badge);
+                          if (isBadgeActive) {
+                            updateSelected({ showBadge: false });
+                          } else {
+                            const updates: Record<string, any> = { showBadge: true };
+                            if (!selected.badge) {
+                              updates.badge = "WELCOME BADGE";
+                            }
+                            updateSelected(updates);
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer select-none ${
+                          selected.showBadge !== false && Boolean(selected.badge)
+                            ? "bg-lime-500/15 text-lime-700 border border-lime-500/30 hover:bg-lime-500/25"
+                            : "bg-slate-200/80 text-slate-500 border border-slate-300 hover:bg-slate-200"
+                        }`}
+                        title={selected.showBadge !== false && Boolean(selected.badge) ? "Click to turn off badge" : "Click to turn on badge"}
+                      >
+                        <span className={`size-1.5 rounded-full ${
+                          selected.showBadge !== false && Boolean(selected.badge)
+                            ? "bg-lime-600 animate-pulse"
+                            : "bg-slate-400"
+                        }`} />
+                        <span>{selected.showBadge !== false && Boolean(selected.badge) ? "Badge On" : "Badge Off"}</span>
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={selected.badge || ""}
+                        placeholder="e.g. AMBIENT LUXURY WELLNESS"
+                        onChange={(event) => {
+                          const val = event.target.value;
+                          updateSelected({
+                            badge: val,
+                            ...(val && selected.showBadge === false ? { showBadge: true } : {})
+                          });
+                        }}
+                        className={`w-full rounded-lg border px-3 py-2 text-xs font-bold outline-none transition ${
+                          selected.showBadge === false
+                            ? "border-slate-200 bg-slate-100/70 text-slate-400 opacity-70"
+                            : "border-slate-200 bg-white text-slate-900 focus:border-lime-600 focus:ring-1 focus:ring-lime-600"
+                        }`}
+                      />
+                    </div>
+                    <p className="mt-1.5 text-[9px] font-medium text-slate-400 leading-tight">
+                      {selected.showBadge === false
+                        ? "Badge is turned off and hidden from section header."
+                        : "Badge pill displayed above the section title."}
+                    </p>
+                  </div>
                   <Field
                     label="Heading"
                     value={selected.title || ""}
@@ -1556,6 +2012,30 @@ export function VisualBuilder({
         </Command>
       </Command.Dialog>
 
+      {pageManagerOpen && (
+        <PageManagerModal
+          pages={pages}
+          activePageId={activePageId}
+          newPageName={newPageName}
+          saving={saving}
+          onNewPageNameChange={setNewPageName}
+          onCreate={createPage}
+          onSelect={switchPage}
+          onUpdate={updatePage}
+          onDelete={deletePage}
+          onClose={() => setPageManagerOpen(false)}
+        />
+      )}
+
+      {siteKitsOpen && (
+        <SiteKitsModal
+          currentKitId={site.theme?.activeSiteKit}
+          applyingKitId={applyingKitId}
+          onApply={applySiteKit}
+          onClose={() => setSiteKitsOpen(false)}
+        />
+      )}
+
       {previewOpen && (
         <div className="fixed inset-0 z-[95] overflow-auto bg-slate-950/75 p-4">
           <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -1592,6 +2072,204 @@ export function VisualBuilder({
           </div>
         </div>
       )}
+
+      {editorNotice && (
+        <div
+          role="status"
+          className={`fixed bottom-5 left-1/2 z-[120] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border px-4 py-3 text-xs font-bold shadow-2xl ${
+            editorNotice.tone === "error"
+              ? "border-rose-200 bg-rose-50 text-rose-800"
+              : editorNotice.tone === "info"
+                ? "border-blue-200 bg-blue-50 text-blue-800"
+                : "border-emerald-200 bg-emerald-50 text-emerald-800"
+          }`}
+        >
+          {editorNotice.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PageManagerModal({
+  pages,
+  activePageId,
+  newPageName,
+  saving,
+  onNewPageNameChange,
+  onCreate,
+  onSelect,
+  onUpdate,
+  onDelete,
+  onClose,
+}: {
+  pages: Page[];
+  activePageId: string | null;
+  newPageName: string;
+  saving: boolean;
+  onNewPageNameChange: (value: string) => void;
+  onCreate: () => void;
+  onSelect: (pageId: string) => void;
+  onUpdate: (pageId: string, patch: Partial<Page>) => void;
+  onDelete: (page: Page) => void;
+  onClose: () => void;
+}) {
+  const active = pages.find((item) => item.id === activePageId) || pages[0];
+  const [draft, setDraft] = useState({
+    name: active?.name || "",
+    slug: active?.slug || "",
+    seo_title: active?.seo_title || "",
+    seo_desc: active?.seo_desc || "",
+  });
+
+  useEffect(() => {
+    setDraft({
+      name: active?.name || "",
+      slug: active?.slug || "",
+      seo_title: active?.seo_title || "",
+      seo_desc: active?.seo_desc || "",
+    });
+  }, [active?.id]);
+
+  return (
+    <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm">
+      <div className="mx-auto mt-[6vh] grid max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl md:grid-cols-[280px_1fr]">
+        <aside className="border-b border-slate-200 bg-slate-50 p-4 md:border-b-0 md:border-r">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Structure</p>
+              <h2 className="mt-1 text-lg font-black">Pages</h2>
+            </div>
+            <button type="button" onClick={onClose} className="grid size-8 place-items-center rounded-lg hover:bg-slate-200">
+              <X size={16} />
+            </button>
+          </div>
+          <div className="mt-4 space-y-1">
+            {pages.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelect(item.id)}
+                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left ${item.id === activePageId ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-white"}`}
+              >
+                <span>
+                  <span className="block text-xs font-black">{item.name}</span>
+                  <span className={`mt-0.5 block text-[10px] ${item.id === activePageId ? "text-slate-400" : "text-slate-400"}`}>/{item.slug === "home" ? "" : item.slug}</span>
+                </span>
+                {item.slug === "home" && <span className="text-[8px] font-black uppercase text-lime-500">Home</span>}
+              </button>
+            ))}
+          </div>
+          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-3">
+            <label className="text-[9px] font-black uppercase tracking-wider text-slate-400">New page</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                value={newPageName}
+                onChange={(event) => onNewPageNameChange(event.target.value)}
+                onKeyDown={(event) => event.key === "Enter" && onCreate()}
+                placeholder="e.g. Case Studies"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2.5 py-2 text-xs font-bold outline-none focus:border-lime-500"
+              />
+              <button type="button" onClick={onCreate} disabled={saving || !newPageName.trim()} className="grid size-9 place-items-center rounded-lg bg-lime-400 text-slate-950 disabled:opacity-40">
+                <Plus size={15} />
+              </button>
+            </div>
+          </div>
+        </aside>
+        <section className="p-5 sm:p-7">
+          {active && (
+            <>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Page settings</p>
+              <h3 className="mt-1 text-xl font-black">{active.name}</h3>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <Field label="Page name" value={draft.name} onChange={(name) => setDraft((current) => ({ ...current, name }))} />
+                <Field label="URL slug" value={draft.slug} onChange={(slug) => setDraft((current) => ({ ...current, slug }))} />
+              </div>
+              <Field label="SEO title" value={draft.seo_title} onChange={(seo_title) => setDraft((current) => ({ ...current, seo_title }))} />
+              <Field label="Meta description" value={draft.seo_desc} multiline onChange={(seo_desc) => setDraft((current) => ({ ...current, seo_desc }))} />
+              <div className="mt-7 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={() => onDelete(active)}
+                  disabled={active.slug === "home" || pages.length <= 1 || saving}
+                  className="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-black text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-30"
+                >
+                  <Trash2 size={14} /> Delete page
+                </button>
+                <button
+                  type="button"
+                  disabled={saving || !draft.name.trim() || !draft.slug.trim()}
+                  onClick={() => onUpdate(active.id, draft)}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-xs font-black text-white disabled:opacity-40"
+                >
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save page settings
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function SiteKitsModal({
+  currentKitId,
+  applyingKitId,
+  onApply,
+  onClose,
+}: {
+  currentKitId?: string;
+  applyingKitId: string | null;
+  onApply: (kitId: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[110] overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm">
+      <div className="mx-auto my-[5vh] max-w-5xl rounded-3xl border border-slate-200 bg-[#f6f7f4] p-5 shadow-2xl sm:p-7">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-lime-200 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-lime-950">
+              <LayoutTemplate size={12} /> Professional site kits
+            </span>
+            <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950">Start from a complete website.</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Each kit installs five connected pages, a shared header and footer, responsive section variants, SEO copy, and real button destinations.</p>
+          </div>
+          <button type="button" onClick={onClose} className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-slate-500 shadow-sm hover:text-slate-950">
+            <X size={17} />
+          </button>
+        </div>
+        <div className="mt-7 grid gap-4 lg:grid-cols-3">
+          {SITE_KITS.map((kit) => (
+            <article key={kit.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="relative h-36 overflow-hidden p-5" style={{ background: `linear-gradient(135deg, ${kit.palette[0]}, ${kit.palette[1]} 65%, ${kit.palette[2]})` }}>
+                <div className="absolute inset-x-5 top-5 h-6 rounded-md border border-white/15 bg-black/25" />
+                <div className="absolute bottom-5 left-5 right-16 h-14 rounded-xl border border-white/15 bg-white/10 backdrop-blur" />
+                <span className="absolute bottom-5 right-5 rounded-full bg-white px-2 py-1 text-[9px] font-black text-slate-950">{kit.pageCount} pages</span>
+              </div>
+              <div className="flex flex-1 flex-col p-5">
+                <p className="text-[9px] font-black uppercase tracking-[0.14em] text-slate-400">{kit.category}</p>
+                <h3 className="mt-1.5 text-lg font-black text-slate-950">{kit.name}</h3>
+                <p className="mt-2 text-xs leading-5 text-slate-500">{kit.description}</p>
+                <p className="mt-4 text-[10px] font-bold text-slate-400">Best for: {kit.audience}</p>
+                <button
+                  type="button"
+                  disabled={Boolean(applyingKitId)}
+                  onClick={() => onApply(kit.id)}
+                  className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-xs font-black text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {applyingKitId === kit.id ? <Loader2 size={14} className="animate-spin" /> : <LayoutTemplate size={14} />}
+                  {applyingKitId === kit.id ? "Installing…" : currentKitId === kit.id ? "Reinstall kit" : "Use this site kit"}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-900">
+          <CircleAlert size={14} className="mt-0.5 shrink-0" />
+          <span>Applying a kit replaces page content with the selected structure. OnlyPage creates an automatic revision backup first; your site identity and account are not changed.</span>
+        </div>
+      </div>
     </div>
   );
 }

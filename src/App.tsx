@@ -33,6 +33,12 @@ import PublicSiteView from './components/PublicSiteView';
 const getSubdomain = (): string | null => {
   if (typeof window === 'undefined') return null;
   const hostname = window.location.hostname.toLowerCase();
+
+  // Local production-parity preview: http://my-site.localhost:3000
+  if (hostname.endsWith('.localhost')) {
+    const localSubdomain = hostname.slice(0, -'.localhost'.length).trim();
+    if (localSubdomain) return localSubdomain;
+  }
   
   if (
     hostname === 'localhost' ||
@@ -73,9 +79,16 @@ export default function App() {
   // Load the current user's site (if any) to decide onboarding vs dashboard.
   const loadSite = async (isInitial = false) => {
     if (isInitial) setSiteLoading(true);
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      setSite(null);
+      if (isInitial) setSiteLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('sites')
       .select('*')
+      .eq('owner_id', authData.user.id)
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle();

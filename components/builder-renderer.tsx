@@ -487,14 +487,7 @@ export function BuilderRenderer({
     // Hijack Navigation subtitle to display dynamic site pages
     let displayChildren = children;
     if (block.type === 'Navigation' && elementId === 'subtitle') {
-      const editableNavigationLinks =
-        (block as any).links?.length > 0
-          ? (block as any).links
-          : (pages || []).map((page: any) => ({
-              id: page.id,
-              label: page.name,
-              url: page.slug,
-            }));
+      const editableNavigationLinks = navigationLinks;
       if (editableNavigationLinks.length > 0) {
         displayChildren = (
           <div className="flex items-center gap-6">
@@ -593,14 +586,25 @@ export function BuilderRenderer({
   // Editable footer links: real block.links when present, else sensible fallback labels.
   const footerLinks: { id: string; label: string; url?: string }[] =
     (block as any).links && (block as any).links.length > 0 ? (block as any).links : [];
+  const normalizeInternalSlug = (value?: string) =>
+    String(value || '').replace(/^\/+|\/+$/g, '').trim().toLowerCase();
+  const pageNavigationLinks = pages.map((page: any) => {
+    const configured = footerLinks.find(
+      (link) => normalizeInternalSlug(link.url) === normalizeInternalSlug(page.slug),
+    );
+    return {
+      id: configured?.id || page.id,
+      label: configured?.label || page.name,
+      url: page.slug,
+    };
+  });
+  const externalNavigationLinks = footerLinks.filter((link) =>
+    /^(https?:\/\/|mailto:|tel:|#)/i.test(String(link.url || '')),
+  );
   const navigationLinks: { id: string; label: string; url?: string }[] =
-    footerLinks.length > 0
-      ? footerLinks
-      : pages.map((page: any) => ({
-          id: page.id,
-          label: page.name,
-          url: page.slug,
-        }));
+    pages.length > 0
+      ? [...pageNavigationLinks, ...externalNavigationLinks]
+      : footerLinks;
 
   const bgType = (styles as any).bgType || (styles.useGradient ? 'gradient' : 'color');
   const bgImageUrl = (styles as any).bgImageUrl || '';

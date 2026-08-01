@@ -1,15 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { BuilderRenderer } from '@/components/builder-renderer';
-import { Loader2, Globe, ArrowRight, Sparkles } from 'lucide-react';
-import type { WebBlock } from '@/components/website-builder-editor';
+import React, { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { fetchPublicProducts } from "@/lib/ecom-queries";
+import { BuilderRenderer } from "@/components/builder-renderer";
+import { ArrowRight, Globe, Loader2, Sparkles } from "lucide-react";
+import type { WebBlock } from "@/components/website-builder-editor";
 
 interface PublicSiteViewProps {
   subdomain: string;
 }
 
+const mapBlock = (row: any): WebBlock => ({
+  id: row.id,
+  type: row.type,
+  ...(row.config || {}),
+});
+
+const cleanSlug = (value?: string) =>
+  String(value || "home")
+    .replace(/^\/+|\/+$/g, "")
+    .trim() || "home";
+
 export default function PublicSiteView({ subdomain }: PublicSiteViewProps) {
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [site, setSite] = useState<any>(null);
   const [pages, setPages] = useState<any[]>([]);
   const [activePageId, setActivePageId] = useState<string | null>(null);
@@ -19,216 +32,200 @@ export default function PublicSiteView({ subdomain }: PublicSiteViewProps) {
   const [ecomProducts, setEcomProducts] = useState<any[]>([]);
   const [notFound, setNotFound] = useState(false);
 
+  const loadPage = async (page: any, siteRecord = site) => {
+    if (!page) return;
+    setPageLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("blocks")
+        .select("*")
+        .eq("page_id", page.id)
+        .order("position", { ascending: true });
+      if (error) throw error;
+      setBlocks(
+        (data || [])
+          .filter((row) => row.type !== "Navigation" && row.type !== "Footer")
+          .map(mapBlock),
+      );
+      setActivePageId(page.id);
+      document.title =
+        page.seo_title || `${page.name} | ${siteRecord?.business_name || "OnlyPage"}`;
+      const description = page.seo_desc || `Explore ${page.name} at ${siteRecord?.business_name || "this website"}.`;
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement("meta");
+        metaDescription.setAttribute("name", "description");
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.setAttribute("content", description);
+    } finally {
+      setPageLoading(false);
+    }
+  };
+
+  const navigateToPage = async (slug: string, pushHistory = true) => {
+    const targetSlug = cleanSlug(slug);
+    const target = pages.find((page) => cleanSlug(page.slug) === targetSlug);
+    if (!target) return;
+    if (pushHistory) {
+      const path = targetSlug === "home" ? "/" : `/${targetSlug}`;
+      window.history.pushState({ pageId: target.id }, "", path);
+    }
+    await loadPage(target);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   useEffect(() => {
+    let cancelled = false;
+    let popStateHandler: (() => void) | null = null;
+
     async function loadPublicSite() {
       setLoading(true);
       setNotFound(false);
-
       try {
-        // 1. Fetch site by subdomain (case-insensitive)
         const { data: siteData, error: siteError } = await supabase
-          .from('sites')
-          .select('*')
-          .ilike('subdomain', subdomain.trim())
+          .from("sites")
+          .select("*")
+          .ilike("subdomain", subdomain.trim())
+          .eq("published", true)
           .maybeSingle();
+        if (siteError || !siteData) throw siteError || new Error("Site not found");
 
-        if (siteError || !siteData) {
-          setNotFound(true);
-          setLoading(false);
-          return;
+        const { data: pagesData, error: pagesError } = await supabase
+          .from("pages")
+          .select("*")
+          .eq("site_id", siteData.id)
+          .order("position", { ascending: true });
+        if (pagesError || !pagesData?.length) {
+          throw pagesError || new Error("No published pages found");
         }
+        if (cancelled) return;
 
         setSite(siteData);
-
-        // 2. Fetch pages for site
-        const { data: pagesData, error: pagesError } = await supabase
-          .from('pages')
-          .select('*')
-          .eq('site_id', siteData.id)
-          .order('position', { ascending: true });
-
-        if (pagesError || !pagesData || pagesData.length === 0) {
-          setNotFound(true);
-          setLoading(false);
-          return;
-        }
-
         setPages(pagesData);
+        // Current editor keys first, then legacy aliases for older sites.
+        setGlobalHeader(siteData.theme?.globalHeader || siteData.theme?.header || null);
+        setGlobalFooter(siteData.theme?.globalFooter || siteData.theme?.footer || null);
 
-        // Check path slug or default to home page
-        const pathname = window.location.pathname.replace(/^\//, '').trim();
-        const activePage = pagesData.find(p => p.slug === pathname) || pagesData[0];
-        setActivePageId(activePage.id);
-
-        // Update Document Title & Meta Description for SEO
-        document.title = activePage.seo_title || `${siteData.business_name} — Powered by OnlyPage`;
-        if (activePage.seo_desc) {
-          let metaDesc = document.querySelector('meta[name="description"]');
-          if (metaDesc) metaDesc.setAttribute('content', activePage.seo_desc);
+        const products = await fetchPublicProducts(siteData.id);
+        if (!cancelled) {
+          setEcomProducts(
+            products.map((product: any) => ({
+              id: product.id,
+              title: product.title,
+              description: product.description || "",
+              price: String(product.price || 0),
+              compare_at: product.compare_at_price ? String(product.compare_at_price) : "",
+              stock: product.stock,
+              category: product.category || "General",
+              tags: product.tags || [],
+              offer_badge: product.offer_badge || "",
+              status: "Active",
+              image: product.images?.[0]?.url || "",
+            })),
+          );
         }
 
-        // Extract Global Header & Footer from theme
-        if (siteData.theme?.header) setGlobalHeader(siteData.theme.header);
-        if (siteData.theme?.footer) setGlobalFooter(siteData.theme.footer);
-
-        // 3. Fetch blocks for active page
-        const { data: blocksData, error: blocksError } = await supabase
-          .from('blocks')
-          .select('*')
-          .eq('page_id', activePage.id)
-          .order('position', { ascending: true });
-
-        if (!blocksError && blocksData && blocksData.length > 0) {
-          const mapped = blocksData
-            .filter(b => b.type !== 'Navigation' && b.type !== 'Footer')
-            .map(b => ({
-              id: b.id,
-              type: b.type as any,
-              position: b.position,
-              ...(b.config as any)
-            }));
-          setBlocks(mapped);
+        const pathSlug = cleanSlug(window.location.pathname);
+        const requested = pagesData.find((page) => cleanSlug(page.slug) === pathSlug);
+        const home =
+          pagesData.find((page) => cleanSlug(page.slug) === "home") || pagesData[0];
+        const initialPage = requested || home;
+        if (!requested && pathSlug !== "home") {
+          window.history.replaceState({ pageId: home.id }, "", "/");
         }
+        await loadPage(initialPage, siteData);
 
-        // Fetch products if store exists
-        const { data: prods } = await supabase
-          .from('products')
-          .select('*')
-          .eq('site_id', siteData.id)
-          .order('created_at', { ascending: false });
-
-        if (prods) {
-          setEcomProducts(prods.map((p: any) => ({
-            id: p.id,
-            name: p.title || p.name,
-            price: p.price ? `₹${p.price}` : '₹0',
-            description: p.description || '',
-            category: p.category || 'All Products',
-            imageUrl: p.image_url || p.imageUrl || '',
-            rating: p.rating || 4.9,
-            reviewsCount: p.reviews_count || 12,
-            inStock: p.in_stock !== false,
-            badge: p.offer_badge || ''
-          })));
-        }
-
-      } catch (err) {
-        console.error('Error loading public site:', err);
-        setNotFound(true);
+        popStateHandler = () => {
+          const nextSlug = cleanSlug(window.location.pathname);
+          const nextPage =
+            pagesData.find((page) => cleanSlug(page.slug) === nextSlug) || home;
+          void loadPage(nextPage, siteData);
+        };
+        window.addEventListener("popstate", popStateHandler);
+      } catch (error) {
+        console.error("Error loading public site:", error);
+        if (!cancelled) setNotFound(true);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    if (subdomain) {
-      loadPublicSite();
-    }
+    if (subdomain) void loadPublicSite();
+    return () => {
+      cancelled = true;
+      if (popStateHandler) window.removeEventListener("popstate", popStateHandler);
+    };
   }, [subdomain]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f7f7f4] flex flex-col items-center justify-center text-slate-800 space-y-3 font-sans">
+      <div className="flex min-h-screen flex-col items-center justify-center space-y-3 bg-[#f7f7f4] font-sans text-slate-800">
         <Loader2 size={28} className="animate-spin text-[#008060]" />
-        <p className="text-xs font-bold tracking-wide text-slate-500">Loading website...</p>
+        <p className="text-xs font-bold tracking-wide text-slate-500">Loading website…</p>
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-[#18201d] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
-        <div className="size-16 rounded-2xl bg-[#bef264]/10 border border-[#bef264]/20 flex items-center justify-center text-[#bef264] mb-6 shadow-xl">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#18201d] p-6 text-center font-sans text-white">
+        <div className="mb-6 flex size-16 items-center justify-center rounded-2xl border border-[#bef264]/20 bg-[#bef264]/10 text-[#bef264] shadow-xl">
           <Globe size={32} />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white max-w-md">
-          <span className="text-[#bef264]">{subdomain}.onlypage.in</span> is available to claim!
+        <h1 className="max-w-md text-2xl font-black tracking-tight text-white sm:text-3xl">
+          <span className="text-[#bef264]">{subdomain}.onlypage.in</span> is not live yet.
         </h1>
-        <p className="mt-3 text-xs sm:text-sm text-slate-400 max-w-md leading-relaxed font-medium">
-          This site is not published yet or hasn't been set up. You can create your own business website on this address in under 2 minutes.
+        <p className="mt-3 max-w-md text-xs font-medium leading-relaxed text-slate-400 sm:text-sm">
+          This address has not been published. Create an OnlyPage account to build your own multi-page website.
         </p>
-
-        <div className="mt-8 flex flex-col sm:flex-row gap-3">
-          <a
-            href="https://onlypage.in"
-            className="px-6 py-3 rounded-xl bg-[#bef264] hover:bg-[#a3e635] text-[#18201d] font-extrabold text-xs tracking-wide transition shadow-lg flex items-center justify-center gap-2"
-          >
-            <span>Create Your OnlyPage</span>
-            <ArrowRight size={14} />
-          </a>
-        </div>
+        <a href="https://onlypage.in" className="mt-8 flex items-center justify-center gap-2 rounded-xl bg-[#bef264] px-6 py-3 text-xs font-extrabold tracking-wide text-[#18201d] shadow-lg transition hover:bg-[#a3e635]">
+          <span>Create your OnlyPage</span>
+          <ArrowRight size={14} />
+        </a>
       </div>
     );
   }
 
+  const rendererProps = {
+    isActive: false,
+    onSelect: () => {},
+    siteId: site.id,
+    pages,
+    onNavigatePage: (slug: string) => void navigateToPage(slug),
+    site,
+    activePageId,
+    ecomProducts,
+  };
+
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-[#bef264] selection:text-[#18201d]">
-      {/* Global Header */}
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#bef264] selection:text-[#18201d]">
       {globalHeader && (
-        <BuilderRenderer 
-          block={globalHeader} 
-          isActive={false} 
-          onSelect={() => {}} 
-          siteId={site.id}
-          pages={pages}
-          onNavigatePage={(slug) => {
-            const targetPage = pages.find(p => p.slug === slug);
-            if (targetPage) {
-              setActivePageId(targetPage.id);
-              window.history.pushState({}, '', `/${slug === 'home' ? '' : slug}`);
-            }
-          }}
-          site={site}
-          activePageId={activePageId}
-          ecomProducts={ecomProducts}
-        />
+        <header data-global-part="header">
+          <BuilderRenderer block={globalHeader} {...rendererProps} />
+        </header>
       )}
 
-      {/* Main Page Blocks */}
-      <main>
+      <main aria-busy={pageLoading} className={pageLoading ? "opacity-80 transition-opacity" : "transition-opacity"}>
         {blocks.length === 0 ? (
-          <div className="py-24 text-center text-slate-400 text-sm font-medium">
-            No content published on this page yet.
-          </div>
+          <div className="py-24 text-center text-sm font-medium text-slate-400">No content has been added to this page yet.</div>
         ) : (
-          blocks.map(block => (
-            <div key={block.id}>
-              <BuilderRenderer 
-                block={block} 
-                isActive={false} 
-                onSelect={() => {}} 
-                siteId={site.id}
-                pages={pages}
-                site={site}
-                activePageId={activePageId}
-                ecomProducts={ecomProducts}
-              />
+          blocks.map((block) => (
+            <div key={block.id} id={block.id} data-block-type={block.type}>
+              <BuilderRenderer block={block} {...rendererProps} />
             </div>
           ))
         )}
       </main>
 
-      {/* Global Footer */}
       {globalFooter && (
-        <BuilderRenderer 
-          block={globalFooter} 
-          isActive={false} 
-          onSelect={() => {}} 
-          siteId={site.id}
-          pages={pages}
-          site={site}
-          activePageId={activePageId}
-          ecomProducts={ecomProducts}
-        />
+        <footer data-global-part="footer">
+          <BuilderRenderer block={globalFooter} {...rendererProps} />
+        </footer>
       )}
 
-      {/* Discrete Powered By OnlyPage badge for public sites */}
-      <div className="py-4 bg-[#18201d] text-center border-t border-slate-800">
-        <a 
-          href="https://onlypage.in" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-[#bef264] transition"
-        >
+      <div className="border-t border-slate-800 bg-[#18201d] py-4 text-center">
+        <a href="https://onlypage.in" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 transition hover:text-[#bef264]">
           <Sparkles size={12} className="text-[#bef264]" />
           <span>Powered by <strong className="text-white">OnlyPage</strong></span>
         </a>
