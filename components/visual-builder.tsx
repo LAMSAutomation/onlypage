@@ -1707,6 +1707,19 @@ export function VisualBuilder({
                   onClick={() => setSelectedId(globalHeader.id)}
                   className={`group relative cursor-pointer transition ${selectedId === globalHeader.id ? "z-[1] ring-2 ring-inset ring-lime-500" : "hover:ring-2 hover:ring-inset hover:ring-lime-300/70"}`}
                 >
+                  {selectedId !== globalHeader.id && (
+                    <button
+                      type="button"
+                      aria-label="Edit global header"
+                      data-editor-selection-overlay="true"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedId(globalHeader.id);
+                        setSelectedSubElement(null);
+                      }}
+                      className="absolute inset-0 z-40 cursor-pointer bg-transparent"
+                    />
+                  )}
                   <BuilderRenderer
                     block={globalHeader}
                     isActive={selectedId === globalHeader.id}
@@ -1760,6 +1773,19 @@ export function VisualBuilder({
                     onClick={() => setSelectedId(block.id)}
                     className={`group relative cursor-pointer transition ${selectedId === block.id ? "z-[1] ring-2 ring-inset ring-lime-500" : "hover:ring-2 hover:ring-inset hover:ring-lime-300/70"}`}
                   >
+                    {selectedId !== block.id && (
+                      <button
+                        type="button"
+                        aria-label={`Edit ${block.type} section`}
+                        data-editor-selection-overlay="true"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedId(block.id);
+                          setSelectedSubElement(null);
+                        }}
+                        className="absolute inset-0 z-40 cursor-pointer bg-transparent"
+                      />
+                    )}
                     <BuilderRenderer
                       block={block}
                       isActive={selectedId === block.id}
@@ -1793,6 +1819,19 @@ export function VisualBuilder({
                   onClick={() => setSelectedId(globalFooter.id)}
                   className={`group relative cursor-pointer transition ${selectedId === globalFooter.id ? "z-[1] ring-2 ring-inset ring-lime-500" : "hover:ring-2 hover:ring-inset hover:ring-lime-300/70"}`}
                 >
+                  {selectedId !== globalFooter.id && (
+                    <button
+                      type="button"
+                      aria-label="Edit global footer"
+                      data-editor-selection-overlay="true"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedId(globalFooter.id);
+                        setSelectedSubElement(null);
+                      }}
+                      className="absolute inset-0 z-40 cursor-pointer bg-transparent"
+                    />
+                  )}
                   <BuilderRenderer
                     block={globalFooter}
                     isActive={selectedId === globalFooter.id}
