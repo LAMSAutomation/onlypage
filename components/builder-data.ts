@@ -56,6 +56,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'glass-panel', name: 'Glass Panel', description: 'Layered translucent surfaces with subtle borders and atmospheric depth', tags: ['Glass', 'Layered', 'Tech'] }
   ],
   Features: [
+    { id: 'premium-bento-grid', name: 'Premium Outcome Bento', description: 'Art-directed asymmetric feature cards with imagery, outcome copy, and connected actions', tags: ['Premium', 'Bento', 'Interactive', 'Media'] },
     { id: 'academy-courses', name: 'Editorial Course Grid', description: 'Image-led two-column curriculum cards with strong hierarchy and art-directed overlays', tags: ['Academy', 'Courses', 'Editorial', 'Media'] },
     { id: 'feature-grid', name: 'Classic Icon Grid', description: 'Fully responsive grid layout with custom hover scale effects', tags: ['Grid', 'Modern', 'Symmetric'] },
     { id: 'bento-box', name: 'Premium Bento Grid', description: 'Asymmetric grid layout inspired by Apple and Vercel', tags: ['Bento', 'Premium', 'Minimalist'] },
@@ -83,6 +84,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'glass-panel', name: 'Glass Action Panel', description: 'Layered translucent CTA with a premium technology feel', tags: ['Glass', 'Tech', 'Layered'] }
   ],
   Gallery: [
+    { id: 'premium-gallery-lightbox', name: 'Premium Editorial Lightbox', description: 'Art-directed image mosaic with captions and a working fullscreen gallery viewer', tags: ['Premium', 'Gallery', 'Lightbox', 'Interactive'] },
     { id: 'masonry', name: 'Staggered Masonry Grid', description: 'Pinterest-style fluid layouts resizing columns gracefully', tags: ['Artistic', 'Masonry', 'Media'] },
     { id: 'slider', name: 'Before-After Comparer', description: 'Click-toggle to compare a project before and after styling', tags: ['Interactive', 'Slider', 'Design'] },
     { id: 'marquee-logos', name: 'Infinite Logo Marquee', description: 'Endless horizontal scrolling of enterprise client logos', tags: ['Marquee', 'Enterprise', 'Social-Proof'] },
@@ -95,6 +97,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'warm-studio', name: 'Warm Studio Journal', description: 'Organic gallery direction for makers, food, hospitality, and wellness', tags: ['Warm', 'Journal', 'Organic'] }
   ],
   Business: [
+    { id: 'premium-story-split', name: 'Premium Case Study Split', description: 'Large editorial image, proof points, measurable outcomes, and a connected next action', tags: ['Premium', 'Case Study', 'Story', 'Media'] },
     { id: 'academy-session', name: 'Live Session Case Study', description: 'Large media case study with supporting copy, proof metrics, and a course action', tags: ['Academy', 'Case Study', 'Stats', 'Media'] },
     { id: 'treatment-list', name: 'Luxury Treatment Menu', description: 'Fine-detailed lists displaying treatments, times, and costs', tags: ['Salon', 'Luxury', 'Treatments'] },
     { id: 'packages', name: 'Service Packages Bento', description: 'Pre-bundled bundles featuring tick lists and accents', tags: ['Packages', 'Bespoke', 'Doctor'] },
@@ -107,6 +110,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'warm-studio', name: 'Artisan Service Menu', description: 'Human, tactile visual direction for studios and independent professionals', tags: ['Warm', 'Artisan', 'Organic'] }
   ],
   Pricing: [
+    { id: 'premium-pricing-toggle', name: 'Premium Pricing Switcher', description: 'Polished plan comparison with a working monthly/annual billing control and highlighted recommendation', tags: ['Premium', 'Pricing', 'Interactive', 'Conversion'] },
     { id: 'saas-pricing', name: 'Standard SaaS 3-Tiers', description: 'Standard billing tiers highlighting a recommended choice', tags: ['SaaS', 'Tiers', 'Checklist'] },
     { id: 'service-tier', name: 'Simple Service Pricer', description: 'Local business packages with individual CTA buttons', tags: ['Service', 'Minimal', 'Compact'] },
     { id: 'comparison-pricing', name: 'Full Matrix Pricing', description: 'A highly structured pricing spreadsheet layout', tags: ['Enterprise', 'Matrix', 'Compare'] },
@@ -118,6 +122,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'glass-panel', name: 'Glass Subscription Plans', description: 'Layered futuristic plan cards for software and digital products', tags: ['Glass', 'SaaS', 'Tech'] }
   ],
   Testimonials: [
+    { id: 'premium-testimonial-carousel', name: 'Premium Story Carousel', description: 'Large focused customer story with working previous/next controls, avatars, and ratings', tags: ['Premium', 'Carousel', 'Stories', 'Interactive'] },
     { id: 'academy-stories', name: 'Academy Student Stories', description: 'Dark editorial testimonial grid with understated proof and participant details', tags: ['Academy', 'Students', 'Editorial', 'Trust'] },
     { id: 'review-cards', name: 'Classic Review Tiles', description: 'Polished client statement blocks with dynamic star ratings', tags: ['Clean', 'Grid'] },
     { id: 'google-review', name: 'Google Stars & Badging', description: 'Trust-focused layout integrating Google Maps badges', tags: ['Google', 'Trust', 'Local-SEO'] },
@@ -129,6 +134,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'mono-grid', name: 'Case Study Quotes', description: 'Crisp testimonial system for agencies, studios, and B2B teams', tags: ['Mono', 'Case Study', 'B2B'] }
   ],
   Forms: [
+    { id: 'premium-contact-panel', name: 'Premium Contact Workspace', description: 'Configurable lead form paired with direct contact channels and a real submission workflow', tags: ['Premium', 'Lead', 'Contact', 'Configurable'] },
     { id: 'academy-enquiry', name: 'Academy Course Enquiry', description: 'Premium configurable enquiry form for course interests, dates, and learning goals', tags: ['Academy', 'Lead', 'Configurable'] },
     { id: 'academy-registration', name: 'Course Registration', description: 'Structured enrollment form with course selection, batch date, payment, and notes', tags: ['Academy', 'Enrollment', 'Registration'] },
     { id: 'academy-portal', name: 'Student Portal Access', description: 'Focused sign-in and access-request panel for members and enrolled students', tags: ['Academy', 'Portal', 'Authentication'] },
@@ -156,6 +162,10 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'warm-studio', name: 'Maker Market', description: 'Warm organic storefront direction for handmade and independent brands', tags: ['Maker', 'Warm', 'Organic'] }
   ],
   Special: [
+    { id: 'premium-proof-rail', name: 'Premium Trust Rail', description: 'Compact high-credibility strip for key numbers, assurances, certifications, or brand proof', tags: ['Premium', 'Trust', 'Metrics', 'Compact'] },
+    { id: 'premium-results-metrics', name: 'Premium Results Stage', description: 'Oversized performance numbers with editorial hierarchy and responsive data cards', tags: ['Premium', 'Results', 'Metrics', 'Editorial'] },
+    { id: 'premium-roadmap', name: 'Premium Journey Roadmap', description: 'Responsive numbered journey with connected milestones and clear supporting explanations', tags: ['Premium', 'Roadmap', 'Process', 'Timeline'] },
+    { id: 'premium-faq', name: 'Premium FAQ Accordion', description: 'Editorial FAQ layout with working accessible expand and collapse interactions', tags: ['Premium', 'FAQ', 'Accordion', 'Interactive'] },
     { id: 'academy-process', name: 'Academy Numbered Process', description: 'Large editorial step numbers with structured education workflow copy', tags: ['Academy', 'Process', 'Editorial'] },
     { id: 'faq-accordions', name: 'FAQ Interactive Drawers', description: 'Interactive accordion list maximizing space gracefully', tags: ['Accordions', 'Interactive'] },
     { id: 'steps-path', name: 'Step Process Roadmap', description: 'Horizontal paths mapping the user journey', tags: ['Timeline', 'Roadmap'] },

@@ -17,6 +17,7 @@ import {
 import { WebBlock, BlockCSSStyles } from './website-builder-editor';
 import { supabase } from '@/lib/supabase';
 import { isPremiumAcademyVariant, PremiumAcademyBlock } from './premium-academy-blocks';
+import { isPremiumSiteModuleVariant, PremiumSiteModule } from './premium-site-modules';
 
 // Dynamically render any Lucide icon by name
 export function DynamicIcon({ name, size = 18, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
@@ -348,6 +349,7 @@ export function BuilderRenderer({
   const block = resolvedBlock;
   const styles = block.styles;
   const premiumAcademy = isPremiumAcademyVariant(block.variant);
+  const premiumSiteModule = isPremiumSiteModuleVariant(block.variant);
   const [faqOpen, setFaqOpen] = useState<Record<string, boolean>>({});
   const [activeBeforeAfter, setActiveBeforeAfter] = useState<number>(50); // percentage slider
   const [activeOfferClaimed, setActiveOfferClaimed] = useState(false);
@@ -758,6 +760,17 @@ export function BuilderRenderer({
             site={site}
             siteId={siteId}
             pages={pages}
+          />
+        ) : premiumSiteModule ? (
+          <PremiumSiteModule
+            block={block}
+            isActive={isActive}
+            onSelect={onSelect}
+            selectedSubElement={selectedSubElement}
+            onSelectSubElement={onSelectSubElement}
+            onNavigatePage={onNavigatePage}
+            site={site}
+            siteId={siteId}
           />
         ) : (
         <>

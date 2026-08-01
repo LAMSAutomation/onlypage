@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Popover from "@radix-ui/react-popover";
 import { Command } from "cmdk";
@@ -234,6 +234,16 @@ const academyStylePatch: Partial<BlockCSSStyles> = {
 };
 
 const variantStylePatches: Record<string, Partial<BlockCSSStyles>> = {
+  "premium-proof-rail": academyStylePatch,
+  "premium-bento-grid": academyStylePatch,
+  "premium-story-split": academyStylePatch,
+  "premium-results-metrics": academyStylePatch,
+  "premium-roadmap": academyStylePatch,
+  "premium-testimonial-carousel": academyStylePatch,
+  "premium-pricing-toggle": academyStylePatch,
+  "premium-gallery-lightbox": academyStylePatch,
+  "premium-faq": academyStylePatch,
+  "premium-contact-panel": academyStylePatch,
   "academy-cinematic": academyStylePatch,
   "academy-courses": academyStylePatch,
   "academy-session": academyStylePatch,
@@ -460,6 +470,19 @@ const contentFor = (type: string, variant?: string) => {
         },
       ],
     };
+  if (type === "Features" && variant === "premium-bento-grid")
+    return {
+      ...base,
+      badge: "BUILT AROUND OUTCOMES",
+      title: "A premium bento system for your strongest capabilities",
+      subtitle: "Combine real imagery, focused customer outcomes, and direct next steps in an art-directed responsive grid.",
+      features: [
+        { id: crypto.randomUUID(), title: "Signature experience", desc: "Lead with the outcome that makes your business genuinely different.", icon: "Sparkles", eyebrow: "Flagship", imageUrl: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=85&w=1400", linkText: "Explore the experience", linkActionType: "link", linkActionValue: "services" },
+        { id: crypto.randomUUID(), title: "Expert guidance", desc: "Explain the human expertise behind the service.", icon: "Users", eyebrow: "Personal", imageUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=85&w=900", linkText: "Meet the team", linkActionType: "link", linkActionValue: "contact" },
+        { id: crypto.randomUUID(), title: "A clear process", desc: "Show customers what happens next and remove uncertainty.", icon: "Route", eyebrow: "Structured", imageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=85&w=1000", linkText: "See the process", linkActionType: "link", linkActionValue: "services" },
+        { id: crypto.randomUUID(), title: "Measurable progress", desc: "Use credible signals and honest evidence to build trust.", icon: "ChartNoAxesCombined", eyebrow: "Evidence", imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=85&w=1000", linkText: "View results", linkActionType: "link", linkActionValue: "services" },
+      ],
+    };
   if (type === "Forms")
     return {
       ...base,
@@ -468,7 +491,25 @@ const contentFor = (type: string, variant?: string) => {
       subtitle:
         "Share your preferred service and we will confirm your booking.",
       btnText: "Request booking",
-      ...(variant?.startsWith("academy-")
+      ...(variant === "premium-contact-panel"
+        ? {
+            badge: "START A CONVERSATION",
+            title: "Tell us what you want to build",
+            subtitle: "A polished, configurable lead workflow with direct contact options and secure submission handling.",
+            btnText: "Send enquiry",
+            contactEmail: "hello@yourbusiness.in",
+            contactPhone: "+91 98765 43210",
+            contactAddress: "Bengaluru, India",
+            successMessage: "Thank you. The team will review your enquiry and contact you shortly.",
+            formFields: [
+              { id: crypto.randomUUID(), label: "First name", name: "first_name", type: "text" as const, placeholder: "Your first name", required: true, width: "half" as const },
+              { id: crypto.randomUUID(), label: "Last name", name: "last_name", type: "text" as const, placeholder: "Your last name", required: true, width: "half" as const },
+              { id: crypto.randomUUID(), label: "Email", name: "email", type: "email" as const, placeholder: "you@example.com", required: true, width: "half" as const },
+              { id: crypto.randomUUID(), label: "Phone", name: "phone", type: "tel" as const, placeholder: "+91 98765 43210", required: false, width: "half" as const },
+              { id: crypto.randomUUID(), label: "How can we help?", name: "message", type: "textarea" as const, placeholder: "Tell us about your goals", required: true, width: "full" as const },
+            ],
+          }
+        : variant?.startsWith("academy-")
         ? {
             badge: variant === "academy-portal" ? "STUDENT PORTAL" : "COURSE ENQUIRY",
             title: variant === "academy-portal" ? "Welcome back" : "Tell us about your learning goals",
@@ -488,6 +529,21 @@ const contentFor = (type: string, variant?: string) => {
         : {}),
     };
   if (type === "Pricing")
+    if (variant === "premium-pricing-toggle")
+      return {
+        ...base,
+        badge: "SIMPLE, TRANSPARENT PRICING",
+        title: "Choose the level of support you need",
+        subtitle: "A premium comparison with a working billing switch and a clear recommended option.",
+        btnText: "Start a conversation",
+        btnActionType: "booking",
+        pricing: [
+          { id: crypto.randomUUID(), tier: "Essential", price: "₹4,999", features: ["Core service or program", "Guided onboarding", "Email support"], btnText: "Choose Essential", popular: false },
+          { id: crypto.randomUUID(), tier: "Professional", price: "₹9,999", features: ["Everything in Essential", "Priority guidance", "Monthly review", "Premium resources"], btnText: "Choose Professional", popular: true },
+          { id: crypto.randomUUID(), tier: "Private", price: "₹19,999", features: ["Everything in Professional", "1:1 strategy sessions", "Custom implementation", "Priority access"], btnText: "Contact us", popular: false },
+        ],
+      };
+    else
     return {
       ...base,
       badge: "SERVICES",
@@ -520,6 +576,22 @@ const contentFor = (type: string, variant?: string) => {
       btnActionType: "link",
       btnActionValue: "services",
     };
+  if (type === "Business" && variant === "premium-story-split")
+    return {
+      ...base,
+      badge: "HOW THE WORK HAPPENS",
+      title: "Turn your process into a compelling case study",
+      subtitle: "Pair real imagery with the decisions, methods, and proof that make the final result credible.",
+      imageUrl: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=85&w=1400",
+      btnText: "Explore the full process",
+      btnActionType: "link",
+      btnActionValue: "services",
+      features: [
+        { id: crypto.randomUUID(), title: "Diagnose the real need", desc: "Start with context instead of forcing a standard solution.", icon: "ScanSearch" },
+        { id: crypto.randomUUID(), title: "Build the right system", desc: "Connect the work to a repeatable process customers can understand.", icon: "Workflow" },
+        { id: crypto.randomUUID(), title: "Review the result", desc: "Use evidence and feedback to improve the next decision.", icon: "ChartNoAxesCombined" },
+      ],
+    };
   if (type === "Business" || type === "Features")
     return {
       ...base,
@@ -547,6 +619,18 @@ const contentFor = (type: string, variant?: string) => {
         { id: crypto.randomUUID(), name: "Student name", role: "Program · Cohort", content: "Keep the review concrete and avoid invented performance claims.", avatar: "", rating: 5 },
       ],
     };
+  if (type === "Testimonials" && variant === "premium-testimonial-carousel")
+    return {
+      ...base,
+      badge: "CUSTOMER STORIES",
+      title: "The experience, in their own words",
+      subtitle: "A focused, interactive story carousel for specific and credible customer feedback.",
+      testimonials: [
+        { id: crypto.randomUUID(), name: "Aarav Mehta", role: "Founder · Bengaluru", content: "The process was clear from the first conversation. Every decision had a reason, and the final result felt distinctly ours.", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200", rating: 5 },
+        { id: crypto.randomUUID(), name: "Maya Rao", role: "Creative Director · Chennai", content: "What stood out was the level of restraint. The team simplified the experience without removing the personality that customers remember.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200", rating: 5 },
+        { id: crypto.randomUUID(), name: "Kabir Singh", role: "Operations Lead · Mumbai", content: "We finally have a system the team can use confidently. It looks premium, but more importantly, every part does useful work.", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200", rating: 5 },
+      ],
+    };
   if (type === "Testimonials")
     return {
       ...base,
@@ -556,6 +640,18 @@ const contentFor = (type: string, variant?: string) => {
       testimonials: [],
     };
   if (type === "Gallery")
+    if (variant === "premium-gallery-lightbox")
+      return {
+        ...base,
+        badge: "SELECTED WORK",
+        title: "An editorial gallery people can explore",
+        subtitle: "Use a responsive visual mosaic and let visitors open every image in a focused fullscreen view.",
+        galleryImages: starterGalleryImages().concat([
+          { id: crypto.randomUUID(), url: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=85&w=1200", title: "Designed environment", subtitle: "Show the space, context, or final experience.", aspect: "landscape" },
+          { id: crypto.randomUUID(), url: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=85&w=1200", title: "Work in progress", subtitle: "Make the process visible and credible.", aspect: "landscape" },
+        ]),
+      };
+    else
     return {
       ...base,
       badge: "OUR WORK",
@@ -565,6 +661,34 @@ const contentFor = (type: string, variant?: string) => {
       galleryImages: starterGalleryImages(),
     };
   if (type === "Special") {
+    if (variant === "premium-proof-rail")
+      return { ...base, badge: "TRUSTED EXPERIENCE", title: "Proof that stays concise", subtitle: "", stats: [
+        { id: crypto.randomUUID(), label: "Customers supported", val: 1200, suffix: "+" },
+        { id: crypto.randomUUID(), label: "Average response", val: 2, suffix: " hrs" },
+        { id: crypto.randomUUID(), label: "Customer rating", val: 4.9, suffix: "/5" },
+        { id: crypto.randomUUID(), label: "Years of practice", val: 8, suffix: "+" },
+      ] };
+    if (variant === "premium-results-metrics")
+      return { ...base, badge: "RESULTS THAT MATTER", title: "Make the evidence impossible to miss", subtitle: "Use honest, current numbers and give each metric enough space to communicate its meaning.", stats: [
+        { id: crypto.randomUUID(), label: "Projects delivered", val: 240, suffix: "+" },
+        { id: crypto.randomUUID(), label: "Repeat customers", val: 68, suffix: "%" },
+        { id: crypto.randomUUID(), label: "Average rating", val: 4.9, suffix: "/5" },
+        { id: crypto.randomUUID(), label: "Cities served", val: 18, suffix: "" },
+      ] };
+    if (variant === "premium-roadmap")
+      return { ...base, badge: "A CLEAR WAY FORWARD", title: "Show customers exactly what happens next", subtitle: "A connected journey makes a complex service easier to understand and easier to choose.", steps: [
+        { id: crypto.randomUUID(), step: "01", title: "Discover", desc: "Understand the customer, the context, and the real outcome required." },
+        { id: crypto.randomUUID(), step: "02", title: "Design", desc: "Shape the right approach and agree on the decisions that matter." },
+        { id: crypto.randomUUID(), step: "03", title: "Deliver", desc: "Build the work with visible milestones and clear communication." },
+        { id: crypto.randomUUID(), step: "04", title: "Improve", desc: "Review evidence, collect feedback, and strengthen the next iteration." },
+      ] };
+    if (variant === "premium-faq")
+      return { ...base, badge: "QUESTIONS, ANSWERED", title: "Remove uncertainty before people ask", subtitle: "Clear answers reduce friction and help the right customers take the next step.", btnText: "Talk to our team", btnActionType: "booking", faqs: [
+        { id: crypto.randomUUID(), q: "What does the process look like?", a: "We begin with a focused discovery conversation, define the required outcome, agree on the scope, and keep each delivery milestone visible." },
+        { id: crypto.randomUUID(), q: "How long does it usually take?", a: "Timing depends on the scope. After discovery, we provide a clear schedule with review points instead of an open-ended estimate." },
+        { id: crypto.randomUUID(), q: "Can the service be customised?", a: "Yes. The structure is repeatable, but the content, priorities, integrations, and level of support can be adapted to the business." },
+        { id: crypto.randomUUID(), q: "What happens after launch?", a: "You receive a clear handover and can choose ongoing support for optimisation, updates, training, or new requirements." },
+      ] };
     if (variant === "stats-grid")
       return {
         ...base,
@@ -679,9 +803,9 @@ const createGlobalFooter = (site: SiteRecord): WebBlock =>
 const specialContentMode = (
   variant?: string,
 ): "faq" | "stats" | "steps" => {
-  if (["stats-grid", "mono-grid", "glass-panel"].includes(variant || ""))
+  if (["stats-grid", "mono-grid", "glass-panel", "premium-proof-rail", "premium-results-metrics"].includes(variant || ""))
     return "stats";
-  if (["steps-path", "editorial-stack", "quiet-luxury", "academy-process"].includes(variant || ""))
+  if (["steps-path", "editorial-stack", "quiet-luxury", "academy-process", "premium-roadmap"].includes(variant || ""))
     return "steps";
   return "faq";
 };
@@ -774,6 +898,8 @@ export function VisualBuilder({
     tone: "success" | "error" | "info";
     message: string;
   } | null>(null);
+  const pageSwitchingRef = useRef(false);
+  const suppressPageAutosaveRef = useRef(false);
 
   const notify = (
     message: string,
@@ -870,12 +996,19 @@ export function VisualBuilder({
         setLoaded(true);
         return;
       }
+      suppressPageAutosaveRef.current = true;
       setActivePageId(page.id);
-      const { data: blockRows } = await supabase
+      const { data: blockRows, error: blocksError } = await supabase
         .from("blocks")
         .select("*")
         .eq("page_id", page.id)
         .order("position");
+      if (blocksError) {
+        notify(`Could not load the first page: ${blocksError.message}`, "error");
+        setLoaded(true);
+        suppressPageAutosaveRef.current = false;
+        return;
+      }
       const loadedBlocks = (blockRows || []).map(fromRow);
       const legacyHeader =
         loadedBlocks.find((block) => block.type === "Navigation") || null;
@@ -935,6 +1068,9 @@ export function VisualBuilder({
       resetBlocks(nextBlocks);
       setSelectedId(nextBlocks[0]?.id || nextHeader.id);
       setLoaded(true);
+      window.setTimeout(() => {
+        suppressPageAutosaveRef.current = false;
+      }, 0);
     };
     load();
   }, [site.id, resetBlocks]);
@@ -966,7 +1102,7 @@ export function VisualBuilder({
   };
 
   useEffect(() => {
-    if (!loaded || !activePageId) return;
+    if (!loaded || !activePageId || suppressPageAutosaveRef.current) return;
     const timer = window.setTimeout(async () => {
       setSaving(true);
       try {
@@ -1010,25 +1146,38 @@ export function VisualBuilder({
   }, [globalHeader, globalFooter, loaded]);
 
   const switchPage = async (pageId: string) => {
-    if (pageId === activePageId || !pageId) return;
+    if (pageId === activePageId || !pageId || pageSwitchingRef.current) return;
+    pageSwitchingRef.current = true;
     setSaving(true);
-    if (activePageId) {
-      await persistPageBlocks(activePageId, blocks);
+    try {
+      if (activePageId) {
+        await persistPageBlocks(activePageId, blocks);
+      }
+      const { data: blockRows, error: blocksError } = await supabase
+        .from("blocks")
+        .select("*")
+        .eq("page_id", pageId)
+        .order("position");
+      if (blocksError) throw blocksError;
+      const nextBlocks = (blockRows || [])
+        .map(fromRow)
+        .filter(
+          (block) => block.type !== "Navigation" && block.type !== "Footer",
+        );
+      suppressPageAutosaveRef.current = true;
+      setActivePageId(pageId);
+      resetBlocks(nextBlocks);
+      setSelectedId(nextBlocks[0]?.id || globalHeader?.id || null);
+      setSelectedSubElement(null);
+      window.setTimeout(() => {
+        suppressPageAutosaveRef.current = false;
+      }, 0);
+    } catch (error: any) {
+      notify(`Could not switch pages: ${error?.message || "Unknown error"}`, "error");
+    } finally {
+      pageSwitchingRef.current = false;
+      setSaving(false);
     }
-    const { data: blockRows } = await supabase
-      .from("blocks")
-      .select("*")
-      .eq("page_id", pageId)
-      .order("position");
-    const nextBlocks = (blockRows || [])
-      .map(fromRow)
-      .filter(
-        (block) => block.type !== "Navigation" && block.type !== "Footer",
-      );
-    setActivePageId(pageId);
-    resetBlocks(nextBlocks);
-    setSelectedId(nextBlocks[0]?.id || globalHeader?.id || null);
-    setSaving(false);
   };
 
   const navigateToPage = (slug: string) => {

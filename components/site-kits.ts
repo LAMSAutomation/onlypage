@@ -342,27 +342,48 @@ function buildPrimeStrikes(businessName: string) {
         secondaryBtnActionType: "link",
         secondaryBtnActionValue: "services",
       }, premium()),
-      block("Features", "academy-courses", {
+      block("Special", "premium-proof-rail", {
+        badge: "TRUSTED LEARNING EXPERIENCE",
+        title: "Prime Strike at a glance",
+        stats: [
+          { id: id(), label: "Students supported", val: 10000, suffix: "+" },
+          { id: id(), label: "Live webinars", val: 500, suffix: "+" },
+          { id: id(), label: "Learner satisfaction", val: 92, suffix: "%" },
+          { id: id(), label: "Structured programs", val: 4, suffix: "" },
+        ],
+      }, premium({ backgroundColor: "#0b0b0b" })),
+      block("Features", "premium-bento-grid", {
         badge: "OUR PROGRAMS",
         title: "Trading Course Curriculum",
         subtitle: "Four connected learning tracks, from market foundations to systematic execution.",
         features: courses,
       }, premium()),
-      block("Business", "academy-session", {
+      block("Business", "premium-story-split", {
         badge: "FEATURED SESSION",
         title: "Live Trading Session Analysis",
         subtitle: "A practical live session where market structure, price action, position sizing, and exit rules are examined in real time—with the reasoning visible at every step.",
         imageUrl: "https://www.primestrike.co.in/images/case-study.png",
-        stats: [
-          { id: id(), label: "Students", val: 10000, suffix: "+" },
-          { id: id(), label: "Webinars", val: 500, suffix: "+" },
-          { id: id(), label: "Learner satisfaction", val: 92, suffix: "%" },
+        features: [
+          { id: id(), title: "Read the market context", desc: "Start with structure, volatility, and the conditions that make a setup valid.", icon: "ScanSearch" },
+          { id: id(), title: "Define risk before entry", desc: "Set invalidation, position size, and maximum loss before execution.", icon: "ShieldCheck" },
+          { id: id(), title: "Review the decision", desc: "Journal the reasoning and examine what should be repeated or changed.", icon: "ChartNoAxesCombined" },
         ],
         btnText: "Explore Courses",
         btnActionType: "link",
         btnActionValue: "services",
       }, premium()),
-      block("Testimonials", "academy-stories", {
+      block("Special", "premium-results-metrics", {
+        badge: "LEARNING, MEASURED",
+        title: "A program built around participation and review",
+        subtitle: "Prime Strike focuses on repeatable education signals rather than performance promises.",
+        stats: [
+          { id: id(), label: "Students supported", val: 10000, suffix: "+" },
+          { id: id(), label: "Live webinars", val: 500, suffix: "+" },
+          { id: id(), label: "Learner satisfaction", val: 92, suffix: "%" },
+          { id: id(), label: "Connected learning tracks", val: 4, suffix: "" },
+        ],
+      }, premium({ backgroundColor: "#111111" })),
+      block("Testimonials", "premium-testimonial-carousel", {
         badge: "STUDENT STORIES",
         title: "What Our Clients Say",
         subtitle: "Feedback from traders who wanted structure, accountability, and more disciplined decisions.",
@@ -372,12 +393,50 @@ function buildPrimeStrikes(businessName: string) {
           { id: id(), name: "Dinesh Kumar", role: "Full-time Trader · Chennai", content: "Complex indicators were simplified, but the biggest improvement was understanding psychology, risk, and emotional execution.", avatar: "", rating: 5 },
         ],
       }, premium()),
-      block("Special", "academy-process", {
+      block("Special", "premium-roadmap", {
         badge: "HOW WE WORK",
         title: "Our Process",
         subtitle: "A deliberate path from understanding to reviewed practice.",
         steps: process,
       }, premium({ backgroundColor: "#171717" })),
+      block("Pricing", "premium-pricing-toggle", {
+        badge: "COURSE OPTIONS",
+        title: "Choose the support level that fits your learning stage",
+        subtitle: "Clear program options with live education, guided practice, and different levels of review.",
+        btnActionType: "link",
+        btnActionValue: "contact",
+        pricing: [
+          { id: id(), tier: "Foundation", price: "₹4,999", features: ["Stock market foundations", "Live webinar access", "Learning resources"], btnText: "Ask about Foundation", popular: false },
+          { id: id(), tier: "Professional", price: "₹9,999", features: ["Foundation curriculum", "Options and technical analysis", "Guided journal reviews", "Live implementation sessions"], btnText: "Choose Professional", popular: true },
+          { id: id(), tier: "Mentored", price: "₹19,999", features: ["Professional curriculum", "Small-group mentoring", "Priority chart review", "Structured feedback"], btnText: "Discuss Mentoring", popular: false },
+        ],
+      }, premium()),
+      block("Gallery", "premium-gallery-lightbox", {
+        badge: "INSIDE THE CLASSROOM",
+        title: "See how live learning works",
+        subtitle: "Explore the charts, webinar environment, journal reviews, and guided market analysis behind the program.",
+        galleryImages: [
+          { id: id(), url: "https://www.primestrike.co.in/images/case-study.png", title: "Live market analysis", subtitle: "Structure and reasoning are visible throughout the session.", aspect: "landscape" },
+          { id: id(), url: "https://www.primestrike.co.in/images/service-party.png", title: "Market foundations", subtitle: "Build the language and tools required for disciplined decisions.", aspect: "square" },
+          { id: id(), url: "https://www.primestrike.co.in/images/service-corporate.png", title: "Options strategy", subtitle: "Understand risk, volatility, hedging, and position structure.", aspect: "square" },
+          { id: id(), url: "https://www.primestrike.co.in/images/service-concert.png", title: "Technical review", subtitle: "Study price action and invalidation with a repeatable framework.", aspect: "landscape" },
+          { id: id(), url: "https://www.primestrike.co.in/images/service-wedding.png", title: "Systematic execution", subtitle: "Translate clear rules into reviewable trading workflows.", aspect: "landscape" },
+        ],
+      }, premium({ backgroundColor: "#111111" })),
+      block("Special", "premium-faq", {
+        badge: "COURSE QUESTIONS",
+        title: "Know what to expect before you enroll",
+        subtitle: "Clear answers about the format, experience level, live classes, and learning approach.",
+        btnText: "Ask Admissions",
+        btnActionType: "link",
+        btnActionValue: "contact",
+        faqs: [
+          { id: id(), q: "Are the classes live or recorded?", a: "The core experience is built around live online webinars, guided examples, questions, and structured review. Supporting resources may also be provided." },
+          { id: id(), q: "Do I need previous trading experience?", a: "No. The Foundation track begins with market basics, while experienced learners can discuss the appropriate entry point with admissions." },
+          { id: id(), q: "Does Prime Strike provide trading calls?", a: "Prime Strike focuses on education, analysis, risk management, and review. Students remain responsible for their own financial decisions." },
+          { id: id(), q: "How do I choose the right program?", a: "Share your current experience and goals through the enquiry form. The academy will recommend the most suitable learning track and batch." },
+        ],
+      }, premium()),
       block("CTA", "academy-spotlight", {
         title: "Start Your Trading Journey Today",
         subtitle: "From market foundations to options hedging and technical analysis. Learn through interactive live webinars.",
@@ -451,7 +510,7 @@ function buildPrimeStrikes(businessName: string) {
         secondaryBtnActionType: "phone",
         secondaryBtnActionValue: "+91 95002 98631",
       }, premium()),
-      block("Forms", "academy-enquiry", {
+      block("Forms", "premium-contact-panel", {
         badge: "COURSE ENQUIRY",
         title: "Tell us about your trading goals",
         subtitle: "Share your experience, course interest, and preferred batch date. We respond to every genuine enquiry.",
