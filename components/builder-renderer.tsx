@@ -16,6 +16,7 @@ import {
 } from './builder-effects';
 import { WebBlock, BlockCSSStyles } from './website-builder-editor';
 import { supabase } from '@/lib/supabase';
+import { isPremiumAcademyVariant, PremiumAcademyBlock } from './premium-academy-blocks';
 
 // Dynamically render any Lucide icon by name
 export function DynamicIcon({ name, size = 18, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
@@ -346,6 +347,7 @@ export function BuilderRenderer({
     resolvedBlock.variant;
   const block = resolvedBlock;
   const styles = block.styles;
+  const premiumAcademy = isPremiumAcademyVariant(block.variant);
   const [faqOpen, setFaqOpen] = useState<Record<string, boolean>>({});
   const [activeBeforeAfter, setActiveBeforeAfter] = useState<number>(50); // percentage slider
   const [activeOfferClaimed, setActiveOfferClaimed] = useState(false);
@@ -745,6 +747,20 @@ export function BuilderRenderer({
       {block.variant === 'gradient-glow' && <SparkleParticles count={15} />}
 
       <div className="mx-auto relative z-10" style={{ maxWidth: `${styles.maxWidth}px`, width: '100%' }}>
+        {premiumAcademy ? (
+          <PremiumAcademyBlock
+            block={block}
+            isActive={isActive}
+            onSelect={onSelect}
+            selectedSubElement={selectedSubElement}
+            onSelectSubElement={onSelectSubElement}
+            onNavigatePage={onNavigatePage}
+            site={site}
+            siteId={siteId}
+            pages={pages}
+          />
+        ) : (
+        <>
         
         {/* ==================== BADGE ==================== */}
         {block.badge && block.showBadge !== false && (
@@ -3404,6 +3420,8 @@ export function BuilderRenderer({
           </div>
         )}
 
+        </>
+        )}
       </div>
     </motion.div>
   );

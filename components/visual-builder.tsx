@@ -209,7 +209,46 @@ const stylePresets = [
   },
 ];
 
+const academyStylePatch: Partial<BlockCSSStyles> = {
+  paddingTop: 0,
+  paddingBottom: 0,
+  paddingLeft: 0,
+  paddingRight: 0,
+  maxWidth: 1600,
+  backgroundColor: "#080808",
+  textColor: "#ffffff",
+  subtitleColor: "#9a9a9a",
+  accentColor: "#e0b82f",
+  badgeBgColor: "transparent",
+  badgeTextColor: "#e0b82f",
+  buttonBgColor: "#e0b82f",
+  buttonTextColor: "#090909",
+  buttonBorderRadius: 999,
+  cardBgColor: "#151515",
+  cardTextColor: "#ffffff",
+  cardBorderColor: "#2a2a2a",
+  cardBorderRadius: 20,
+  fontFamily: "Inter",
+  textAlign: "left",
+  useGradient: false,
+};
+
 const variantStylePatches: Record<string, Partial<BlockCSSStyles>> = {
+  "academy-cinematic": academyStylePatch,
+  "academy-courses": academyStylePatch,
+  "academy-session": academyStylePatch,
+  "academy-stories": academyStylePatch,
+  "academy-process": academyStylePatch,
+  "academy-spotlight": academyStylePatch,
+  "academy-enquiry": academyStylePatch,
+  "academy-registration": academyStylePatch,
+  "academy-portal": academyStylePatch,
+  "nav-academy": academyStylePatch,
+  "footer-academy": {
+    ...academyStylePatch,
+    backgroundColor: "#f7f7f5",
+    textColor: "#121212",
+  },
   "editorial-stack": {
     backgroundColor: "#f5f0e8",
     textColor: "#211c18",
@@ -374,6 +413,53 @@ const contentFor = (type: string, variant?: string) => {
       "Tell customers what you do, make the next step clear, and keep every enquiry moving.",
     btnText: "Get started",
   };
+  if (type === "Hero" && variant === "academy-cinematic")
+    return {
+      ...base,
+      badge: "PREMIUM ACADEMY",
+      title: "Teach with authority. Help people act with clarity.",
+      subtitle:
+        "Combine a cinematic visual, a precise promise, and two clear paths for new and returning students.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=85&w=1800",
+      btnText: "Start learning",
+      btnActionType: "booking",
+      btnActionValue: "",
+      secondaryBtnText: "Explore courses",
+      secondaryBtnActionType: "link",
+      secondaryBtnActionValue: "services",
+    };
+  if (type === "Features" && variant === "academy-courses")
+    return {
+      ...base,
+      badge: "CURRICULUM",
+      title: "A structured learning path",
+      subtitle: "Present each course with real imagery, a clear outcome, and a connected next step.",
+      features: [
+        {
+          id: crypto.randomUUID(),
+          title: "Foundation Program",
+          desc: "Build the core knowledge students need before advancing.",
+          icon: "BookOpen",
+          eyebrow: "Start here",
+          imageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=85&w=1000",
+          linkText: "View program",
+          linkActionType: "link",
+          linkActionValue: "services",
+        },
+        {
+          id: crypto.randomUUID(),
+          title: "Advanced Program",
+          desc: "Apply the framework through guided practice and review.",
+          icon: "ChartNoAxesCombined",
+          eyebrow: "Go deeper",
+          imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=85&w=1000",
+          linkText: "View program",
+          linkActionType: "link",
+          linkActionValue: "services",
+        },
+      ],
+    };
   if (type === "Forms")
     return {
       ...base,
@@ -382,6 +468,24 @@ const contentFor = (type: string, variant?: string) => {
       subtitle:
         "Share your preferred service and we will confirm your booking.",
       btnText: "Request booking",
+      ...(variant?.startsWith("academy-")
+        ? {
+            badge: variant === "academy-portal" ? "STUDENT PORTAL" : "COURSE ENQUIRY",
+            title: variant === "academy-portal" ? "Welcome back" : "Tell us about your learning goals",
+            subtitle:
+              variant === "academy-portal"
+                ? "Sign in or request access after your enrollment is verified."
+                : "Share the details your team needs to recommend the right next step.",
+            btnText: variant === "academy-portal" ? "Sign in" : "Send enquiry",
+            formFields: [
+              { id: crypto.randomUUID(), label: "Full name", name: "name", type: "text" as const, placeholder: "Your name", required: variant !== "academy-portal", width: "full" as const },
+              { id: crypto.randomUUID(), label: "Email", name: "email", type: "email" as const, placeholder: "you@example.com", required: true, width: "full" as const },
+              ...(variant === "academy-portal"
+                ? [{ id: crypto.randomUUID(), label: "Password", name: "password", type: "password" as const, placeholder: "Enter your password", required: true, width: "full" as const }]
+                : [{ id: crypto.randomUUID(), label: "Learning goals", name: "message", type: "textarea" as const, placeholder: "What would you like to learn?", required: false, width: "full" as const }]),
+            ],
+          }
+        : {}),
     };
   if (type === "Pricing")
     return {
@@ -402,6 +506,20 @@ const contentFor = (type: string, variant?: string) => {
         },
       ],
     };
+  if (type === "Business" && variant === "academy-session")
+    return {
+      ...base,
+      badge: "FEATURED SESSION",
+      title: "Show the work behind the result",
+      subtitle:
+        "Use a real session, project, or case study to explain how your teaching works in practice.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=85&w=1400",
+      stats: starterStats(),
+      btnText: "Explore courses",
+      btnActionType: "link",
+      btnActionValue: "services",
+    };
   if (type === "Business" || type === "Features")
     return {
       ...base,
@@ -415,6 +533,18 @@ const contentFor = (type: string, variant?: string) => {
           desc: "A clear description of the result your customer receives.",
           icon: "Sparkles",
         },
+      ],
+    };
+  if (type === "Testimonials" && variant === "academy-stories")
+    return {
+      ...base,
+      badge: "STUDENT STORIES",
+      title: "What learners say",
+      subtitle: "Replace these prompts with verified student feedback before publishing.",
+      testimonials: [
+        { id: crypto.randomUUID(), name: "Student name", role: "Program · Cohort", content: "Add a genuine, specific student experience here.", avatar: "", rating: 5 },
+        { id: crypto.randomUUID(), name: "Student name", role: "Program · Cohort", content: "Explain what changed in the learner's process or understanding.", avatar: "", rating: 5 },
+        { id: crypto.randomUUID(), name: "Student name", role: "Program · Cohort", content: "Keep the review concrete and avoid invented performance claims.", avatar: "", rating: 5 },
       ],
     };
   if (type === "Testimonials")
@@ -443,7 +573,7 @@ const contentFor = (type: string, variant?: string) => {
         subtitle: "Use real numbers and update them as your business grows.",
         stats: starterStats(),
       };
-    if (variant === "steps-path")
+    if (variant === "steps-path" || variant === "academy-process")
       return {
         ...base,
         badge: "HOW IT WORKS",
@@ -487,7 +617,10 @@ const createBlock = (type: string, variant: string): WebBlock =>
     type: type as WebBlock["type"],
     variant,
     ...contentFor(type, variant),
-    styles: structuredClone(defaultStyles),
+    styles: {
+      ...structuredClone(defaultStyles),
+      ...(variantStylePatches[variant] || {}),
+    },
   } as WebBlock);
 
 const createGlobalHeader = (site: SiteRecord): WebBlock =>
@@ -548,7 +681,7 @@ const specialContentMode = (
 ): "faq" | "stats" | "steps" => {
   if (["stats-grid", "mono-grid", "glass-panel"].includes(variant || ""))
     return "stats";
-  if (["steps-path", "editorial-stack", "quiet-luxury"].includes(variant || ""))
+  if (["steps-path", "editorial-stack", "quiet-luxury", "academy-process"].includes(variant || ""))
     return "steps";
   return "faq";
 };
@@ -1833,6 +1966,49 @@ export function VisualBuilder({
                       onChange={updateSelected}
                     />
                   )}
+                  {(["Hero", "Navigation"].includes(selected.type) ||
+                    selected.secondaryBtnText !== undefined) && (
+                    <>
+                      <Field
+                        label="Secondary button label"
+                        value={selected.secondaryBtnText || ""}
+                        onChange={(value) =>
+                          updateSelected({ secondaryBtnText: value })
+                        }
+                      />
+                      {selected.secondaryBtnText && (
+                        <ActionPanel
+                          title="Secondary button destination"
+                          block={{
+                            ...selected,
+                            btnActionType:
+                              selected.secondaryBtnActionType || "none",
+                            btnActionValue:
+                              selected.secondaryBtnActionValue || "",
+                          }}
+                          pages={pages}
+                          sections={pageBlocks}
+                          site={site}
+                          onChange={(patch) =>
+                            updateSelected({
+                              ...(patch.btnActionType !== undefined
+                                ? {
+                                    secondaryBtnActionType:
+                                      patch.btnActionType,
+                                  }
+                                : {}),
+                              ...(patch.btnActionValue !== undefined
+                                ? {
+                                    secondaryBtnActionValue:
+                                      patch.btnActionValue,
+                                  }
+                                : {}),
+                            })
+                          }
+                        />
+                      )}
+                    </>
+                  )}
                   {(selected.type === "Forms" ||
                     selected.type === "Contact") && (
                     <LeadRoutingPanel
@@ -2313,12 +2489,14 @@ function ActionPanel({
   sections,
   site,
   onChange,
+  title = "Button destination",
 }: {
   block: WebBlock;
   pages: Page[];
   sections: WebBlock[];
   site: SiteRecord;
   onChange: (patch: Partial<WebBlock>) => void;
+  title?: string;
 }) {
   const actionType = block.btnActionType || "none";
   const actions = [
@@ -2338,7 +2516,7 @@ function ActionPanel({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
-            Button destination
+            {title}
           </p>
           <p className="mt-1 text-[11px] leading-4 text-slate-500">
             Choose what happens after a customer clicks.
@@ -3035,6 +3213,136 @@ export function BlockContentEditor({
       ...items.slice(index + 1),
     ]);
 
+  if (block.type === "Forms" && block.formFields) {
+    const fields = block.formFields || [];
+    return (
+      <InspectorCollection
+        icon={FormInput}
+        title="Form fields"
+        count={fields.length}
+        addLabel="Add field"
+        onAdd={() =>
+          setItems("formFields", [
+            ...fields,
+            {
+              id: crypto.randomUUID(),
+              label: "New field",
+              name: `field_${fields.length + 1}`,
+              type: "text",
+              placeholder: "Enter a value",
+              required: false,
+              width: "full",
+            },
+          ])
+        }
+      >
+        {fields.map((field, index) => (
+          <InspectorItem
+            key={field.id}
+            index={index}
+            label={field.label || `Field ${index + 1}`}
+            isSelected={index === selectedIndex}
+            onDuplicate={() => duplicateItem("formFields", fields, index)}
+            onDelete={() => removeItem("formFields", fields, index)}
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <MiniField
+                label="Label"
+                value={field.label}
+                onChange={(value) =>
+                  updateItem("formFields", fields, index, { label: value })
+                }
+              />
+              <MiniField
+                label="Field name"
+                value={field.name}
+                onChange={(value) =>
+                  updateItem("formFields", fields, index, {
+                    name: value.toLowerCase().replace(/[^a-z0-9_]+/g, "_"),
+                  })
+                }
+              />
+            </div>
+            <MiniField
+              label="Placeholder"
+              value={field.placeholder || ""}
+              onChange={(value) =>
+                updateItem("formFields", fields, index, {
+                  placeholder: value,
+                })
+              }
+            />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  Field type
+                </span>
+                <select
+                  value={field.type}
+                  onChange={(event) =>
+                    updateItem("formFields", fields, index, {
+                      type: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-bold outline-none"
+                >
+                  {["text", "email", "tel", "date", "number", "password", "textarea", "select"].map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[9px] font-black uppercase tracking-wider text-slate-400">
+                  Width
+                </span>
+                <select
+                  value={field.width || "full"}
+                  onChange={(event) =>
+                    updateItem("formFields", fields, index, {
+                      width: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-bold outline-none"
+                >
+                  <option value="full">Full row</option>
+                  <option value="half">Half row</option>
+                </select>
+              </label>
+            </div>
+            {field.type === "select" && (
+              <MiniField
+                label="Options (one per line)"
+                value={(field.options || []).join("\n")}
+                onChange={(value) =>
+                  updateItem("formFields", fields, index, {
+                    options: value
+                      .split("\n")
+                      .map((option) => option.trim())
+                      .filter(Boolean),
+                  })
+                }
+                multiline
+              />
+            )}
+            <label className="mt-3 flex items-center gap-2 text-[10px] font-bold text-slate-600">
+              <input
+                type="checkbox"
+                checked={Boolean(field.required)}
+                onChange={(event) =>
+                  updateItem("formFields", fields, index, {
+                    required: event.target.checked,
+                  })
+                }
+                className="size-4 accent-lime-600"
+              />
+              Required field
+            </label>
+          </InspectorItem>
+        ))}
+      </InspectorCollection>
+    );
+  }
+
   if (block.type === "Text") {
     return (
       <InspectorDetails icon={Type} title="Text Block Content">
@@ -3254,6 +3562,51 @@ export function BlockContentEditor({
               }
               multiline
             />
+            {(block.variant === "academy-courses" || item.imageUrl) && (
+              <>
+                <MiniField
+                  label="Image URL"
+                  value={item.imageUrl || ""}
+                  onChange={(value) =>
+                    updateItem("features", items, index, {
+                      imageUrl: value,
+                    })
+                  }
+                  placeholder="https://â€¦"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <MiniField
+                    label="Eyebrow"
+                    value={item.eyebrow || ""}
+                    onChange={(value) =>
+                      updateItem("features", items, index, {
+                        eyebrow: value,
+                      })
+                    }
+                  />
+                  <MiniField
+                    label="Link label"
+                    value={item.linkText || ""}
+                    onChange={(value) =>
+                      updateItem("features", items, index, {
+                        linkText: value,
+                      })
+                    }
+                  />
+                </div>
+                <MiniField
+                  label="Link destination (page slug or URL)"
+                  value={item.linkActionValue || ""}
+                  onChange={(value) =>
+                    updateItem("features", items, index, {
+                      linkActionType: /^https?:\/\//i.test(value) ? "external" : "link",
+                      linkActionValue: value,
+                    })
+                  }
+                  placeholder="services or https://example.com"
+                />
+              </>
+            )}
             <MiniField
               label="Icon name"
               value={item.icon || ""}

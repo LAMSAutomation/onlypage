@@ -88,10 +88,13 @@ export interface WebBlock {
   showBadge?: boolean;
   imageUrl?: string;
   btnText?: string;
+  secondaryBtnText?: string;
   variant?: string;
   // Button Actions
   btnActionType?: 'scroll' | 'link' | 'external' | 'none' | string;
   btnActionValue?: string;
+  secondaryBtnActionType?: 'scroll' | 'link' | 'external' | 'none' | string;
+  secondaryBtnActionValue?: string;
   // Lead routing
   whatsappFollowUp?: boolean;
   successMessage?: string;
@@ -103,7 +106,17 @@ export interface WebBlock {
   // Gallery Slide Images
   galleryImages?: { id: string; url: string; title: string; subtitle: string; aspect?: string }[];
   // Features lists
-  features?: { id: string; title: string; desc: string; icon: string }[];
+  features?: {
+    id: string;
+    title: string;
+    desc: string;
+    icon: string;
+    imageUrl?: string;
+    eyebrow?: string;
+    linkText?: string;
+    linkActionType?: string;
+    linkActionValue?: string;
+  }[];
   // Pricing plans
   pricing?: { id: string; tier: string; price: string; features: string[]; btnText: string; popular?: boolean }[];
   // Testimonial list
@@ -122,6 +135,16 @@ export interface WebBlock {
   faqs?: { id: string; q: string; a: string }[];
   stats?: { id: string; label: string; val: number; suffix: string }[];
   steps?: { id: string; step: string; title: string; desc: string }[];
+  formFields?: {
+    id: string;
+    label: string;
+    name: string;
+    type: 'text' | 'email' | 'tel' | 'date' | 'number' | 'password' | 'textarea' | 'select';
+    placeholder?: string;
+    required?: boolean;
+    width?: 'full' | 'half';
+    options?: string[];
+  }[];
   styles: BlockCSSStyles;
 }
 

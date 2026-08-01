@@ -10,13 +10,8 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const email = process.env.PRIME_STRIKES_EMAIL;
 const password = process.env.PRIME_STRIKES_PASSWORD;
 
-if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-  throw new Error("Supabase URL, anon key, and service role key are required in .env.local.");
-}
-if (serviceRoleKey.length < 40 || serviceRoleKey.includes("...")) {
-  throw new Error(
-    "SUPABASE_SERVICE_ROLE_KEY is still a placeholder. Copy the real server-side key from Supabase project settings before running this seed.",
-  );
+if (!supabaseUrl || !anonKey) {
+  throw new Error("Supabase URL and anon key are required in .env.local.");
 }
 if (!email || !password) {
   throw new Error("Set PRIME_STRIKES_EMAIL and PRIME_STRIKES_PASSWORD for this one-time seed.");
@@ -25,7 +20,17 @@ if (password.length < 12) {
   throw new Error("Use a test password with at least 12 characters.");
 }
 
-const admin = createClient(supabaseUrl, serviceRoleKey, {
+const hasAdminKey = Boolean(
+  serviceRoleKey &&
+    serviceRoleKey.length >= 40 &&
+    !serviceRoleKey.includes("..."),
+);
+const admin = hasAdminKey
+  ? createClient(supabaseUrl, serviceRoleKey!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  : null;
+const loginClient = createClient(supabaseUrl, anonKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
@@ -33,6 +38,7 @@ const kit = getSiteKit("prime-strikes");
 if (!kit) throw new Error("Prime Strikes site kit is not registered.");
 
 async function findUserByEmail(targetEmail: string) {
+  if (!admin) return null;
   let page = 1;
   while (page <= 20) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 100 });
@@ -47,24 +53,32 @@ async function findUserByEmail(targetEmail: string) {
   return null;
 }
 
-async function availableSubdomain(ownerId: string) {
+async function availableSubdomain(client: any, ownerId: string) {
   const base = "prime-strikes-demo";
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const candidate = attempt === 0 ? base : `${base}-${attempt + 1}`;
-    const { data, error } = await admin
+    const { data, error } = await client
       .from("sites")
       .select("id, owner_id")
       .eq("subdomain", candidate)
       .maybeSingle();
     if (error) throw error;
-    if (!data || data.owner_id === ownerId) return candidate;
+    if (!data || (data as any).owner_id === ownerId) return candidate;
   }
   throw new Error("Could not allocate a Prime Strikes demo subdomain.");
 }
 
 async function run() {
-  let user = await findUserByEmail(email);
-  if (!user) {
+  const { data: login, error: loginError } = await loginClient.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (loginError || !login.user || !login.session) {
+    throw loginError || new Error("Existing demo account login failed.");
+  }
+
+  let user = admin ? await findUserByEmail(email) : login.user;
+  if (admin && !user) {
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password,
@@ -73,7 +87,7 @@ async function run() {
     });
     if (error || !data.user) throw error || new Error("User creation failed.");
     user = data.user;
-  } else {
+  } else if (admin && user) {
     const { error } = await admin.auth.admin.updateUserById(user.id, {
       password,
       email_confirm: true,
@@ -81,9 +95,12 @@ async function run() {
     });
     if (error) throw error;
   }
+  if (!user) throw new Error("Could not resolve the Prime Strike demo user.");
 
-  const subdomain = await availableSubdomain(user.id);
-  const built = kit.build("Prime Strikes");
+  const db = admin || loginClient;
+
+  const subdomain = await availableSubdomain(db, user.id);
+  const built = kit.build("Prime Strike");
   const theme = {
     mode: "business",
     activeSiteKit: kit.id,
@@ -91,11 +108,12 @@ async function run() {
     globalFooter: built.footer,
     header: built.header,
     footer: built.footer,
-    email: "hello@primestrikes.academy",
-    address: "Online programs · India",
+    phone: "+91 95002 98631",
+    email: "contact@primestrike.co.in",
+    address: "No 519 MKN Road, Alandur, Chennai 600016",
   };
 
-  const { data: existingSite, error: existingSiteError } = await admin
+  const { data: existingSite, error: existingSiteError } = await db
     .from("sites")
     .select("id")
     .eq("owner_id", user.id)
@@ -103,17 +121,17 @@ async function run() {
   if (existingSiteError) throw existingSiteError;
 
   const siteQuery = existingSite
-    ? admin
+    ? db
         .from("sites")
-        .update({ business_name: "Prime Strikes", subdomain, published: true, theme })
+        .update({ business_name: "Prime Strike", subdomain, published: true, theme })
         .eq("id", existingSite.id)
         .select()
         .single()
-    : admin
+    : db
         .from("sites")
         .insert({
           owner_id: user.id,
-          business_name: "Prime Strikes",
+          business_name: "Prime Strike",
           subdomain,
           published: true,
           theme,
@@ -123,7 +141,7 @@ async function run() {
   const { data: site, error: siteError } = await siteQuery;
   if (siteError || !site) throw siteError || new Error("Site creation failed.");
 
-  const { error: pagesDeleteError } = await admin
+  const { error: pagesDeleteError } = await db
     .from("pages")
     .delete()
     .eq("site_id", site.id);
@@ -131,7 +149,7 @@ async function run() {
 
   for (let position = 0; position < built.pages.length; position += 1) {
     const page = built.pages[position];
-    const { data: savedPage, error: pageError } = await admin
+    const { data: savedPage, error: pageError } = await db
       .from("pages")
       .insert({
         site_id: site.id,
@@ -145,7 +163,7 @@ async function run() {
       .single();
     if (pageError || !savedPage) throw pageError || new Error(`Could not create ${page.name}.`);
 
-    const { error: blockError } = await admin.from("blocks").insert(
+    const { error: blockError } = await db.from("blocks").insert(
       page.blocks.map((pageBlock, blockPosition) => ({
         id: pageBlock.id,
         page_id: savedPage.id,
@@ -157,13 +175,13 @@ async function run() {
     if (blockError) throw blockError;
   }
 
-  const { error: productDeleteError } = await admin
+  const { error: productDeleteError } = await db
     .from("ecom_products")
     .delete()
     .eq("site_id", site.id);
   if (productDeleteError) throw productDeleteError;
   if (built.products?.length) {
-    const { error: productError } = await admin.from("ecom_products").insert(
+    const { error: productError } = await db.from("ecom_products").insert(
       built.products.map((product) => ({
         site_id: site.id,
         title: product.title,
@@ -179,10 +197,10 @@ async function run() {
     if (productError) throw productError;
   }
 
-  const { error: storeError } = await admin.from("ecom_stores").upsert(
+  const { error: storeError } = await db.from("ecom_stores").upsert(
     {
       site_id: site.id,
-      store_name: "Prime Strikes Programs",
+      store_name: "Prime Strike Programs",
       currency: "INR",
       currency_symbol: "₹",
       tax_rate: 18,
@@ -192,14 +210,6 @@ async function run() {
   );
   if (storeError) throw storeError;
 
-  const loginClient = createClient(supabaseUrl, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data: login, error: loginError } = await loginClient.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (loginError || !login.session) throw loginError || new Error("Login verification failed.");
   const { data: ownedSite, error: ownedSiteError } = await loginClient
     .from("sites")
     .select("id, business_name, subdomain, published")

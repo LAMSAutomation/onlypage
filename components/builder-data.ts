@@ -37,6 +37,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'heading-minimal', name: 'Centered Heading & Subtext', description: 'Standalone headline with subtext and alignment controls', tags: ['Heading', 'Text', 'Clean'] },
   ],
   Hero: [
+    { id: 'academy-cinematic', name: 'Cinematic Academy', description: 'Full-bleed editorial hero with dual actions, atmospheric media, and premium education positioning', tags: ['Academy', 'Cinematic', 'Premium', 'Dual CTA'] },
     { id: 'minimal', name: 'Simple Minimalist', description: 'Clean layout centering typography & call-to-actions', tags: ['Minimal', 'Light', 'Corporate'] },
     { id: 'shopify-growth', name: 'Shopify Growth Showcase', description: 'World-class e-commerce landing page layout with floating app mockups, mint backgrounds, and social tag overlays', tags: ['Shopify', 'ECom', 'High-Convert', 'Mint'] },
     { id: 'split', name: 'Interactive Image Split', description: 'Side-by-side text & responsive image preview layout', tags: ['Split', 'SaaS', 'Startup'] },
@@ -55,6 +56,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'glass-panel', name: 'Glass Panel', description: 'Layered translucent surfaces with subtle borders and atmospheric depth', tags: ['Glass', 'Layered', 'Tech'] }
   ],
   Features: [
+    { id: 'academy-courses', name: 'Editorial Course Grid', description: 'Image-led two-column curriculum cards with strong hierarchy and art-directed overlays', tags: ['Academy', 'Courses', 'Editorial', 'Media'] },
     { id: 'feature-grid', name: 'Classic Icon Grid', description: 'Fully responsive grid layout with custom hover scale effects', tags: ['Grid', 'Modern', 'Symmetric'] },
     { id: 'bento-box', name: 'Premium Bento Grid', description: 'Asymmetric grid layout inspired by Apple and Vercel', tags: ['Bento', 'Premium', 'Minimalist'] },
     { id: 'alternating', name: 'Alternating Timelines', description: 'Alternating rows detailing a story or a timeline', tags: ['Story', 'Alternating', 'Creative'] },
@@ -68,6 +70,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'mono-grid', name: 'Monochrome Capability Grid', description: 'Crisp black-and-white capability grid for modern professional brands', tags: ['Mono', 'Grid', 'Professional'] }
   ],
   CTA: [
+    { id: 'academy-spotlight', name: 'Academy Spotlight CTA', description: 'Restrained conversion stage with cinematic depth and a focused enrollment action', tags: ['Academy', 'Enrollment', 'Premium'] },
     { id: 'simple-cta', name: 'Minimal Conversion Panel', description: 'High-contrast banner directing focus to a primary CTA', tags: ['Minimal', 'Fast'] },
     { id: 'gradient-cta', name: 'High-Contrast Gradient Block', description: 'Glow-tinted canvas displaying high-energy newsletter setups', tags: ['Gradient', 'Modern', 'Immersive'] },
     { id: 'image-bg-cta', name: 'Immersive Dark Backdrop', description: 'Elegant overlays with full-bleed media backgrounds', tags: ['Overlay', 'Premium', 'Media'] },
@@ -92,6 +95,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'warm-studio', name: 'Warm Studio Journal', description: 'Organic gallery direction for makers, food, hospitality, and wellness', tags: ['Warm', 'Journal', 'Organic'] }
   ],
   Business: [
+    { id: 'academy-session', name: 'Live Session Case Study', description: 'Large media case study with supporting copy, proof metrics, and a course action', tags: ['Academy', 'Case Study', 'Stats', 'Media'] },
     { id: 'treatment-list', name: 'Luxury Treatment Menu', description: 'Fine-detailed lists displaying treatments, times, and costs', tags: ['Salon', 'Luxury', 'Treatments'] },
     { id: 'packages', name: 'Service Packages Bento', description: 'Pre-bundled bundles featuring tick lists and accents', tags: ['Packages', 'Bespoke', 'Doctor'] },
     { id: 'offers', name: 'Dynamic Active Offers', description: 'Flash offer tickers styled with urgency countdown elements', tags: ['Offers', 'Sales', 'Urgent'] },
@@ -114,6 +118,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'glass-panel', name: 'Glass Subscription Plans', description: 'Layered futuristic plan cards for software and digital products', tags: ['Glass', 'SaaS', 'Tech'] }
   ],
   Testimonials: [
+    { id: 'academy-stories', name: 'Academy Student Stories', description: 'Dark editorial testimonial grid with understated proof and participant details', tags: ['Academy', 'Students', 'Editorial', 'Trust'] },
     { id: 'review-cards', name: 'Classic Review Tiles', description: 'Polished client statement blocks with dynamic star ratings', tags: ['Clean', 'Grid'] },
     { id: 'google-review', name: 'Google Stars & Badging', description: 'Trust-focused layout integrating Google Maps badges', tags: ['Google', 'Trust', 'Local-SEO'] },
     { id: 'wall-of-love', name: 'Masonry Wall of Love', description: 'A massive visual array of community appreciation letters', tags: ['WallOfLove', 'Premium'] },
@@ -124,6 +129,9 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'mono-grid', name: 'Case Study Quotes', description: 'Crisp testimonial system for agencies, studios, and B2B teams', tags: ['Mono', 'Case Study', 'B2B'] }
   ],
   Forms: [
+    { id: 'academy-enquiry', name: 'Academy Course Enquiry', description: 'Premium configurable enquiry form for course interests, dates, and learning goals', tags: ['Academy', 'Lead', 'Configurable'] },
+    { id: 'academy-registration', name: 'Course Registration', description: 'Structured enrollment form with course selection, batch date, payment, and notes', tags: ['Academy', 'Enrollment', 'Registration'] },
+    { id: 'academy-portal', name: 'Student Portal Access', description: 'Focused sign-in and access-request panel for members and enrolled students', tags: ['Academy', 'Portal', 'Authentication'] },
     { id: 'appointment', name: 'Lead Form & Booking', description: 'Fully styled reservation boxes capturing names, emails, and slots', tags: ['Interactive', 'Forms', 'Booking'] },
     { id: 'newsletter', name: 'High-Impact Subscriber Bar', description: 'One-click newsletter subscriptions with custom validations', tags: ['Subscribers', 'Bar'] },
     { id: 'contact-complex', name: 'Detailed Contact Grid', description: 'Direct contact form flanked by interactive maps and contact details', tags: ['Forms', 'Detailed', 'Contact'] },
@@ -148,6 +156,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'warm-studio', name: 'Maker Market', description: 'Warm organic storefront direction for handmade and independent brands', tags: ['Maker', 'Warm', 'Organic'] }
   ],
   Special: [
+    { id: 'academy-process', name: 'Academy Numbered Process', description: 'Large editorial step numbers with structured education workflow copy', tags: ['Academy', 'Process', 'Editorial'] },
     { id: 'faq-accordions', name: 'FAQ Interactive Drawers', description: 'Interactive accordion list maximizing space gracefully', tags: ['Accordions', 'Interactive'] },
     { id: 'steps-path', name: 'Step Process Roadmap', description: 'Horizontal paths mapping the user journey', tags: ['Timeline', 'Roadmap'] },
     { id: 'stats-grid', name: 'Performance Counters Grid', description: 'Animated numeric metrics describing growth accomplishments', tags: ['Numbers', 'Counters'] },
@@ -158,6 +167,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'glass-panel', name: 'Glass Utility Panel', description: 'Atmospheric layered surface for technology and product details', tags: ['Glass', 'Tech', 'Utility'] }
   ],
   Navigation: [
+    { id: 'nav-academy', name: '01. Cinematic Academy Header', description: 'Transparent editorial navigation with dual conversion actions and responsive menu', tags: ['Academy', 'Transparent', 'Premium'] },
     { id: 'nav-minimal', name: '01. Minimal Left Brand', description: 'Simple brand text, centered clean links, and a solid outline action button.', tags: ['Minimal', 'Light'] },
     { id: 'nav-glass', name: '02. Frosted Floating Glass', description: 'Elegant glassmorphic panel floating centrally with a subtle blur effect.', tags: ['Glassmorphism', 'Premium'] },
     { id: 'nav-centered-logo', name: '03. Symmetric Centered Brand', description: 'Centered brand text with evenly split navigation links on left & right sides.', tags: ['Symmetric', 'Elegant'] },
@@ -181,6 +191,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'nav-glowing-glow', name: '21. Futuristic Cyber Rail', description: 'Glowing cyan neon strip with a modern cybertech font styling.', tags: ['Futuristic', 'Cyber'] }
   ],
   Footer: [
+    { id: 'footer-academy', name: '01. Academy Editorial Footer', description: 'Clean light footer with brand story, page links, contact details, and legal navigation', tags: ['Academy', 'Editorial', 'Contact'] },
     { id: 'footer-classic', name: '01. Corporate 4-Column Index', description: 'Robust directory footer featuring logo, copy, newsletter form, and structured grids.', tags: ['Directory', 'Corporate'] },
     { id: 'footer-minimal', name: '02. Centered Single-Row Ribbon', description: 'Slim horizontal ribbon centering copyright labels and tiny circle social pills.', tags: ['Minimal', 'Clean'] },
     { id: 'footer-brand-huge', name: '03. Ultra-Display Huge Branding', description: 'Gigantic typographic branding headline stacked on top of 3 dense content lists.', tags: ['Display', 'Bold'] },

@@ -203,6 +203,336 @@ function sharedChrome(
 }
 
 function buildPrimeStrikes(businessName: string) {
+  const brand = businessName || "Prime Strike";
+  const gold = "#e0b82f";
+  const pages = [
+    { name: "Home", slug: "home" },
+    { name: "Services", slug: "services" },
+    { name: "Contact", slug: "contact" },
+    { name: "Joined Course", slug: "joined-course" },
+    { name: "Student Portal", slug: "student-portal" },
+  ];
+  const links = pages.map((item) => ({ id: id(), label: item.name, url: item.slug }));
+  const premium = (overrides: Partial<BlockCSSStyles> = {}): Partial<BlockCSSStyles> => ({
+    ...dark(gold),
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    maxWidth: 1600,
+    backgroundColor: "#080808",
+    backgroundGradient: "none",
+    useGradient: false,
+    textColor: "#ffffff",
+    subtitleColor: "#9a9a9a",
+    accentColor: gold,
+    fontFamily: "Inter",
+    titleSize: 72,
+    titleWeight: "bold",
+    subtitleSize: 16,
+    cardBgColor: "#151515",
+    cardTextColor: "#ffffff",
+    cardBorderColor: "#2a2a2a",
+    cardBorderRadius: 20,
+    buttonBgColor: gold,
+    buttonTextColor: "#090909",
+    buttonBorderRadius: 999,
+    ...overrides,
+  });
+
+  const header = block(
+    "Navigation",
+    "nav-academy",
+    {
+      title: brand,
+      links,
+      secondaryBtnText: "Joined Course",
+      secondaryBtnActionType: "link",
+      secondaryBtnActionValue: "joined-course",
+      btnText: "Student Portal",
+      btnActionType: "link",
+      btnActionValue: "student-portal",
+    },
+    premium({ backgroundColor: "#080808", maxWidth: 1600 }),
+  );
+
+  const footer = block(
+    "Footer",
+    "footer-academy",
+    {
+      title: brand,
+      subtitle: "Premium stock market and options trading education in Chennai, built around live learning, risk management, and disciplined execution.",
+      copyright: `© ${new Date().getFullYear()} ${brand}. All rights reserved. Trading involves risk.`,
+      contactEmail: "contact@primestrike.co.in",
+      contactPhone: "+91 95002 98631",
+      contactAddress: "No 519 MKN Road, Alandur, Chennai 600016",
+      links,
+    },
+    premium({ backgroundColor: "#f7f7f5", textColor: "#121212", maxWidth: 1600 }),
+  );
+
+  const courses = [
+    {
+      id: id(),
+      title: "Stock Market Basics",
+      desc: "Structured guidance on equity markets, broker accounts, order types, charts, and practical risk foundations.",
+      icon: "TrendingUp",
+      eyebrow: "Foundation",
+      imageUrl: "https://www.primestrike.co.in/images/service-party.png",
+      linkText: "View course",
+      linkActionType: "link",
+      linkActionValue: "services",
+    },
+    {
+      id: id(),
+      title: "Options & Derivatives",
+      desc: "Understand option buying, selling, hedging structures, volatility, position sizing, and capital protection.",
+      icon: "ChartCandlestick",
+      eyebrow: "Strategy",
+      imageUrl: "https://www.primestrike.co.in/images/service-corporate.png",
+      linkText: "View course",
+      linkActionType: "link",
+      linkActionValue: "services",
+    },
+    {
+      id: id(),
+      title: "Technical Analysis",
+      desc: "Build repeatable chart-reading skills using price action, volume, market structure, and defined invalidation.",
+      icon: "ChartNoAxesCombined",
+      eyebrow: "Execution",
+      imageUrl: "https://www.primestrike.co.in/images/service-concert.png",
+      linkText: "View course",
+      linkActionType: "link",
+      linkActionValue: "services",
+    },
+    {
+      id: id(),
+      title: "Algorithmic Trading",
+      desc: "Translate clear rules into basic backtests and systematic execution workflows that reduce emotional decisions.",
+      icon: "Code2",
+      eyebrow: "Advanced",
+      imageUrl: "https://www.primestrike.co.in/images/service-wedding.png",
+      linkText: "View course",
+      linkActionType: "link",
+      linkActionValue: "services",
+    },
+  ];
+
+  const process = [
+    { id: id(), step: "01", title: "Structured Webinars", desc: "Learn the theory, trading logic, options structures, and risk rules in live guided sessions." },
+    { id: id(), step: "02", title: "Interactive Mentoring", desc: "Bring charts and questions into group reviews and receive direct feedback on the reasoning." },
+    { id: id(), step: "03", title: "Live Market Practice", desc: "Observe developing market conditions and practise execution without hiding the uncertainty." },
+  ];
+
+  const home = page(
+    "Home",
+    "home",
+    `${brand} | Interactive Trading School in Chennai`,
+    "Learn stock market trading, options hedging, technical analysis, and disciplined execution through live online education from Chennai.",
+    [
+      block("Hero", "academy-cinematic", {
+        badge: "PREMIUM TRADING ACADEMY · EST. 2024 · CHENNAI",
+        title: "Learn to trade with confidence",
+        subtitle: "Master the financial markets through interactive online webinars, practical chart work, and direct mentorship.",
+        imageUrl: "https://www.primestrike.co.in/images/hero.png",
+        btnText: "Start Learning",
+        btnActionType: "link",
+        btnActionValue: "contact",
+        secondaryBtnText: "Explore Courses",
+        secondaryBtnActionType: "link",
+        secondaryBtnActionValue: "services",
+      }, premium()),
+      block("Features", "academy-courses", {
+        badge: "OUR PROGRAMS",
+        title: "Trading Course Curriculum",
+        subtitle: "Four connected learning tracks, from market foundations to systematic execution.",
+        features: courses,
+      }, premium()),
+      block("Business", "academy-session", {
+        badge: "FEATURED SESSION",
+        title: "Live Trading Session Analysis",
+        subtitle: "A practical live session where market structure, price action, position sizing, and exit rules are examined in real time—with the reasoning visible at every step.",
+        imageUrl: "https://www.primestrike.co.in/images/case-study.png",
+        stats: [
+          { id: id(), label: "Students", val: 10000, suffix: "+" },
+          { id: id(), label: "Webinars", val: 500, suffix: "+" },
+          { id: id(), label: "Learner satisfaction", val: 92, suffix: "%" },
+        ],
+        btnText: "Explore Courses",
+        btnActionType: "link",
+        btnActionValue: "services",
+      }, premium()),
+      block("Testimonials", "academy-stories", {
+        badge: "STUDENT STORIES",
+        title: "What Our Clients Say",
+        subtitle: "Feedback from traders who wanted structure, accountability, and more disciplined decisions.",
+        testimonials: [
+          { id: id(), name: "Karthik Raja", role: "Retail Trader · Chennai", content: "The options strategies changed how I look at risk. The live webinars make the concepts practical and easy to question.", avatar: "", rating: 5 },
+          { id: id(), name: "Shalini Sen", role: "Working Professional · Online Batch", content: "I tried learning from videos for a year. The structured course helped me build a consistent process and a journal I could review.", avatar: "", rating: 5 },
+          { id: id(), name: "Dinesh Kumar", role: "Full-time Trader · Chennai", content: "Complex indicators were simplified, but the biggest improvement was understanding psychology, risk, and emotional execution.", avatar: "", rating: 5 },
+        ],
+      }, premium()),
+      block("Special", "academy-process", {
+        badge: "HOW WE WORK",
+        title: "Our Process",
+        subtitle: "A deliberate path from understanding to reviewed practice.",
+        steps: process,
+      }, premium({ backgroundColor: "#171717" })),
+      block("CTA", "academy-spotlight", {
+        title: "Start Your Trading Journey Today",
+        subtitle: "From market foundations to options hedging and technical analysis. Learn through interactive live webinars.",
+        btnText: "Enroll Now",
+        btnActionType: "link",
+        btnActionValue: "contact",
+      }, premium()),
+    ],
+  );
+
+  const services = page(
+    "Services",
+    "services",
+    `${brand} Courses | Structured Trading Education`,
+    "Explore Prime Strike courses in stock market foundations, technical analysis, options strategies, and systematic trading.",
+    [
+      block("Hero", "academy-cinematic", {
+        badge: "OUR COURSES",
+        title: "Structured Trading Education",
+        subtitle: "From stock market basics to advanced options strategies. Learn to analyse risk and trade with a repeatable process.",
+        imageUrl: "https://www.primestrike.co.in/images/services-hero.png",
+        btnText: "Enquire Now",
+        btnActionType: "link",
+        btnActionValue: "contact",
+        secondaryBtnText: "Joined a course?",
+        secondaryBtnActionType: "link",
+        secondaryBtnActionValue: "joined-course",
+      }, premium()),
+      block("Features", "academy-courses", {
+        badge: "CURRICULUM",
+        title: "Choose the right learning track",
+        subtitle: "Start with the foundations or enter at the level that matches your experience.",
+        features: courses,
+      }, premium()),
+      block("Special", "academy-process", {
+        badge: "THE PRIME STRIKE WAY",
+        title: "From foundation to review",
+        subtitle: "Every course connects theory, guided strategy work, implementation, and feedback.",
+        steps: [
+          { id: id(), step: "01", title: "Foundation Class", desc: "Learn core market concepts, broker systems, chart structure, and risk tools." },
+          { id: id(), step: "02", title: "Strategy Webinar", desc: "Study specific setups, hedging structures, and the evidence behind each rule." },
+          { id: id(), step: "03", title: "Live Implementation", desc: "Observe setups forming and practise marking entries, invalidation, and exits." },
+          { id: id(), step: "04", title: "Journal Review", desc: "Submit your trade journal for feedback on decisions, consistency, and discipline." },
+        ],
+      }, premium({ backgroundColor: "#171717" })),
+      block("CTA", "academy-spotlight", {
+        title: "Ready to Start Your Trading Journey?",
+        subtitle: "Join Chennai's structured trading community and build a process you can review.",
+        btnText: "Get Started",
+        btnActionType: "link",
+        btnActionValue: "contact",
+      }, premium()),
+    ],
+  );
+
+  const contact = page(
+    "Contact",
+    "contact",
+    `${brand} Contact | Course Enquiry Chennai`,
+    "Contact Prime Strike in Alandur, Chennai for trading course details, batch dates, and online webinar enquiries.",
+    [
+      block("Hero", "academy-cinematic", {
+        badge: "GET IN TOUCH",
+        title: "Let's Learn Together",
+        subtitle: "Master options trading and technical analysis with a Chennai team focused on practical learning and disciplined risk.",
+        imageUrl: "https://www.primestrike.co.in/images/contact-hero.png",
+        btnText: "Send an Enquiry",
+        btnActionType: "booking",
+        btnActionValue: "",
+        secondaryBtnText: "Call the Academy",
+        secondaryBtnActionType: "phone",
+        secondaryBtnActionValue: "+91 95002 98631",
+      }, premium()),
+      block("Forms", "academy-enquiry", {
+        badge: "COURSE ENQUIRY",
+        title: "Tell us about your trading goals",
+        subtitle: "Share your experience, course interest, and preferred batch date. We respond to every genuine enquiry.",
+        contactEmail: "contact@primestrike.co.in",
+        contactPhone: "+91 95002 98631",
+        contactAddress: "No 519 MKN Road, Alandur, Chennai 600016",
+        btnText: "Send Enquiry",
+        successMessage: "Thank you. The Prime Strike team will review your goals and contact you with the next suitable batch.",
+        whatsappFollowUp: true,
+        formFields: [
+          { id: id(), label: "First name", name: "first_name", type: "text", placeholder: "Your first name", required: true, width: "half" },
+          { id: id(), label: "Last name", name: "last_name", type: "text", placeholder: "Your last name", required: true, width: "half" },
+          { id: id(), label: "Email address", name: "email", type: "email", placeholder: "you@example.com", required: true, width: "full" },
+          { id: id(), label: "Course interest", name: "course", type: "select", required: true, width: "half", options: ["Stock Market Basics", "Options & Derivatives", "Technical Analysis", "Algorithmic Trading"] },
+          { id: id(), label: "Preferred batch date", name: "batch_date", type: "date", required: false, width: "half" },
+          { id: id(), label: "Tell us about your goals", name: "message", type: "textarea", placeholder: "Describe your experience, goals, and questions", required: false, width: "full" },
+        ],
+      }, premium()),
+      block("CTA", "academy-spotlight", {
+        badge: "CHENNAI · TAMIL NADU",
+        title: "Protect the capital. Improve the process.",
+        subtitle: "Trading is not about being right on every setup. It is about controlling what happens when you are wrong.",
+        btnText: "Chat on WhatsApp",
+        btnActionType: "whatsapp",
+        btnActionValue: "+91 95002 98631",
+      }, premium({ backgroundColor: "#171717" })),
+    ],
+  );
+
+  const joinedCourse = page(
+    "Joined Course",
+    "joined-course",
+    `${brand} | Joined Course Registration`,
+    "Submit your Prime Strike course selection, first class date, contact details, and fee information.",
+    [
+      block("Forms", "academy-registration", {
+        badge: "JOINED COURSE FORM",
+        title: "Complete Your Enrollment",
+        subtitle: "Submit your course selection, first class date, and fee payment details so the academy can confirm your enrollment.",
+        btnText: "Submit Course Registration",
+        successMessage: "Your course registration has been received. The academy will verify the details and send your confirmation.",
+        whatsappFollowUp: true,
+        formFields: [
+          { id: id(), label: "Full name", name: "name", type: "text", placeholder: "Your full name", required: true, width: "full" },
+          { id: id(), label: "Email address", name: "email", type: "email", placeholder: "you@example.com", required: true, width: "half" },
+          { id: id(), label: "WhatsApp phone", name: "phone", type: "tel", placeholder: "+91 95002 98631", required: true, width: "half" },
+          { id: id(), label: "Joined course", name: "course", type: "select", required: true, width: "full", options: ["Basic to Advance · Comprehensive", "Advance Level · Pro Trader"] },
+          { id: id(), label: "First class date", name: "class_date", type: "date", required: true, width: "half" },
+          { id: id(), label: "Paid amount", name: "amount", type: "number", placeholder: "15000", required: true, width: "half" },
+          { id: id(), label: "Additional notes", name: "message", type: "textarea", placeholder: "Preferred timing, topics, or payment reference", required: false, width: "full" },
+        ],
+      }, premium()),
+    ],
+  );
+
+  const studentPortal = page(
+    "Student Portal",
+    "student-portal",
+    `${brand} | Student Portal`,
+    "Sign in or request student portal access for Prime Strike learning resources and course updates.",
+    [
+      block("Forms", "academy-portal", {
+        badge: "STUDENT PORTAL",
+        title: "Welcome Back",
+        subtitle: "Sign in to your Prime Strike learning account, or request access after your course enrollment is confirmed.",
+        btnText: "Sign In",
+        successMessage: "If your enrollment is active, the academy will send or confirm your secure student access details.",
+        whatsappFollowUp: false,
+        formFields: [
+          { id: id(), label: "Full name", name: "name", type: "text", placeholder: "Your full name", required: true, width: "full" },
+          { id: id(), label: "Email address", name: "email", type: "email", placeholder: "name@example.com", required: true, width: "full" },
+          { id: id(), label: "Password", name: "password", type: "password", placeholder: "Enter your password", required: true, width: "full" },
+        ],
+      }, premium()),
+    ],
+  );
+
+  return { header, footer, pages: [home, services, contact, joinedCourse, studentPortal] };
+}
+
+function buildPrimeStrikesLegacy(businessName: string) {
   const brand = businessName || "Prime Strikes";
   const pageLinks = [
     { name: "Home", slug: "home" },
