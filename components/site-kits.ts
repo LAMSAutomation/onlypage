@@ -1,4 +1,7 @@
-import type { BlockCSSStyles, WebBlock } from "./website-builder-editor";
+import type { BlockCSSStyles, WebBlock } from './builder-types';
+import { EXTRA_SITE_KITS } from "./site-kits-extra";
+import { EXTRA_SITE_KITS_2 } from "./site-kits-extra2";
+import { enrichKitSite } from "./site-kit-sections";
 
 export interface SiteKitPage {
   name: string;
@@ -76,9 +79,9 @@ const baseStyles: BlockCSSStyles = {
   clickResponse: "scale-down",
 };
 
-const id = () => crypto.randomUUID();
+export const id = () => crypto.randomUUID();
 
-const block = (
+export const block = (
   type: WebBlock["type"],
   variant: string,
   content: Partial<WebBlock>,
@@ -93,7 +96,7 @@ const block = (
   styles: { ...baseStyles, ...style },
 });
 
-const dark = (accent = "#f4c95d"): Partial<BlockCSSStyles> => ({
+export const dark = (accent = "#f4c95d"): Partial<BlockCSSStyles> => ({
   backgroundColor: "#080b10",
   backgroundGradient: "linear-gradient(135deg, #080b10 0%, #111827 58%, #172033 100%)",
   useGradient: true,
@@ -110,7 +113,7 @@ const dark = (accent = "#f4c95d"): Partial<BlockCSSStyles> => ({
   fontFamily: "Space Grotesk",
 });
 
-const light = (accent = "#b88716"): Partial<BlockCSSStyles> => ({
+export const light = (accent = "#b88716"): Partial<BlockCSSStyles> => ({
   backgroundColor: "#f7f5ef",
   textColor: "#111827",
   subtitleColor: "#586173",
@@ -125,7 +128,7 @@ const light = (accent = "#b88716"): Partial<BlockCSSStyles> => ({
   fontFamily: "Space Grotesk",
 });
 
-const page = (
+export const page = (
   name: string,
   slug: string,
   seoTitle: string,
@@ -137,6 +140,13 @@ function sharedChrome(
   businessName: string,
   pages: Array<{ name: string; slug: string }>,
   accent = "#f4c95d",
+  footerContent?: {
+    tagline?: string;
+    contactPhone?: string;
+    contactEmail?: string;
+    contactAddress?: string;
+    copyright?: string;
+  },
 ) {
   const links = pages.map((item) => ({ id: id(), label: item.name, url: item.slug }));
   const conversionPage =
@@ -177,11 +187,14 @@ function sharedChrome(
     {
       title: businessName,
       subtitle:
+        footerContent?.tagline ||
         "Structured education for independent traders. Build a process, manage risk, and make decisions with discipline.",
-      copyright: `© ${new Date().getFullYear()} ${businessName}. Educational content only. Trading involves risk.`,
-      contactPhone: "Admissions · Mon–Fri",
-      contactEmail: "hello@primestrikes.academy",
-      contactAddress: "Online programs · India",
+      copyright:
+        footerContent?.copyright ||
+        `© ${new Date().getFullYear()} ${businessName}. Educational content only. Trading involves risk.`,
+      contactPhone: footerContent?.contactPhone || "Admissions · Mon–Fri",
+      contactEmail: footerContent?.contactEmail || "hello@primestrikes.academy",
+      contactAddress: footerContent?.contactAddress || "Online programs · India",
       btnText: `View ${primaryContentPage.name.toLowerCase()}`,
       btnActionType: "link",
       btnActionValue: primaryContentPage.slug,
@@ -926,6 +939,265 @@ function buildPrimeStrikesLegacy(businessName: string) {
   return { ...chrome, pages, products };
 }
 
+function buildSignatureStudio(businessName: string) {
+  const brand = businessName || "Atelier North";
+  const gold = "#d9b24c";
+  const links = [
+    { name: "Home", slug: "home" },
+    { name: "Studio", slug: "studio" },
+    { name: "Services", slug: "services" },
+    { name: "Shop", slug: "shop" },
+    { name: "Contact", slug: "contact" },
+  ];
+  const navigationLinks = links.map((item) => ({ id: id(), label: item.name, url: item.slug }));
+  const signature = (overrides: Partial<BlockCSSStyles> = {}): Partial<BlockCSSStyles> => ({
+    ...dark(gold),
+    backgroundColor: "#07090d",
+    backgroundGradient: "linear-gradient(135deg, #07090d 0%, #111722 58%, #182235 100%)",
+    paddingTop: 104,
+    paddingBottom: 104,
+    maxWidth: 1280,
+    titleSize: 60,
+    cardBgColor: "#111722",
+    cardBorderColor: "#2a3445",
+    cardBorderRadius: 24,
+    buttonBorderRadius: 999,
+    ...overrides,
+  });
+  const ivory = (overrides: Partial<BlockCSSStyles> = {}): Partial<BlockCSSStyles> => ({
+    ...light("#8b6817"),
+    backgroundColor: "#f3f0e8",
+    paddingTop: 104,
+    paddingBottom: 104,
+    maxWidth: 1280,
+    titleSize: 54,
+    cardBorderRadius: 24,
+    buttonBorderRadius: 999,
+    ...overrides,
+  });
+
+  const header = block(
+    "Navigation",
+    "nav-signature",
+    {
+      title: brand,
+      subtitle: links.map((item) => item.name).join(" · "),
+      btnText: "Start a project",
+      btnActionType: "link",
+      btnActionValue: "contact",
+      links: navigationLinks,
+    },
+    signature({ paddingTop: 12, paddingBottom: 12, titleSize: 18, maxWidth: 1280 }),
+  );
+
+  const footer = block(
+    "Footer",
+    "footer-signature",
+    {
+      title: brand,
+      subtitle: "Distinctive digital experiences built with clarity, restraint, and a point of view.",
+      copyright: `© ${new Date().getFullYear()} ${brand}. All rights reserved.`,
+      contactPhone: "+91 98765 43210",
+      contactEmail: "hello@ateliernorth.studio",
+      contactAddress: "Bengaluru · India",
+      btnText: "View services",
+      btnActionType: "link",
+      btnActionValue: "services",
+      links: navigationLinks,
+    },
+    signature({ useGradient: false, paddingTop: 72, paddingBottom: 36, titleSize: 22 }),
+  );
+
+  const pages = [
+    page(
+      "Home",
+      "home",
+      `${brand} | Distinctive digital experiences`,
+      `${brand} creates strategic identities, digital products, and memorable brand experiences.`,
+      [
+        block("Hero", "signature-hero", {
+          badge: "INDEPENDENT CREATIVE PRACTICE",
+          title: "Make your presence impossible to ignore.",
+          subtitle: "Strategy, identity, and digital experiences for ambitious teams ready to look as considered as the work they do.",
+          imageUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=90&w=2000",
+          btnText: "Explore our work",
+          btnActionType: "link",
+          btnActionValue: "studio",
+          secondaryBtnText: "Start a project",
+          secondaryBtnActionType: "link",
+          secondaryBtnActionValue: "contact",
+        }, signature({ paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0, maxWidth: 1600, titleSize: 86 })),
+        block("Features", "signature-bento", {
+          badge: "WHAT WE MAKE",
+          title: "One clear idea, expressed beautifully everywhere.",
+          subtitle: "A connected creative system spanning the decisions customers notice and the details they simply feel.",
+          features: [
+            { id: id(), title: "Brand direction", desc: "Positioning, voice, and a visual system with enough character to be remembered.", icon: "Sparkles", eyebrow: "01 · STRATEGY", imageUrl: "https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&q=88&w=1400", linkText: "See our approach", linkActionType: "link", linkActionValue: "services" },
+            { id: id(), title: "Digital experience", desc: "High-conviction websites and products that turn attention into useful action.", icon: "PanelsTopLeft", eyebrow: "02 · DIGITAL", imageUrl: "https://images.unsplash.com/photo-1559028012-481c04fa702d?auto=format&fit=crop&q=88&w=1100", linkText: "Explore digital", linkActionType: "link", linkActionValue: "services" },
+            { id: id(), title: "Content systems", desc: "A repeatable language for campaigns, launches, and the everyday moments between them.", icon: "GalleryHorizontalEnd", eyebrow: "03 · CONTENT", imageUrl: "https://images.unsplash.com/photo-1545235617-9465d2a55698?auto=format&fit=crop&q=88&w=1100", linkText: "View the studio", linkActionType: "link", linkActionValue: "studio" },
+            { id: id(), title: "Ongoing partnership", desc: "Senior creative support that keeps the system coherent as the business changes.", icon: "Handshake", eyebrow: "04 · PARTNERSHIP", imageUrl: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=88&w=1100", linkText: "Work with us", linkActionType: "link", linkActionValue: "contact" },
+          ],
+        }, ivory()),
+        block("Business", "signature-story", {
+          badge: "SELECTED ENGAGEMENT",
+          title: "From a complicated offer to a brand people could finally understand.",
+          subtitle: "We rebuilt the story, experience, and launch system around one confident promise — giving the team a clearer way to sell and customers a simpler way to choose.",
+          imageUrl: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&q=88&w=1600",
+          btnText: "Read the full story",
+          btnActionType: "link",
+          btnActionValue: "studio",
+          features: [
+            { id: id(), title: "Find the signal", desc: "Research revealed the idea customers already valued most.", icon: "ScanSearch" },
+            { id: id(), title: "Build the system", desc: "One creative direction connected every touchpoint.", icon: "Workflow" },
+            { id: id(), title: "Make it useful", desc: "The launch toolkit gave the internal team real independence.", icon: "ChartNoAxesCombined" },
+          ],
+        }, signature()),
+        block("Testimonials", "signature-stories", {
+          badge: "CLIENT STORIES",
+          title: "Good work changes the conversation.",
+          subtitle: "Specific reflections from the people closest to the process.",
+          testimonials: [
+            { id: id(), name: "Maya Rao", role: "Founder · Common Ground", content: "They found the simple idea inside a very complicated business. For the first time, our website sounds like us and gives the team a system we can actually use.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=85&w=240", rating: 5 },
+            { id: id(), name: "Aarav Mehta", role: "CEO · Morrow", content: "Every choice was deliberate. The new experience feels dramatically more premium, but it is also clearer, faster, and much easier for customers to navigate.", avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=85&w=240", rating: 5 },
+            { id: id(), name: "Leena Shah", role: "Creative Lead · Form House", content: "The work gave us confidence without adding noise. We came away with a point of view, a beautiful site, and practical tools for everything that followed.", avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=85&w=240", rating: 5 },
+          ],
+        }, ivory()),
+        block("CTA", "signature-cta", {
+          badge: "NOW BOOKING SELECT PROJECTS",
+          title: "Your next chapter should look like one.",
+          subtitle: "Tell us where the business is going. We will help the experience catch up.",
+          btnText: "Start a conversation",
+          btnActionType: "link",
+          btnActionValue: "contact",
+        }, signature({ textAlign: "center", titleSize: 68 })),
+      ],
+    ),
+    page(
+      "Studio",
+      "studio",
+      `${brand} | Studio and selected work`,
+      `The thinking, process, and selected work behind ${brand}.`,
+      [
+        block("Text", "signature-editorial", {
+          badge: "OUR POINT OF VIEW",
+          title: "Restraint is not less ambition. It is better judgment.",
+          subtitle: "We work with founders and teams at moments of meaningful change — when the business has evolved but the way it presents itself has not.\n\nOur role is to find the clearest expression of what makes the company valuable, then turn it into a distinctive system people can understand, trust, and remember.",
+          btnText: "Discuss a project",
+          btnActionType: "link",
+          btnActionValue: "contact",
+        }, signature({ titleSize: 70 })),
+        block("Gallery", "signature-gallery", {
+          badge: "VISUAL ARCHIVE",
+          title: "Selected work, seen up close.",
+          subtitle: "Identity, digital, and campaign moments from recent collaborations.",
+          galleryImages: [
+            { id: id(), url: "https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&q=88&w=1400", title: "Morrow", subtitle: "Identity and launch system", aspect: "landscape" },
+            { id: id(), url: "https://images.unsplash.com/photo-1559028012-481c04fa702d?auto=format&fit=crop&q=88&w=1200", title: "Common Ground", subtitle: "Digital flagship", aspect: "square" },
+            { id: id(), url: "https://images.unsplash.com/photo-1545235617-9465d2a55698?auto=format&fit=crop&q=88&w=1200", title: "Soft Objects", subtitle: "Editorial campaign", aspect: "portrait" },
+            { id: id(), url: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=88&w=1400", title: "Form House", subtitle: "Spatial identity", aspect: "landscape" },
+            { id: id(), url: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=88&w=1200", title: "North/West", subtitle: "Team workshop", aspect: "square" },
+          ],
+        }, ivory()),
+      ],
+    ),
+    page(
+      "Services",
+      "services",
+      `${brand} | Services and engagements`,
+      `Flexible creative engagements for brand, digital, and ongoing design support.`,
+      [
+        block("Pricing", "signature-pricing", {
+          badge: "WAYS TO WORK TOGETHER",
+          title: "Choose the right level of transformation.",
+          subtitle: "Clear starting points with room to shape the scope around the problem that matters.",
+          btnText: "Discuss your project",
+          btnActionType: "link",
+          btnActionValue: "contact",
+          pricing: [
+            { id: id(), tier: "Focus", price: "₹95,000", features: ["Focused strategy sprint", "Core creative direction", "Priority recommendations"], btnText: "Choose Focus", popular: false },
+            { id: id(), tier: "Signature", price: "₹2,40,000", features: ["Brand and digital strategy", "Complete visual system", "Flagship website experience", "Launch toolkit"], btnText: "Choose Signature", popular: true },
+            { id: id(), tier: "Partnership", price: "₹4,50,000", features: ["Everything in Signature", "Campaign and content system", "Team enablement", "Three months creative direction"], btnText: "Talk to the studio", popular: false },
+          ],
+        }, signature()),
+        block("Special", "signature-faq", {
+          badge: "GOOD QUESTIONS",
+          title: "What clients usually want to know.",
+          subtitle: "A few useful answers before we begin the conversation.",
+          btnText: "Ask something else",
+          btnActionType: "link",
+          btnActionValue: "contact",
+          faqs: [
+            { id: id(), q: "What kind of projects are the best fit?", a: "We are most useful when the business is changing, the current experience no longer reflects its quality, and the team is ready to make clear strategic choices." },
+            { id: id(), q: "How long does a typical engagement take?", a: "A focused sprint can take three to four weeks. A complete brand and website engagement usually runs eight to twelve weeks with clear review milestones." },
+            { id: id(), q: "Can you work with our internal team?", a: "Yes. We regularly partner with in-house marketing, product, and engineering teams and build systems they can confidently extend after handover." },
+            { id: id(), q: "Do you provide development as well as design?", a: "Yes. Digital engagements can include production-ready design, React implementation, CMS setup, analytics, integrations, launch support, and documentation." },
+          ],
+        }, ivory()),
+      ],
+    ),
+    page(
+      "Shop",
+      "shop",
+      `${brand} | The Signature Edit`,
+      `A considered collection of tools and editions from ${brand}.`,
+      [
+        block("EComStore", "signature-store", {
+          badge: "THE SIGNATURE EDIT",
+          title: "Useful objects, beautifully considered.",
+          subtitle: "A small collection of tools for clearer thinking, stronger presentations, and more intentional creative work.",
+          btnText: "Ask about an edition",
+          btnActionType: "link",
+          btnActionValue: "contact",
+          contactPhone: "+91 98765 43210",
+        }, signature()),
+      ],
+    ),
+    page(
+      "Contact",
+      "contact",
+      `${brand} | Start a project`,
+      `Start a project or arrange a studio visit with ${brand}.`,
+      [
+        block("Map", "signature-map", {
+          badge: "VISIT THE STUDIO",
+          title: "Good conversations deserve a good setting.",
+          subtitle: "Visit by appointment in Indiranagar, call the studio, or send a note and we will put you in touch with the right person.",
+          mapAddress: "Indiranagar, Bengaluru, Karnataka, India",
+          contactPhone: "+91 98765 43210",
+          contactEmail: "hello@ateliernorth.studio",
+          contactAddress: "Indiranagar · Bengaluru · India",
+          btnText: "Get directions",
+        }, signature()),
+        block("Forms", "signature-form", {
+          badge: "START A CONVERSATION",
+          title: "Tell us what is changing.",
+          subtitle: "Share the ambition, the timing, and where the current experience is falling short. We will reply with a useful next step.",
+          btnText: "Send project note",
+          contactEmail: "hello@ateliernorth.studio",
+          contactPhone: "+91 98765 43210",
+          contactAddress: "Bengaluru · India",
+          successMessage: "Thank you. The studio will review your note and reply within two business days.",
+          formFields: [
+            { id: id(), label: "First name", name: "first_name", type: "text", placeholder: "Your first name", required: true, width: "half" },
+            { id: id(), label: "Last name", name: "last_name", type: "text", placeholder: "Your last name", required: true, width: "half" },
+            { id: id(), label: "Work email", name: "email", type: "email", placeholder: "you@company.com", required: true, width: "half" },
+            { id: id(), label: "Phone", name: "phone", type: "tel", placeholder: "+91 98765 43210", required: false, width: "half" },
+            { id: id(), label: "What are you building?", name: "message", type: "textarea", placeholder: "A little context is enough to begin", required: true, width: "full" },
+          ],
+        }, ivory()),
+      ],
+    ),
+  ];
+
+  const products: SiteKitProduct[] = [
+    { title: "The Clarity Workbook", description: "A 96-page guided workbook for positioning, audience, and creative direction.", price: 2400, compareAtPrice: 2900, image: "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=88&w=1200", category: "Workbooks", tags: ["Strategy", "Printed"], badge: "Studio favourite" },
+    { title: "Presentation System", description: "A flexible editorial deck system for proposals, launches, and important ideas.", price: 4800, image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=88&w=1200", category: "Digital tools", tags: ["Templates", "Digital"], badge: "New edition" },
+    { title: "Creative Direction Session", description: "A focused 90-minute review with a written decision brief and practical next steps.", price: 12500, image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=88&w=1200", category: "Sessions", tags: ["Advisory", "1:1"], badge: "Limited availability" },
+  ];
+
+  return { header, footer, pages, products };
+}
+
 function buildNorthstar(businessName: string) {
   const brand = businessName || "Northstar Advisory";
   const links = [
@@ -935,7 +1207,14 @@ function buildNorthstar(businessName: string) {
     { name: "About", slug: "about" },
     { name: "Contact", slug: "contact" },
   ];
-  const chrome = sharedChrome(brand, links, "#a3e635");
+  const chrome = sharedChrome(brand, links, "#a3e635", {
+    tagline:
+      "Independent advisory for founders and operators — senior attention, direct communication, and work that moves a real decision forward.",
+    contactPhone: "Mon–Fri · 9:00–18:00 IST",
+    contactEmail: "hello@northstaradvisory.in",
+    contactAddress: "Bengaluru, India · Remote worldwide",
+    copyright: `© ${new Date().getFullYear()} Northstar Advisory. All rights reserved.`,
+  });
   const pages = links.map((item, index) =>
     page(
       item.name,
@@ -969,7 +1248,14 @@ function buildFieldNotes(businessName: string) {
     { name: "Studio", slug: "studio" },
     { name: "Contact", slug: "contact" },
   ];
-  const chrome = sharedChrome(brand, links, "#fb923c");
+  const chrome = sharedChrome(brand, links, "#fb923c", {
+    tagline:
+      "An independent creative practice — identity, digital, and stories built with attention and staying power.",
+    contactPhone: "Mon–Fri · 10:00–19:00 IST",
+    contactEmail: "hello@fieldnotes.studio",
+    contactAddress: "Bengaluru, India",
+    copyright: `© ${new Date().getFullYear()} Field Notes Studio. All rights reserved.`,
+  });
   const warm = { ...light("#c2410c"), backgroundColor: "#fff7ed", fontFamily: "Lora" };
   const pages = links.map((item, index) =>
     page(
@@ -997,9 +1283,19 @@ function buildFieldNotes(businessName: string) {
 
 export const SITE_KITS: SiteKit[] = [
   {
+    id: "signature-studio",
+    name: "Signature Studio",
+    category: "Premium Multi-Purpose",
+    description: "A complete five-page art-directed system with a cinematic home, editorial studio, services, commerce, and connected lead capture.",
+    audience: "Premium brands, studios, consultants, educators, and ambitious small businesses",
+    palette: ["#07090d", "#d9b24c", "#f3f0e8"],
+    pageCount: 5,
+    build: buildSignatureStudio,
+  },
+  {
     id: "prime-strikes",
     name: "Prime Strikes Academy",
-    category: "Education & courses",
+    category: "Education & Courses",
     description: "A five-page trading school with programs, mentors, editorial content, admissions, and a live course catalog.",
     audience: "Trading educators, cohort courses, professional academies",
     palette: ["#080b10", "#f4c95d", "#f7f5ef"],
@@ -1009,7 +1305,7 @@ export const SITE_KITS: SiteKit[] = [
   {
     id: "northstar-advisory",
     name: "Northstar Advisory",
-    category: "Professional services",
+    category: "Professional Services",
     description: "A rigorous five-page consulting site with restrained typography, capabilities, work, and lead capture.",
     audience: "Consultants, studios, B2B services",
     palette: ["#080b10", "#a3e635", "#ffffff"],
@@ -1019,13 +1315,18 @@ export const SITE_KITS: SiteKit[] = [
   {
     id: "field-notes-studio",
     name: "Field Notes Studio",
-    category: "Creative portfolio",
+    category: "Creative Portfolio",
     description: "A warm editorial portfolio with selected work, a journal, a studio profile, and project enquiries.",
     audience: "Designers, photographers, creative practices",
     palette: ["#111827", "#fb923c", "#fff7ed"],
     pageCount: 5,
     build: buildFieldNotes,
   },
-];
+  ...EXTRA_SITE_KITS,
+  ...EXTRA_SITE_KITS_2,
+].map((kit) => ({
+  ...kit,
+  build: (businessName: string) => enrichKitSite(kit.build(businessName), kit),
+}));
 
 export const getSiteKit = (kitId: string) => SITE_KITS.find((kit) => kit.id === kitId);

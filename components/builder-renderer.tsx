@@ -7,17 +7,20 @@ import {
   UploadCloud, ShieldCheck, Star, Play, ArrowUpRight, CheckSquare,
   ThumbsUp, Menu, Search, Sparkles,
   Twitter, Instagram, Github, Lock, CreditCard, ShoppingCart, ShoppingBag,
-  MessageCircle, ArrowUp, Rocket
+  MessageCircle, ArrowUp, Rocket, X
 } from 'lucide-react';
 import { 
   Spotlight, MovingBorder, GridBackground, DotBackground, AuroraBackground, 
   SparkleParticles, InfiniteMarquee, TextReveal, NumberCounter, MouseGlowCard, 
   Magnetic, AnimatedBeams 
 } from './builder-effects';
-import { WebBlock, BlockCSSStyles } from './website-builder-editor';
+import { WebBlock, BlockCSSStyles } from './builder-types';
+import { getStyleFamilyTokens } from './builder-style-families';
 import { supabase } from '@/lib/supabase';
 import { isPremiumAcademyVariant, PremiumAcademyBlock } from './premium-academy-blocks';
 import { isPremiumSiteModuleVariant, PremiumSiteModule } from './premium-site-modules';
+import { CHROME_LAYOUTS } from './header-footer-variants';
+import * as ComponentSuites from '@/src/components';
 
 // Dynamically render any Lucide icon by name
 export function DynamicIcon({ name, size = 18, className = "", style }: { name: string; size?: number; className?: string; style?: React.CSSProperties }) {
@@ -67,6 +70,174 @@ export function resolveBindings(
     return match;
   });
 }
+
+// --------------------------------------------------------------------
+// OPEN-SOURCE LIBRARY SECTION RENDERERS
+// Maps each curated library variant (UIverse, MUI, plus extra Untitled /
+// Tailgrids / Horizon sections) to its ported section component. Keeps
+// the render chain compact as libraries grow.
+// --------------------------------------------------------------------
+const librarySectionRenderers: Record<string, (block: any) => React.ReactNode> = {
+  // ---- UIverse (glassmorphism / gradient) ----
+  'uiverse-hero-glow': (b) => (
+    <ComponentSuites.UiverseHero
+      badgeText={b.badge || '✨ Community Built'}
+      title={b.title || 'Sections that feel alive.'}
+      description={b.subtitle}
+      primaryCtaText={b.btnText || 'Start Creating'}
+      secondaryCtaText={b.secondaryBtnText || 'Browse Elements'}
+      styles={b.styles}
+      block={b}
+    />
+  ),
+  'uiverse-feature-grid': (b) => (
+    <ComponentSuites.UiverseFeatureGrid
+      sectionTag={b.badge}
+      title={b.title || 'Everything you need to ship.'}
+      description={b.subtitle}
+      styles={b.styles}
+      block={b}
+    />
+  ),
+  'uiverse-pricing': (b) => (
+    <ComponentSuites.UiversePricing title={b.title || 'Simple, honest pricing.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'uiverse-cta': (b) => (
+    <ComponentSuites.UiverseCTA
+      title={b.title || 'Ready to launch something electric?'}
+      description={b.subtitle}
+      ctaText={b.btnText || 'Get Started Free'}
+      secondaryText={b.secondaryBtnText || 'No credit card required'}
+      styles={b.styles}
+      block={b}
+    />
+  ),
+  'uiverse-testimonials': (b) => (
+    <ComponentSuites.UiverseTestimonials title={b.title || 'Loved by creators everywhere.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'uiverse-lead-form': (b) => (
+    <ComponentSuites.UiverseLeadForm title={b.title || 'Tell us about your project.'} description={b.subtitle} submitText={b.btnText || 'Send Message'} styles={b.styles} block={b} />
+  ),
+  'uiverse-stat-grid': (b) => (
+    <ComponentSuites.UiverseStatGrid title={b.title || 'Built to perform.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+
+  'mui-hero': (b) => (
+    <ComponentSuites.MuiHero
+      badgeText={b.badge || 'Material Design 3'}
+      title={b.title || 'Build faster with a familiar design language.'}
+      description={b.subtitle}
+      primaryCtaText={b.btnText || 'Get Started'}
+      secondaryCtaText={b.secondaryBtnText || 'Watch Demo'}
+      styles={b.styles}
+      block={b}
+    />
+  ),
+  // Upgraded Top 5 Generic Blocks to Premium MUI Components
+  'split': (b) => (
+    <ComponentSuites.MuiHero badgeText={b.badge || 'Premium Header'} title={b.title || 'Elevate your online presence.'} description={b.subtitle} primaryCtaText={b.btnText || 'Get Started'} secondaryCtaText={b.secondaryBtnText || 'Learn More'} styles={b.styles} block={b} />
+  ),
+  'bento-box': (b) => (
+    <ComponentSuites.MuiFeatureGrid title={b.title || 'Core Capabilities'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'comparison-pricing': (b) => (
+    <ComponentSuites.MuiPricing title={b.title || 'Flexible Plans'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'gradient-cta': (b) => (
+    <ComponentSuites.MuiCTA title={b.title || 'Ready to start?'} description={b.subtitle} primaryCtaText={b.btnText || 'Sign Up'} secondaryCtaText={b.secondaryBtnText || 'Contact Sales'} styles={b.styles} block={b} />
+  ),
+  'wall-of-love': (b) => (
+    <ComponentSuites.MuiTestimonials title={b.title || 'Trusted by teams'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'mui-feature-grid': (b) => (
+    <ComponentSuites.MuiFeatureGrid title={b.title || 'Everything your product needs.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'mui-pricing': (b) => (
+    <ComponentSuites.MuiPricing title={b.title || 'Simple, transparent pricing.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'mui-cta': (b) => (
+    <ComponentSuites.MuiCTA
+      title={b.title || 'Ready to build something great?'}
+      description={b.subtitle}
+      primaryCtaText={b.btnText || 'Create Free Account'}
+      secondaryCtaText={b.secondaryBtnText || 'Talk to Sales'}
+      styles={b.styles}
+      block={b}
+    />
+  ),
+  'mui-testimonials': (b) => (
+    <ComponentSuites.MuiTestimonials title={b.title || 'Loved by product teams everywhere.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'mui-lead-form': (b) => (
+    <ComponentSuites.MuiLeadForm title={b.title || 'Get in touch.'} description={b.subtitle} buttonText={b.btnText || 'Send Message'} styles={b.styles} block={b} />
+  ),
+  'mui-footer': (b) => (
+    <ComponentSuites.MuiFooter brandName={b.title || 'OnlyPage'} tagline={b.subtitle} copyright={b.copyright} styles={b.styles} block={b} />
+  ),
+
+  // ---- Untitled UI extras ----
+  'untitled-cta': (b) => (
+    <ComponentSuites.UntitledCTA
+      title={b.title || 'Start building today.'}
+      description={b.subtitle}
+      primaryCtaText={b.btnText || 'Get started'}
+      secondaryCtaText={b.secondaryBtnText || 'Book a demo'}
+      styles={b.styles}
+      block={b}
+    />
+  ),
+  'untitled-testimonials': (b) => (
+    <ComponentSuites.UntitledTestimonials title={b.title || 'Loved by teams around the world.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'untitled-footer': (b) => (
+    <ComponentSuites.UntitledFooter brandName={b.title || 'Untitled'} tagline={b.subtitle} copyright={b.copyright} styles={b.styles} block={b} />
+  ),
+
+  // ---- Tailgrids extras ----
+  'tailgrids-testimonials': (b) => (
+    <ComponentSuites.TailgridsTestimonials title={b.title || 'What our customers say.'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'tailgrids-logo-cloud': (b) => (
+    <ComponentSuites.TailgridsLogoCloud title={b.title || 'Trusted by teams at'} styles={b.styles} block={b} />
+  ),
+  'tailgrids-footer': (b) => (
+    <ComponentSuites.TailgridsFooter brandName={b.title || 'Tailgrids'} tagline={b.subtitle} copyright={b.copyright} styles={b.styles} block={b} />
+  ),
+
+  // ---- Horizon UI extras ----
+  'horizon-data-table': (b) => (
+    <ComponentSuites.HorizonTable title={b.title || 'Check Table'} subtitle={b.subtitle || 'Weekly activity overview'} styles={b.styles} block={b} />
+  ),
+  'horizon-profile-card': (b) => (
+    <ComponentSuites.HorizonProfileCard name={b.title || 'Alessandra Williams'} role={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'horizon-metric-card': (b) => (
+    <ComponentSuites.HorizonMetricCard title={b.title || 'Total Revenue'} value={b.subtitle || '$3,450.50'} growth="+24.5%" styles={b.styles} block={b} />
+  ),
+  'horizon-nft-card': (b) => (
+    <ComponentSuites.HorizonNFTCard title={b.title || 'Abstract Fluid Geometry #04'} currentBid={b.subtitle || '2.45 ETH'} styles={b.styles} block={b} />
+  ),
+
+  // ---- Tailgrids & Untitled UI full mappings ----
+  'untitled-feature-grid': (b) => (
+    <ComponentSuites.TailgridsFeatureGrid title={b.title || 'Everything You Need'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'tailgrids-feature-grid': (b) => (
+    <ComponentSuites.TailgridsFeatureGrid title={b.title || 'Capability Matrix'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'untitled-pricing-tiers': (b) => (
+    <ComponentSuites.TailgridsPricing title={b.title || 'Simple Pricing'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'tailgrids-pricing-table': (b) => (
+    <ComponentSuites.TailgridsPricing title={b.title || 'Flexible Plans'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'tailgrids-cta-banner': (b) => (
+    <ComponentSuites.TailgridsCTA title={b.title || 'Ready to Get Started?'} description={b.subtitle} styles={b.styles} block={b} />
+  ),
+  'untitled-stat-cards': (b) => (
+    <ComponentSuites.HorizonMetricCard title={b.title || 'Active Monthly Users'} value={b.subtitle || '12,485'} growth="+18.2%" styles={b.styles} block={b} />
+  ),
+};
 
 interface BuilderRendererProps {
   block: WebBlock;
@@ -258,7 +429,11 @@ export function BuilderRenderer({
   // block type, then layer their own visual system on top. This keeps every
   // catalog choice meaningfully different without duplicating renderer code.
   const layoutAliases: Record<string, Record<string, string>> = {
+    Navigation: {
+      "nav-signature": "nav-academy",
+    },
     Hero: {
+      "signature-hero": "academy-cinematic",
       "editorial-stack": "split",
       "local-conversion": "split",
       "quiet-luxury": "minimal",
@@ -269,6 +444,7 @@ export function BuilderRenderer({
       "glass-panel": "saas-modern",
     },
     Features: {
+      "signature-bento": "premium-bento-grid",
       "editorial-stack": "alternating",
       "local-conversion": "comparison",
       "quiet-luxury": "bento-box",
@@ -277,6 +453,7 @@ export function BuilderRenderer({
       "mono-grid": "comparison",
     },
     CTA: {
+      "signature-cta": "academy-spotlight",
       "local-conversion": "simple-cta",
       "quiet-luxury": "image-bg-cta",
       "bold-poster": "simple-cta",
@@ -285,6 +462,7 @@ export function BuilderRenderer({
       "glass-panel": "gradient-cta",
     },
     Gallery: {
+      "signature-gallery": "premium-gallery-lightbox",
       "editorial-stack": "masonry",
       "quiet-luxury": "grid-hover",
       "bold-poster": "marquee-logos",
@@ -293,6 +471,7 @@ export function BuilderRenderer({
       "warm-studio": "masonry",
     },
     Business: {
+      "signature-story": "premium-story-split",
       "local-conversion": "treatment-list",
       "quiet-luxury": "packages",
       "bold-poster": "offers",
@@ -301,6 +480,7 @@ export function BuilderRenderer({
       "warm-studio": "packages",
     },
     Pricing: {
+      "signature-pricing": "premium-pricing-toggle",
       "local-conversion": "service-tier",
       "quiet-luxury": "saas-pricing",
       "bold-poster": "service-tier",
@@ -309,6 +489,7 @@ export function BuilderRenderer({
       "glass-panel": "saas-pricing",
     },
     Testimonials: {
+      "signature-stories": "premium-testimonial-carousel",
       "editorial-stack": "wall-of-love",
       "local-conversion": "google-review",
       "quiet-luxury": "review-cards",
@@ -316,6 +497,7 @@ export function BuilderRenderer({
       "mono-grid": "review-cards",
     },
     Forms: {
+      "signature-form": "premium-contact-panel",
       "local-conversion": "appointment",
       "quiet-luxury": "contact-complex",
       "bold-poster": "newsletter",
@@ -330,6 +512,7 @@ export function BuilderRenderer({
       "warm-studio": "product-grid-filter",
     },
     Special: {
+      "signature-faq": "premium-faq",
       "editorial-stack": "steps-path",
       "local-conversion": "faq-accordions",
       "quiet-luxury": "steps-path",
@@ -342,17 +525,30 @@ export function BuilderRenderer({
       "mono-grid": "map-split",
       "warm-studio": "map-classic",
     },
+    Footer: {
+      "footer-signature": "footer-academy",
+    },
   };
+  // Capture the style family *before* aliasing rewrites `variant` to a layout
+  // id. Several families deliberately share a base layout, so the family tokens
+  // below are what keep them visually distinct.
+  const styleFamilyTokens = getStyleFamilyTokens(resolvedBlock.variant);
+
   resolvedBlock.variant =
     layoutAliases[resolvedBlock.type]?.[resolvedBlock.variant] ||
     resolvedBlock.variant;
   const block = resolvedBlock;
-  const styles = block.styles;
+  // Family tokens are defaults; anything the user set on the block wins.
+  const styles = styleFamilyTokens
+    ? { ...styleFamilyTokens, ...block.styles }
+    : block.styles;
   const premiumAcademy = isPremiumAcademyVariant(block.variant);
   const premiumSiteModule = isPremiumSiteModuleVariant(block.variant);
+  const ChromeComponent = CHROME_LAYOUTS[block.variant];
   const [faqOpen, setFaqOpen] = useState<Record<string, boolean>>({});
   const [activeBeforeAfter, setActiveBeforeAfter] = useState<number>(50); // percentage slider
   const [activeOfferClaimed, setActiveOfferClaimed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Parse font family
   const getFontFamilyClass = (font: string) => {
@@ -403,7 +599,7 @@ export function BuilderRenderer({
     borderStyle: ((styles as any).titleBorderStyle as any) || 'solid',
     textTransform: ((styles as any).titleTransform as any) || 'none',
     textAlign: styles.textAlign,
-    overflowWrap: 'anywhere',
+    overflowWrap: 'break-word',
   };
 
   const subtitleStyle: React.CSSProperties = {
@@ -488,13 +684,14 @@ export function BuilderRenderer({
     const isSelectedBlock = isActive;
     const badgeLabel = elementId.split(':')[0].toUpperCase();
     
-    // Hijack Navigation subtitle to display dynamic site pages
+    // Hijack Navigation subtitle to display dynamic site pages — but only for
+    // the legacy inline chains; the chrome layout library renders its own links.
     let displayChildren = children;
-    if (block.type === 'Navigation' && elementId === 'subtitle') {
+    if (block.type === 'Navigation' && elementId === 'subtitle' && !(block as any).__chromeLayout) {
       const editableNavigationLinks = navigationLinks;
       if (editableNavigationLinks.length > 0) {
         displayChildren = (
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-16">
             {editableNavigationLinks.slice(0, 5).map((link: any) => (
               <span 
                 key={link.id}
@@ -515,7 +712,14 @@ export function BuilderRenderer({
     }
     
     if (!isActive) {
-      return <>{displayChildren}</>;
+      // Preserve layout className/style on the published site (the editor wraps
+      // children in a div), so grid spans like md:col-span-2 keep working.
+      if (!className && !style) return <>{displayChildren}</>;
+      return (
+        <div className={className} style={style}>
+          {displayChildren}
+        </div>
+      );
     }
 
     return (
@@ -529,17 +733,17 @@ export function BuilderRenderer({
           }
         }}
         style={style}
-        className={`relative transition-all duration-200 cursor-pointer group/subel rounded-lg ${className} ${
+        className={`relative transition-all duration-200 cursor-pointer group/subel rounded-xl ${className} ${
           isSubActive && isSelectedBlock
-            ? 'ring-2 ring-blue-500 shadow-md ring-offset-1 ring-offset-white' 
-            : 'hover:outline hover:outline-dashed hover:outline-1 hover:outline-blue-400 hover:outline-offset-2'
+            ? 'ring-2 ring-lime-500 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] ring-offset-1 ring-offset-white' 
+            : 'hover:outline hover:outline-dashed hover:outline-1 hover:outline-lime-400 hover:outline-offset-2'
         }`}
       >
         {/* Figma label overlay on hover/active inside editor */}
-        <div className={`absolute -top-4 left-0 text-[8px] font-mono font-bold uppercase px-1 rounded pointer-events-none transition-opacity z-20 ${
+        <div className={`absolute -top-4 left-0 text-[8px] font-mono font-semibold tracking-tight uppercase px-1 rounded pointer-events-none transition-opacity z-20 ${
           isSubActive && isSelectedBlock
-            ? 'bg-blue-500 text-white opacity-100'
-            : 'bg-blue-400/80 text-white opacity-0 group-hover/subel:opacity-100'
+            ? 'bg-lime-500 text-white opacity-100'
+            : 'bg-lime-400/80 text-white opacity-0 group-hover/subel:opacity-100'
         }`}>
           {badgeLabel}
         </div>
@@ -625,10 +829,10 @@ export function BuilderRenderer({
   const effectivePaddingTop = isNavBlock ? Math.min(styles.paddingTop ?? 12, 16) : styles.paddingTop;
   const effectivePaddingBottom = isNavBlock ? Math.min(styles.paddingBottom ?? 12, 16) : styles.paddingBottom;
 
-  // Build the outer container styles
+  // Build the outer container styles with responsive padding support
   const containerStyle: React.CSSProperties = {
-    paddingTop: `${effectivePaddingTop}px`,
-    paddingBottom: `${effectivePaddingBottom}px`,
+    '--block-pt': `${effectivePaddingTop}px`,
+    '--block-pb': `${effectivePaddingBottom}px`,
     paddingLeft: `${styles.paddingLeft}px`,
     paddingRight: `${styles.paddingRight}px`,
     backgroundColor: bgType === 'color' ? styles.backgroundColor : undefined,
@@ -645,7 +849,7 @@ export function BuilderRenderer({
     cursor: clickResponse !== 'none' ? 'pointer' : 'default',
     containerType: 'inline-size',
     overflowX: 'clip',
-  };
+  } as React.CSSProperties;
 
   // tap configuration based on selection
   const whileTapConfig = clickResponse === 'scale-down' 
@@ -678,13 +882,13 @@ export function BuilderRenderer({
 
   // Pre-configured mock lists for rich variants
   const defaultLogos = [
-    <span className="text-sm font-black tracking-widest text-slate-400">VERCEL</span>,
-    <span className="text-sm font-black tracking-widest text-slate-400">STRIPE</span>,
-    <span className="text-sm font-black tracking-widest text-slate-400">APPLE</span>,
-    <span className="text-sm font-black tracking-widest text-slate-400">LINEAR</span>,
-    <span className="text-sm font-black tracking-widest text-slate-400">FIGMA</span>,
-    <span className="text-sm font-black tracking-widest text-slate-400">SUPABASE</span>,
-    <span className="text-sm font-black tracking-widest text-slate-400">FRAMER</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">VERCEL</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">STRIPE</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">APPLE</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">LINEAR</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">FIGMA</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">SUPABASE</span>,
+    <span className="text-sm font-black tracking-widest text-slate-400/90 font-medium">FRAMER</span>,
   ];
 
   return (
@@ -706,8 +910,8 @@ export function BuilderRenderer({
       whileTap={whileTapConfig}
       whileHover={whileHoverConfig}
       style={containerStyle}
-      className={`relative group transition-all duration-300 select-none overflow-hidden ${
-        isActive ? 'ring-2 ring-blue-500 shadow-2xl scale-[1.002] z-20' : 'hover:ring-1 hover:ring-slate-300'
+      className={`relative group transition-all duration-300 select-none overflow-hidden pt-[calc(var(--block-pt)*0.6)] md:pt-[var(--block-pt)] pb-[calc(var(--block-pb)*0.6)] md:pb-[var(--block-pb)] ${
+        isActive ? 'ring-2 ring-lime-500 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] scale-[1.002] z-20' : 'hover:ring-1 hover:ring-slate-300'
       }`}
     >
       {/* Dynamic Background Image Layer (absolute to avoid text opacity inheritance) */}
@@ -771,7 +975,78 @@ export function BuilderRenderer({
             onNavigatePage={onNavigatePage}
             site={site}
             siteId={siteId}
+            ecomProducts={ecomProducts}
           />
+        ) : block.variant === 'tailgrids-hero-split' || block.variant === 'untitled-hero-split' ? (
+          <ComponentSuites.TailgridsHeroSplit
+            title={block.title || 'Build Modern Web Applications'}
+            description={block.subtitle || 'Empower your team with a complete set of pre-built UI components.'}
+            primaryCtaText={block.btnText || 'Get Started'}
+            secondaryCtaText={block.secondaryBtnText || 'Learn More'}
+            badgeText={block.badge || 'New Component Suite'}
+          />
+        ) : block.variant === 'tailgrids-feature-grid' || block.variant === 'untitled-feature-grid' ? (
+          <ComponentSuites.TailgridsFeatureGrid
+            title={block.title || 'Everything You Need'}
+            description={block.subtitle || 'Built with performance, accessibility, and developer experience in mind.'}
+          />
+        ) : block.variant === 'tailgrids-pricing-table' || block.variant === 'untitled-pricing-tiers' ? (
+          <ComponentSuites.TailgridsPricing />
+        ) : block.variant === 'tailgrids-cta-banner' ? (
+          <ComponentSuites.TailgridsCTA />
+        ) : block.variant === 'horizon-metric-card' ? (
+          <ComponentSuites.HorizonMetricCard
+            title={block.title || 'Total Revenue'}
+            value={block.subtitle || '$3,450.50'}
+            growth="+24.5%"
+            subtitle="vs last month"
+          />
+        ) : block.variant === 'horizon-nft-card' ? (
+          <ComponentSuites.HorizonNFTCard
+            title={block.title || 'Abstract Artwork'}
+            author={block.subtitle || 'By Alex Rivera'}
+            currentBid="2.45 ETH"
+            imageSrc="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80"
+          />
+        ) : block.variant === 'untitled-stat-cards' ? (
+          <ComponentSuites.StatCard
+            title={block.title || 'Active Customers'}
+            value={block.subtitle || '2,420'}
+            change="+12.5%"
+            isPositive={true}
+          />
+        ) : librarySectionRenderers[block.variant] ? (
+          librarySectionRenderers[block.variant](block)
+        ) : ChromeComponent ? (
+          (() => {
+            // Mark the block so SelectableElement skips its legacy subtitle
+            // hijack — chrome layouts render their own navigation links.
+            (block as any).__chromeLayout = true;
+            return (
+              <div className="w-full">
+                {block.badge && block.showBadge !== false && (
+                  <div className={`w-full mb-4 text-left`}>
+                    <span
+                      className={`inline-block uppercase tracking-widest font-bold tracking-tight ${(styles as any).badgeShape === 'square' ? 'rounded-none border' : (styles as any).badgeShape === 'outline' ? 'rounded-full border-2 bg-transparent' : 'rounded-full border'} px-3 py-1 text-[9.5px]`}
+                      style={badgeStyle}
+                    >
+                      {block.badge}
+                    </span>
+                  </div>
+                )}
+                <ChromeComponent
+                  block={block}
+                  links={navigationLinks}
+                  styles={styles}
+                  buttonStyle={buttonStyle}
+                  Selectable={SelectableElement}
+                  onNavigate={handleLinkNav}
+                  runAction={runBtnAction}
+                  site={site}
+                />
+              </div>
+            );
+          })()
         ) : (
         <>
         
@@ -790,7 +1065,7 @@ export function BuilderRenderer({
           >
             <SelectableElement elementId="badge">
               <span 
-                className={`inline-block uppercase tracking-widest font-extrabold shadow-sm ${
+                className={`inline-block uppercase tracking-widest font-bold tracking-tight shadow-sm ${
                   (styles as any).badgeSize === 'lg'
                     ? 'text-[13px] px-4 py-1.5'
                     : (styles as any).badgeSize === 'md'
@@ -823,9 +1098,9 @@ export function BuilderRenderer({
             styles.textAlign === 'center' ? 'text-center' : styles.textAlign === 'right' ? 'text-right' : 'text-left'
           }`}>
             {block.variant === 'quote-callout' ? (
-              <blockquote className="border-l-4 border-lime-500 pl-6 py-3 my-4 bg-slate-900/40 rounded-r-xl">
+              <blockquote className="border-l-4 border-lime-500 pl-6 py-3 my-4 bg-slate-900/95 backdrop-blur-3xl/40 rounded-r-xl">
                 <SelectableElement elementId="title">
-                  <h3 className="text-xl md:text-2xl font-bold italic" style={titleStyle}>
+                  <h3 className="text-xl @md:text-2xl font-semibold tracking-tight italic" style={titleStyle}>
                     "{block.title || 'Quote Title'}"
                   </h3>
                 </SelectableElement>
@@ -840,13 +1115,13 @@ export function BuilderRenderer({
             ) : block.variant === 'heading-minimal' ? (
               <div className="py-4">
                 <SelectableElement elementId="title">
-                  <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4" style={titleStyle}>
+                  <h2 className="text-3xl @md:text-5xl font-black tracking-tight mb-4" style={titleStyle}>
                     {block.title || 'Heading Title'}
                   </h2>
                 </SelectableElement>
                 {block.subtitle && (
                   <SelectableElement elementId="subtitle">
-                    <p className="text-base md:text-lg opacity-85 leading-relaxed max-w-2xl mx-auto" style={subtitleStyle}>
+                    <p className="text-base @md:text-lg opacity-85 leading-relaxed max-w-2xl mx-auto" style={subtitleStyle}>
                       {block.subtitle}
                     </p>
                   </SelectableElement>
@@ -856,14 +1131,14 @@ export function BuilderRenderer({
               <div className="max-w-3xl mx-auto space-y-4 py-2">
                 {block.title && (
                   <SelectableElement elementId="title">
-                    <h2 className="text-2xl md:text-4xl font-bold tracking-tight" style={titleStyle}>
+                    <h2 className="text-2xl @md:text-4xl font-semibold tracking-tight tracking-tight" style={titleStyle}>
                       {block.title}
                     </h2>
                   </SelectableElement>
                 )}
                 {block.subtitle && (
                   <SelectableElement elementId="subtitle">
-                    <div className="text-base md:text-lg leading-relaxed whitespace-pre-line opacity-90" style={subtitleStyle}>
+                    <div className="text-base @md:text-lg leading-relaxed whitespace-pre-line opacity-90" style={subtitleStyle}>
                       {block.subtitle}
                     </div>
                   </SelectableElement>
@@ -880,7 +1155,7 @@ export function BuilderRenderer({
           <div>
             {/* Split layout or centered layout depending on variant */}
             {(block.variant === 'shopify-growth' || block.variant === 'split' || block.variant === 'saas-modern' || block.variant === 'video-simulate') ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center text-left">
+              <div className="grid grid-cols-1 @lg:grid-cols-2 gap-16 items-center text-left">
                 <div>
                   <SelectableElement elementId="title">
                     <h1 
@@ -897,13 +1172,13 @@ export function BuilderRenderer({
                     </p>
                   </SelectableElement>
 
-                  <div className="flex flex-wrap gap-4 mt-8">
+                  <div className="flex flex-wrap gap-16 mt-8">
                     {block.btnText && (
                       <SelectableElement elementId="button">
                         <Magnetic>
                           <button 
                             onClick={runBtnAction}
-                            className="font-extrabold cursor-pointer transition-all duration-300 hover:scale-[1.02] flex items-center gap-2"
+                            className="font-bold tracking-tight cursor-pointer transition-all duration-300 hover:scale-[1.02] flex items-center gap-2"
                             style={buttonStyle}
                           >
                             <span>{block.btnText}</span>
@@ -913,7 +1188,7 @@ export function BuilderRenderer({
                       </SelectableElement>
                     )}
                     {block.variant === 'shopify-growth' && (
-                      <a href="#features" className="px-6 py-4 font-bold text-xs text-[#008060] underline underline-offset-4 hover:opacity-80 transition flex items-center gap-1">
+                      <a href="#features" className="px-6 py-4 font-semibold tracking-tight text-xs text-[#008060] underline underline-offset-4 hover:opacity-80 transition flex items-center gap-1">
                         Explore features & capabilities
                       </a>
                     )}
@@ -926,51 +1201,51 @@ export function BuilderRenderer({
                     {block.variant === 'shopify-growth' ? (
                       <div className="relative flex items-center justify-center p-4">
                         {/* Mint radial accent blur */}
-                        <div className="absolute size-72 sm:size-96 rounded-full bg-[#008060]/10 blur-2xl pointer-events-none" />
-                        <div className="relative w-full max-w-sm bg-white rounded-3xl p-4 shadow-2xl border border-slate-200/80">
+                        <div className="absolute size-72 @sm:size-96 rounded-full bg-[#008060]/10 blur-2xl pointer-events-none" />
+                        <div className="relative w-full max-w-sm bg-white rounded-3xl p-4 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] border border-black/5/80">
                           {/* Phone header */}
                           <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
                             <div className="flex items-center gap-2">
-                              <div className="size-6 rounded-full bg-[#008060] text-white flex items-center justify-center text-xs font-bold">f</div>
-                              <span className="text-xs font-bold text-slate-800">Facebook & Instagram</span>
+                              <div className="size-6 rounded-full bg-[#008060] text-white flex items-center justify-center text-xs font-semibold tracking-tight">f</div>
+                              <span className="text-xs font-semibold tracking-tight text-slate-800">Facebook & Instagram</span>
                             </div>
-                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Active Channel</span>
+                            <span className="text-[10px] font-bold tracking-tight px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Active Channel</span>
                           </div>
                           {/* Phone product preview card */}
-                          <div className="rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 p-3 space-y-3">
+                          <div className="rounded-3xl overflow-hidden bg-slate-50 border border-slate-100 p-3 space-y-3">
                             <img 
                               src={block.imageUrl || "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&q=80&w=600"} 
-                              className="w-full h-44 object-cover rounded-xl shadow-xs" 
+                              className="w-full h-44 object-cover rounded-3xl shadow-xs" 
                               alt="Product showcase"
                             />
                             <div className="flex items-center justify-between">
                               <div>
                                 <span className="text-xs font-black text-slate-900 block">Minimalist Pearl Earring</span>
-                                <span className="text-[10px] text-slate-500 font-medium">Synced to Instagram Shop</span>
+                                <span className="text-[10px] text-slate-500/80 font-medium font-medium">Synced to Instagram Shop</span>
                               </div>
-                              <span className="text-xs font-black text-[#008060] bg-emerald-50 px-2.5 py-1 rounded-lg">₹2,499</span>
+                              <span className="text-xs font-black text-[#008060] bg-emerald-50 px-2.5 py-1 rounded-xl">₹2,499</span>
                             </div>
                           </div>
                           {/* Floating social tag badge */}
                           <motion.div 
                             animate={{ y: [0, -6, 0] }}
                             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                            className="absolute -bottom-4 -left-4 bg-slate-900 text-white rounded-2xl p-3 shadow-xl border border-slate-800 flex items-center gap-3 text-xs"
+                            className="absolute -bottom-4 -left-4 bg-slate-900/95 backdrop-blur-3xl text-white rounded-3xl p-3 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] border border-white/10 flex items-center gap-3 text-xs"
                           >
-                            <div className="size-8 rounded-full bg-[#008060] flex items-center justify-center font-bold text-white shrink-0">
+                            <div className="size-8 rounded-full bg-[#008060] flex items-center justify-center font-semibold tracking-tight text-white shrink-0">
                               <ShoppingBag size={14} />
                             </div>
                             <div>
-                              <span className="font-bold block text-white">Product Tagged</span>
-                              <span className="text-[10px] text-slate-400">1-Tap Checkout via WhatsApp</span>
+                              <span className="font-semibold tracking-tight block text-white">Product Tagged</span>
+                              <span className="text-[10px] text-slate-400/90 font-medium">1-Tap Checkout via WhatsApp</span>
                             </div>
                           </motion.div>
                         </div>
                       </div>
                     ) : block.variant === 'saas-modern' ? (
-                      <MouseGlowCard className="p-1 bg-slate-800/80 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-md">
-                        <div className="bg-slate-950 rounded-xl overflow-hidden aspect-video relative flex flex-col" style={mediaStyle}>
-                          <div className="h-6 bg-slate-900 border-b border-slate-800 flex items-center px-3 gap-1.5">
+                      <MouseGlowCard className="p-1 bg-slate-800/80 border border-white/15 rounded-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] backdrop-blur-md">
+                        <div className="bg-slate-950/95 backdrop-blur-3xl rounded-3xl overflow-hidden aspect-video relative flex flex-col" style={mediaStyle}>
+                          <div className="h-6 bg-slate-900/95 backdrop-blur-3xl border-b border-white/10 flex items-center px-3 gap-1.5">
                             <span className="w-2.5 h-2.5 bg-red-500 rounded-full" />
                             <span className="w-2.5 h-2.5 bg-yellow-500 rounded-full" />
                             <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
@@ -982,18 +1257,18 @@ export function BuilderRenderer({
                               <div className="h-3 w-5/6 bg-slate-800 rounded" />
                             </div>
                             <div className="grid grid-cols-3 gap-3">
-                              <div className="h-10 bg-slate-900 border border-slate-800 rounded" />
-                              <div className="h-10 bg-slate-900 border border-slate-800 rounded" />
-                              <div className="h-10 bg-slate-900 border border-slate-800 rounded" />
+                              <div className="h-10 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded" />
+                              <div className="h-10 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded" />
+                              <div className="h-10 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded" />
                             </div>
                           </div>
                         </div>
                       </MouseGlowCard>
                     ) : block.variant === 'video-simulate' ? (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-800 flex items-center justify-center group" style={mediaStyle}>
+                      <div className="relative aspect-video rounded-3xl overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] bg-slate-950/95 backdrop-blur-3xl border border-white/10 flex items-center justify-center group" style={mediaStyle}>
                         <img src={block.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-                        <button className="w-16 h-16 rounded-full bg-white text-slate-900 flex items-center justify-center shadow-2xl scale-100 group-hover:scale-110 transition duration-300 z-10">
+                        <button className="w-16 h-16 rounded-full bg-white text-slate-900 flex items-center justify-center shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] scale-100 group-hover:scale-110 transition duration-300 z-10">
                           <Play size={20} fill="currentColor" className="ml-1" />
                         </button>
                       </div>
@@ -1002,7 +1277,7 @@ export function BuilderRenderer({
                         <motion.img 
                           whileHover={{ scale: 1.02 }}
                           src={block.imageUrl} 
-                          className="w-full object-cover shadow-2xl border border-slate-100/10" 
+                          className="w-full object-cover shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] border border-slate-100/10" 
                           style={{ ...mediaStyle, maxHeight: '420px' }} 
                           alt="Hero Visual" 
                         />
@@ -1035,7 +1310,7 @@ export function BuilderRenderer({
                     <Magnetic>
                       <button 
                         onClick={runBtnAction}
-                        className="font-extrabold cursor-pointer transition-all duration-300 shadow-2xl hover:translate-y-[-2px]"
+                        className="font-bold tracking-tight cursor-pointer transition-all duration-300 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] hover:translate-y-[-2px]"
                         style={buttonStyle}
                       >
                         {block.btnText}
@@ -1062,22 +1337,22 @@ export function BuilderRenderer({
             
             {block.variant === 'bento-box' ? (
               // BENTO GRID LAYOUT
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16 text-left">
                 {block.features?.map((feat, i) => (
                   <SelectableElement key={feat.id} elementId="card" className={i === 0 ? 'md:col-span-2 md:row-span-1' : ''}>
                     <MouseGlowCard 
-                      className="p-8 flex flex-col justify-between h-full"
+                      className="p-10 @md:p-12 @md:p-16 flex flex-col justify-between h-full"
                       style={cardStyle}
                     >
                       <div>
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-500 mb-6">
+                        <div className="w-10 h-10 rounded-3xl flex items-center justify-center bg-blue-500/10 text-blue-500 mb-6">
                           <DynamicIcon name={feat.icon} size={20} />
                         </div>
-                        <h3 className="text-xl font-bold mb-3">{feat.title}</h3>
+                        <h3 className="text-xl font-semibold tracking-tight mb-3">{feat.title}</h3>
                         <p className="text-sm opacity-80 leading-relaxed">{feat.desc}</p>
                       </div>
                       {i === 0 && (
-                        <div className="mt-8 border-t border-slate-100/10 pt-4 flex items-center gap-1.5 text-xs font-bold text-blue-500">
+                        <div className="mt-8 border-t border-slate-100/10 pt-4 flex items-center gap-1.5 text-xs font-semibold tracking-tight text-blue-500">
                           Explore Bento Module <ArrowUpRight size={14} />
                         </div>
                       )}
@@ -1089,17 +1364,17 @@ export function BuilderRenderer({
               // ALTERNATING SECTIONS
               <div className="space-y-16 text-left">
                 {block.features?.map((feat, i) => (
-                  <div key={feat.id} className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
+                  <div key={feat.id} className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center ${i % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
                     <div className={i % 2 === 1 ? 'lg:order-2' : ''}>
-                      <span className="text-xs font-bold tracking-widest text-blue-500 mb-2 block uppercase">STEP 0{i + 1}</span>
+                      <span className="text-xs font-semibold tracking-tight tracking-widest text-blue-500 mb-2 block uppercase">STEP 0{i + 1}</span>
                       <h3 className="text-2xl font-black mb-4">{feat.title}</h3>
                       <p className="text-sm leading-relaxed opacity-80 mb-6">{feat.desc}</p>
                     </div>
                     <SelectableElement elementId="media">
-                      <div className="bg-slate-100 dark:bg-slate-800 h-64 flex items-center justify-center overflow-hidden shadow-md" style={mediaStyle}>
-                        <div className="text-center p-6">
-                          <DynamicIcon name={feat.icon} size={48} className="mx-auto text-slate-400 mb-4 animate-bounce" />
-                          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Interactive Media Slot</span>
+                      <div className="bg-slate-100 dark:bg-slate-800 h-64 flex items-center justify-center overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]" style={mediaStyle}>
+                        <div className="text-center p-10 @md:p-12 @md:p-16">
+                          <DynamicIcon name={feat.icon} size={48} className="mx-auto text-slate-400/90 font-medium mb-4 animate-bounce" />
+                          <span className="text-xs font-semibold tracking-tight text-slate-400/90 font-medium uppercase tracking-widest">Interactive Media Slot</span>
                         </div>
                       </div>
                     </SelectableElement>
@@ -1108,16 +1383,16 @@ export function BuilderRenderer({
               </div>
             ) : block.variant === 'icon-cards' ? (
               // GLOWING ACCENT CARDS
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16 text-left">
                 {block.features?.map(feat => (
                   <SelectableElement key={feat.id} elementId="card">
                     <div
-                      className="relative p-8 h-full rounded-2xl border border-transparent hover:border-blue-500/50 bg-gradient-to-b from-slate-500/5 to-transparent transition-all duration-300 group"
+                      className="relative p-10 @md:p-12 @md:p-16 h-full rounded-3xl border border-transparent hover:border-blue-500/50 bg-gradient-to-b from-slate-500/5 to-transparent transition-all duration-300 group"
                       style={cardStyle}
                     >
-                      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500" style={{ boxShadow: `inset 0 0 40px ${styles.accentColor}20` }} />
+                      <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition duration-500" style={{ boxShadow: `inset 0 0 40px ${styles.accentColor}20` }} />
                       <div className="relative">
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300" style={{ backgroundColor: `${styles.accentColor}18`, color: styles.accentColor }}>
+                        <div className="w-12 h-12 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300" style={{ backgroundColor: `${styles.accentColor}18`, color: styles.accentColor }}>
                           <DynamicIcon name={feat.icon} size={22} />
                         </div>
                         <h3 className="text-lg font-black mb-2">{feat.title}</h3>
@@ -1129,7 +1404,7 @@ export function BuilderRenderer({
               </div>
             ) : block.variant === 'comparison' ? (
               // FEATURE COMPARISON TABLE
-              <div className="max-w-3xl mx-auto overflow-hidden rounded-2xl border border-slate-500/15" style={cardStyle}>
+              <div className="max-w-3xl mx-auto overflow-hidden rounded-3xl border border-slate-500/15" style={cardStyle}>
                 <div className="grid grid-cols-2 px-6 py-4 border-b border-slate-500/15 text-xs font-black uppercase tracking-wider" style={{ backgroundColor: `${styles.accentColor}10` }}>
                   <span>Feature</span>
                   <span className="text-right" style={{ color: styles.accentColor }}>Included</span>
@@ -1140,7 +1415,7 @@ export function BuilderRenderer({
                       <div className="flex items-center gap-3">
                         <DynamicIcon name={feat.icon} size={16} className="shrink-0" style={{ color: styles.accentColor }} />
                         <div>
-                          <h4 className="text-sm font-bold">{feat.title}</h4>
+                          <h4 className="text-sm font-semibold tracking-tight">{feat.title}</h4>
                           <p className="text-[11px] opacity-70">{feat.desc}</p>
                         </div>
                       </div>
@@ -1153,7 +1428,7 @@ export function BuilderRenderer({
               </div>
             ) : (
               // DEFAULT CARD GRID (feature-grid)
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16">
                 {block.features?.map(feat => (
                   <SelectableElement key={feat.id} elementId="card">
                     <motion.div
@@ -1162,10 +1437,10 @@ export function BuilderRenderer({
                       style={cardStyle}
                     >
                       <div>
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
+                        <div className="w-10 h-10 rounded-3xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 transition duration-300">
                           <DynamicIcon name={feat.icon} size={18} />
                         </div>
-                        <h3 className="text-lg font-bold mb-3">{feat.title}</h3>
+                        <h3 className="text-lg font-semibold tracking-tight mb-3">{feat.title}</h3>
                         <p className="text-sm opacity-85 leading-relaxed">{feat.desc}</p>
                       </div>
                     </motion.div>
@@ -1182,7 +1457,7 @@ export function BuilderRenderer({
         {block.type === 'CTA' && (
           <div className="p-1">
             {block.variant === 'gradient-cta' ? (
-              <MovingBorder containerClassName="rounded-3xl" className="p-12 text-center relative overflow-hidden bg-slate-950 border border-slate-900 rounded-3xl">
+              <MovingBorder containerClassName="rounded-3xl" className="p-12 @md:p-16 text-center relative overflow-hidden bg-slate-950/95 backdrop-blur-3xl border border-slate-900 rounded-3xl">
                 <Spotlight />
                 <SelectableElement elementId="title">
                   <h2 className="text-3xl font-black mb-4 tracking-tight text-white">{block.title}</h2>
@@ -1193,7 +1468,7 @@ export function BuilderRenderer({
                 {block.btnText && (
                   <SelectableElement elementId="button">
                     <Magnetic>
-                      <button onClick={runBtnAction} className="font-bold hover:shadow-2xl transition" style={buttonStyle}>
+                      <button onClick={runBtnAction} className="font-semibold tracking-tight hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] transition" style={buttonStyle}>
                         {block.btnText}
                       </button>
                     </Magnetic>
@@ -1201,7 +1476,7 @@ export function BuilderRenderer({
                 )}
               </MovingBorder>
             ) : block.variant === 'app-download' ? (
-              <div className="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-left grid grid-cols-1 md:grid-cols-2 gap-8 items-center text-white">
+              <div className="p-12 @md:p-16 rounded-3xl bg-slate-900/95 backdrop-blur-3xl border border-white/10 text-left grid grid-cols-1 @md:grid-cols-2 gap-16 items-center text-white">
                 <div>
                   <SelectableElement elementId="title">
                     <h2 className="text-3xl font-black mb-4">{block.title}</h2>
@@ -1209,25 +1484,25 @@ export function BuilderRenderer({
                   <SelectableElement elementId="subtitle" className="mb-6">
                     <p className="text-slate-300 text-sm">{block.subtitle}</p>
                   </SelectableElement>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-16">
                     <SelectableElement elementId="button">
-                      <button className="px-6 py-3 bg-white text-slate-950 font-bold rounded-xl flex items-center gap-2 hover:bg-slate-100 transition text-xs">
+                      <button className="px-6 py-3 bg-white text-slate-950 font-semibold tracking-tight rounded-3xl flex items-center gap-2 hover:bg-slate-100 transition text-xs">
                         <Play size={14} fill="currentColor" /> App Store
                       </button>
                     </SelectableElement>
-                    <button className="px-6 py-3 bg-slate-800 text-white font-bold rounded-xl flex items-center gap-2 hover:bg-slate-700 transition text-xs border border-slate-700">
+                    <button className="px-6 py-3 bg-slate-800 text-white font-semibold tracking-tight rounded-3xl flex items-center gap-2 hover:bg-slate-700 transition text-xs border border-white/15">
                       <Globe size={14} /> Google Play
                     </button>
                   </div>
                 </div>
                 <SelectableElement elementId="media">
-                  <div className="aspect-square bg-slate-950/80 flex items-center justify-center p-6 border border-slate-800" style={mediaStyle}>
+                  <div className="aspect-square bg-slate-950/95 backdrop-blur-3xl/80 flex items-center justify-center p-10 @md:p-12 @md:p-16 border border-white/10" style={mediaStyle}>
                     <ShieldCheck size={72} className="text-emerald-500 animate-pulse" />
                   </div>
                 </SelectableElement>
               </div>
             ) : (
-              <div className="p-10 flex flex-col items-center text-center rounded-2xl border border-slate-200/10" style={cardStyle}>
+              <div className="p-10 flex flex-col items-center text-center rounded-3xl border border-black/5/10" style={cardStyle}>
                 <SelectableElement elementId="title">
                   <h2 style={titleStyle} className="mb-4">{block.title}</h2>
                 </SelectableElement>
@@ -1236,7 +1511,7 @@ export function BuilderRenderer({
                 </SelectableElement>
                 {block.btnText && (
                   <SelectableElement elementId="button">
-                    <button onClick={runBtnAction} className="font-bold cursor-pointer hover:opacity-90 transition text-sm" style={buttonStyle}>
+                    <button onClick={runBtnAction} className="font-semibold tracking-tight cursor-pointer hover:opacity-90 transition text-sm" style={buttonStyle}>
                       {block.btnText}
                     </button>
                   </SelectableElement>
@@ -1270,8 +1545,8 @@ export function BuilderRenderer({
                           { id: 'm-3', title: 'SIGNATURE EXPERIENCE', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=150' }
                         ]
                     ).map((image) => (
-                      <div key={image.id} className="flex items-center gap-3 px-6 py-2 bg-slate-900/40 border border-slate-800/80 rounded-2xl">
-                        {image.url && <img src={image.url} alt="" className="h-9 w-9 rounded-lg object-cover shrink-0" />}
+                      <div key={image.id} className="flex items-center gap-3 px-6 py-2 bg-slate-900/95 backdrop-blur-3xl/40 border border-white/10/80 rounded-3xl">
+                        {image.url && <img src={image.url} alt="" className="h-9 w-9 rounded-xl object-cover shrink-0" />}
                         <span className="text-xs font-black uppercase tracking-wider text-slate-200">{image.title}</span>
                       </div>
                     ))
@@ -1282,12 +1557,12 @@ export function BuilderRenderer({
             ) : block.variant === 'slider' ? (
               // BEFORE AFTER INTERACTIVE COMPONENT
               <SelectableElement elementId="media">
-                <div className="max-w-2xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl aspect-video border border-slate-100/10 bg-slate-900" style={mediaStyle}>
+                <div className="max-w-2xl mx-auto relative rounded-3xl overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] aspect-video border border-slate-100/10 bg-slate-900/95 backdrop-blur-3xl" style={mediaStyle}>
                   <div className="absolute inset-0 bg-emerald-950/40 flex items-center justify-center text-white font-black z-0">
                     {block.galleryImages?.[1]?.url && (
                       <img src={block.galleryImages[1].url} alt={block.galleryImages[1].title || 'After'} className="absolute inset-0 h-full w-full object-cover opacity-80" />
                     )}
-                    <span className="relative z-10 rounded-lg bg-slate-950/55 px-3 py-2 text-xs">
+                    <span className="relative z-10 rounded-xl bg-slate-950/95 backdrop-blur-3xl/55 px-3 py-2 text-xs">
                       {block.galleryImages?.[1]?.title || 'AFTER'}
                     </span>
                   </div>
@@ -1295,11 +1570,11 @@ export function BuilderRenderer({
                     className="absolute inset-y-0 left-0 bg-red-950/80 z-10 overflow-hidden"
                     style={{ width: `${activeBeforeAfter}%` }}
                   >
-                    <div className="relative w-[640px] h-full flex items-center justify-center text-slate-300 font-bold">
+                    <div className="relative w-[640px] h-full flex items-center justify-center text-slate-300 font-semibold tracking-tight">
                       {block.galleryImages?.[0]?.url && (
                         <img src={block.galleryImages[0].url} alt={block.galleryImages[0].title || 'Before'} className="absolute inset-0 h-full w-full object-cover opacity-80" />
                       )}
-                      <span className="relative z-10 rounded-lg bg-slate-950/55 px-3 py-2 text-xs">
+                      <span className="relative z-10 rounded-xl bg-slate-950/95 backdrop-blur-3xl/55 px-3 py-2 text-xs">
                         {block.galleryImages?.[0]?.title || 'BEFORE'}
                       </span>
                     </div>
@@ -1317,7 +1592,7 @@ export function BuilderRenderer({
               </SelectableElement>
             ) : (
               // MASONRY / GRID USING DYNAMIC IMAGES
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 @sm:grid-cols-2 @md:grid-cols-3 gap-16">
                 {(block.galleryImages || [
                   { id: 'slide-1', url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=600', title: 'Marketing Analytics Dashboard', subtitle: 'Advanced UI & Data visualization solutions' },
                   { id: 'slide-2', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=600', title: 'Corporate Branding Strategy', subtitle: 'Elevating online presence across modern channels' },
@@ -1333,18 +1608,18 @@ export function BuilderRenderer({
                     <SelectableElement key={imgItem.id || index} elementId={`media:${index}`}>
                       <motion.div
                         whileHover={{ scale: 1.03 }}
-                        className={`relative overflow-hidden shadow-md group cursor-pointer bg-slate-900 ${aspectClass}`}
+                        className={`relative overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] group cursor-pointer bg-slate-900/95 backdrop-blur-3xl ${aspectClass}`}
                         style={mediaStyle}
                       >
                         <img src={imgItem.url} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition duration-300" alt={imgItem.title} />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent flex items-end p-6 text-left">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent flex items-end p-10 @md:p-12 @md:p-16 text-left">
                           <div>
                             {imgItem.subtitle && (
-                              <span className="text-[9px] font-extrabold uppercase tracking-widest text-blue-400 block mb-1 drop-shadow-sm">
+                              <span className="text-[9px] font-bold tracking-tight uppercase tracking-widest text-blue-400 block mb-1 drop-shadow-sm">
                                 {imgItem.subtitle}
                               </span>
                             )}
-                            <h4 className="text-sm font-bold text-white tracking-tight drop-shadow-md">
+                            <h4 className="text-sm font-semibold tracking-tight text-white tracking-tight drop-shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]">
                               {imgItem.title || 'Gallery Case'}
                             </h4>
                           </div>
@@ -1375,9 +1650,9 @@ export function BuilderRenderer({
               <div className="max-w-2xl mx-auto space-y-4 text-left">
                 {block.features?.map(feat => (
                   <SelectableElement key={feat.id} elementId="card">
-                    <div className="p-5 flex justify-between items-center border-b border-slate-200/10 hover:bg-slate-500/5 rounded-xl transition duration-300">
+                    <div className="p-5 flex justify-between items-center border-b border-black/5/10 hover:bg-slate-500/5 rounded-3xl transition duration-300">
                       <div>
-                        <h4 className="text-base font-extrabold flex items-center gap-2">
+                        <h4 className="text-base font-bold tracking-tight flex items-center gap-2">
                           <DynamicIcon name={feat.icon || 'CheckCircle2'} size={16} className="text-blue-500" /> {feat.title}
                         </h4>
                         <p className="text-xs opacity-75 mt-1 ml-6">{feat.desc}</p>
@@ -1386,7 +1661,7 @@ export function BuilderRenderer({
                         <button
                           type="button"
                           onClick={runBtnAction}
-                          className="rounded-lg px-3.5 py-2 text-xs font-black tracking-wider transition hover:bg-blue-500/10 cursor-pointer"
+                          className="rounded-xl px-3.5 py-2 text-xs font-black tracking-wider transition hover:bg-blue-500/10 cursor-pointer"
                           style={{ color: styles.accentColor }}
                         >
                           {block.btnText || 'RESERVE'}
@@ -1399,15 +1674,15 @@ export function BuilderRenderer({
             ) : (
               // ACTIVE OFFERS / FLASH DISCOUNT
               <SelectableElement elementId="card">
-                <div className="max-w-xl mx-auto p-8 rounded-2xl border border-dashed border-red-500/30 bg-red-500/5 text-center">
-                  <span className="bg-red-500 text-white text-[9px] font-bold uppercase px-3 py-1 rounded-full tracking-widest">FLASH ACTIVE OFFER</span>
+                <div className="max-w-xl mx-auto p-10 @md:p-12 @md:p-16 rounded-3xl border border-dashed border-red-500/30 bg-red-500/5 text-center">
+                  <span className="bg-red-500 text-white text-[9px] font-semibold tracking-tight uppercase px-3 py-1 rounded-full tracking-widest">FLASH ACTIVE OFFER</span>
                   <h3 className="text-2xl font-black mt-4 text-red-500">30% OFF YOUR FIRST RESERVATION</h3>
                   <p className="text-xs opacity-80 my-4">Claim this code to activate a 30% discount automatically applied during clinic or salon consultation reservations.</p>
                   <SelectableElement elementId="button">
                     <button 
                       onClick={() => setActiveOfferClaimed(true)}
-                      className={`px-6 py-3 font-bold text-xs rounded-xl transition-all duration-300 cursor-pointer ${
-                        activeOfferClaimed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white hover:shadow-lg'
+                      className={`px-6 py-3 font-semibold tracking-tight text-xs rounded-3xl transition-all duration-300 cursor-pointer ${
+                        activeOfferClaimed ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]'
                       }`}
                     >
                       {activeOfferClaimed ? '✓ CODE ACTIVATED' : 'CLAIM D50-DISCOUNT CODE'}
@@ -1436,17 +1711,17 @@ export function BuilderRenderer({
               <div className="max-w-2xl mx-auto space-y-3">
                 {block.pricing?.map(plan => (
                   <SelectableElement key={plan.id} elementId="card">
-                    <div className="flex items-center justify-between gap-4 p-5 rounded-2xl text-left transition-all hover:shadow-lg" style={cardStyle}>
+                    <div className="flex items-center justify-between gap-16 p-5 rounded-3xl text-left transition-all hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]" style={cardStyle}>
                       <div className="min-w-0">
-                        <h3 className="text-base font-extrabold flex items-center gap-2">
+                        <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
                           {plan.tier}
                           {plan.popular && <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: styles.accentColor, color: '#fff' }}>Popular</span>}
                         </h3>
                         <p className="text-[11px] opacity-70 mt-1 line-clamp-1">{plan.features.join(' · ')}</p>
                       </div>
-                      <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-16 shrink-0">
                         <span className="text-xl font-black" style={{ color: styles.accentColor }}>{plan.price}</span>
-                        <button onClick={runBtnAction} className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: styles.accentColor, color: '#fff', borderRadius: `${styles.buttonBorderRadius}px` }}>
+                        <button onClick={runBtnAction} className="px-4 py-2 font-semibold tracking-tight text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: styles.accentColor, color: '#fff', borderRadius: `${styles.buttonBorderRadius}px` }}>
                           {plan.btnText}
                         </button>
                       </div>
@@ -1456,7 +1731,7 @@ export function BuilderRenderer({
               </div>
             ) : block.variant === 'comparison-pricing' ? (
               // FULL MATRIX PRICING — feature rows × plan columns
-              <div className="max-w-4xl mx-auto overflow-x-auto rounded-2xl border border-slate-500/15" style={cardStyle}>
+              <div className="max-w-4xl mx-auto overflow-x-auto rounded-3xl border border-slate-500/15" style={cardStyle}>
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-500/15">
@@ -1470,7 +1745,7 @@ export function BuilderRenderer({
                     {block.pricing?.map(plan => (
                       <SelectableElement key={plan.id} elementId="card">
                         <tr className={`border-b border-slate-500/10 last:border-0 hover:bg-slate-500/5 transition ${plan.popular ? 'bg-slate-500/[0.04]' : ''}`}>
-                          <td className="px-5 py-4 font-extrabold text-sm">
+                          <td className="px-5 py-4 font-bold tracking-tight text-sm">
                             {plan.tier}
                             {plan.popular && <span className="ml-2 text-[8px] font-black uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${styles.accentColor}20`, color: styles.accentColor }}>Best</span>}
                           </td>
@@ -1485,7 +1760,7 @@ export function BuilderRenderer({
                             </ul>
                           </td>
                           <td className="px-5 py-4 text-right">
-                            <button onClick={runBtnAction} className="px-4 py-2 font-bold text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#fff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                            <button onClick={runBtnAction} className="px-4 py-2 font-semibold tracking-tight text-xs cursor-pointer whitespace-nowrap" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#fff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
                               {plan.btnText}
                             </button>
                           </td>
@@ -1497,22 +1772,22 @@ export function BuilderRenderer({
               </div>
             ) : (
               // STANDARD SAAS 3-TIERS (saas-pricing / default)
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16">
                 {block.pricing?.map(plan => (
                   <SelectableElement key={plan.id} elementId="card" className={plan.popular ? 'md:scale-[1.03] z-10' : ''}>
                     <div
-                      className={`p-8 text-left flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:shadow-2xl h-full ${
+                      className={`p-10 @md:p-12 @md:p-16 text-left flex flex-col justify-between relative overflow-hidden transition-all duration-300 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] h-full ${
                         plan.popular ? 'ring-2 ring-blue-500' : ''
                       }`}
                       style={cardStyle}
                     >
                       {plan.popular && (
-                        <span className="absolute top-4 right-4 bg-blue-500 text-white text-[8px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">
+                        <span className="absolute top-4 right-4 bg-blue-500 text-white text-[8px] font-bold tracking-tight uppercase px-2 py-0.5 rounded-full tracking-wider">
                           RECOMMENDED
                         </span>
                       )}
                       <div>
-                        <h3 className="text-lg font-extrabold mb-1">{plan.tier}</h3>
+                        <h3 className="text-lg font-bold tracking-tight mb-1">{plan.tier}</h3>
                         <p className="text-3xl font-black mb-6" style={{ color: styles.accentColor }}>{plan.price}</p>
                         <ul className="space-y-3 mb-8">
                           {plan.features.map((f, i) => (
@@ -1523,7 +1798,7 @@ export function BuilderRenderer({
                           ))}
                         </ul>
                       </div>
-                      <button onClick={runBtnAction} className="w-full py-3 font-bold text-xs cursor-pointer transition-all duration-300" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#ffffff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                      <button onClick={runBtnAction} className="w-full py-3 font-semibold tracking-tight text-xs cursor-pointer transition-all duration-300" style={{ backgroundColor: plan.popular ? styles.accentColor : 'transparent', color: plan.popular ? '#ffffff' : styles.accentColor, border: `1.5px solid ${styles.accentColor}`, borderRadius: `${styles.buttonBorderRadius}px` }}>
                         {plan.btnText}
                       </button>
                     </div>
@@ -1548,10 +1823,10 @@ export function BuilderRenderer({
             
             {block.variant === 'wall-of-love' ? (
               // WALL OF LOVE GRID
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 text-left">
+              <div className="grid grid-cols-1 @sm:grid-cols-2 @md:grid-cols-3 gap-16 text-left">
                 {block.testimonials?.map(test => (
                   <SelectableElement key={test.id} elementId="card">
-                    <div className="rounded-2xl flex flex-col justify-between h-full" style={cardStyle}>
+                    <div className="rounded-3xl flex flex-col justify-between h-full" style={cardStyle}>
                       <div>
                         <div className="flex gap-1 mb-4 text-amber-500">
                           {Array.from({ length: test.rating }).map((_, rIdx) => <Star key={rIdx} size={14} fill="currentColor" />)}
@@ -1562,7 +1837,7 @@ export function BuilderRenderer({
                         <img src={test.avatar} className="w-8 h-8 rounded-full object-cover shrink-0" alt="Avatar" />
                         <div>
                           <h4 className="text-xs font-black">{test.name}</h4>
-                          <p className="text-[10px] text-slate-400">{test.role}</p>
+                          <p className="text-[10px] text-slate-400/90 font-medium">{test.role}</p>
                         </div>
                       </div>
                     </div>
@@ -1588,10 +1863,10 @@ export function BuilderRenderer({
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
+                <div className="grid grid-cols-1 @md:grid-cols-3 gap-5 text-left">
                   {block.testimonials?.map(test => (
                     <SelectableElement key={test.id} elementId="card">
-                      <div className="p-6 rounded-2xl border border-slate-500/15" style={cardStyle}>
+                      <div className="p-10 @md:p-12 @md:p-16 rounded-3xl border border-slate-500/15" style={cardStyle}>
                         <div className="flex items-center gap-3 mb-4">
                           <img src={test.avatar} className="w-10 h-10 rounded-full object-cover shrink-0" alt="Avatar" />
                           <div className="min-w-0">
@@ -1610,10 +1885,10 @@ export function BuilderRenderer({
               </div>
             ) : (
               // CLASSIC REVIEW TILES (review-cards / default)
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 @md:grid-cols-2 gap-16">
                 {block.testimonials?.map(test => (
                   <SelectableElement key={test.id} elementId="card">
-                    <div className="rounded-2xl flex flex-col justify-between h-full border border-slate-100/10" style={cardStyle}>
+                    <div className="rounded-3xl flex flex-col justify-between h-full border border-slate-100/10" style={cardStyle}>
                       <div>
                         <div className="flex gap-1 mb-4 text-amber-500">
                           {Array.from({ length: test.rating }).map((_, rIdx) => <Star key={rIdx} size={14} fill="currentColor" />)}
@@ -1621,10 +1896,16 @@ export function BuilderRenderer({
                         <p className="text-sm italic leading-relaxed opacity-90">"{test.content}"</p>
                       </div>
                       <div className="flex items-center gap-3 mt-8">
-                        <img src={test.avatar} className="w-10 h-10 rounded-full object-cover shrink-0" alt="Avatar" />
+                        {test.avatar ? (
+                          <img src={test.avatar} className="w-10 h-10 rounded-full object-cover shrink-0" alt="Avatar" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-xs font-black bg-slate-500/25 text-slate-200">
+                            {(test.name || '?').trim().charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <h4 className="text-xs font-black">{test.name}</h4>
-                          <p className="text-[10px] text-slate-400">{test.role}</p>
+                          <p className="text-[10px] text-slate-400/90 font-medium">{test.role}</p>
                         </div>
                       </div>
                     </div>
@@ -1653,19 +1934,19 @@ export function BuilderRenderer({
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="max-w-md mx-auto p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-center"
+                  className="max-w-md mx-auto p-10 @md:p-12 @md:p-16 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl text-center"
                 >
                   <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4 animate-bounce" />
-                  <h3 className="text-xl font-bold text-emerald-400">Request Received Successfully!</h3>
-                  <p className="text-xs text-slate-400 mt-2">
+                  <h3 className="text-xl font-semibold tracking-tight text-emerald-400">Request Received Successfully!</h3>
+                  <p className="text-xs text-slate-400/90 font-medium mt-2">
                     {(block as any).successMessage || 'Our coordinators will reach out using the provided details shortly.'}
                   </p>
-                  <button onClick={() => setFormSubmitted(false)} className="mt-6 text-xs text-blue-500 font-extrabold hover:underline">
+                  <button onClick={() => setFormSubmitted(false)} className="mt-6 text-xs text-blue-500 font-bold tracking-tight hover:underline">
                     Submit Another Query
                   </button>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 text-left">
+                <div className="grid grid-cols-1 @md:grid-cols-2 gap-16 text-left">
                   {/* Styled Input card */}
                   <form 
                     onSubmit={async (e) => {
@@ -1689,22 +1970,22 @@ export function BuilderRenderer({
                       }
                       setFormSubmitted(true);
                     }}
-                    className="p-8 flex flex-col gap-4"
+                    className="p-10 @md:p-12 @md:p-16 flex flex-col gap-16"
                     style={{ backgroundColor: styles.cardBgColor, borderRadius: `${styles.cardBorderRadius}px` }}
                   >
                     <div>
-                      <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">FULL NAME</label>
-                      <input required name="name" type="text" placeholder="Kabir Mehta" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                      <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">FULL NAME</label>
+                      <input required name="name" type="text" placeholder="Kabir Mehta" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">EMAIL ADDRESS</label>
-                      <input required name="email" type="email" placeholder="kabir@designco.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                      <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">EMAIL ADDRESS</label>
+                      <input required name="email" type="email" placeholder="kabir@designco.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">MESSAGE QUERY</label>
-                      <textarea required name="query" placeholder="Outline your project goals..." className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" rows={4} />
+                      <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">MESSAGE QUERY</label>
+                      <textarea required name="query" placeholder="Outline your project goals..." className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none" rows={4} />
                     </div>
-                    <button type="submit" className="w-full py-4 font-bold text-xs cursor-pointer hover:opacity-95 transition" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                    <button type="submit" className="w-full py-4 font-semibold tracking-tight text-xs cursor-pointer hover:opacity-95 transition" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
                       {block.btnText || 'Submit Request'}
                     </button>
                   </form>
@@ -1712,22 +1993,22 @@ export function BuilderRenderer({
                   {/* Informational Panel */}
                   <div className="flex flex-col justify-between py-4">
                     <div className="space-y-6">
-                      <h3 className="text-xl font-bold">Contact Details</h3>
+                      <h3 className="text-xl font-semibold tracking-tight">Contact Details</h3>
                       <div className="space-y-4">
                         <div className="flex items-center gap-3 text-xs">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                             <Mail size={14} />
                           </div>
                           <span>{block.contactEmail || 'hello@onlypage.in'}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                             <Phone size={14} />
                           </div>
                           <span>{block.contactPhone || '+91 98765 43210'}</span>
                         </div>
                         <div className="flex items-center gap-3 text-xs">
-                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                             <MapPin size={14} />
                           </div>
                           <span>{block.contactAddress || 'Bengaluru, India'}</span>
@@ -1735,9 +2016,9 @@ export function BuilderRenderer({
                       </div>
                     </div>
 
-                    <div className="mt-8 p-6 bg-slate-500/5 rounded-2xl border border-slate-200/10">
-                      <h4 className="text-xs font-bold mb-1">Response Guarantee</h4>
-                      <p className="text-[10px] text-slate-400">All submissions are monitored by real account handlers. Standard response times are within 15 minutes flat.</p>
+                    <div className="mt-8 p-10 @md:p-12 @md:p-16 bg-slate-500/5 rounded-3xl border border-black/5/10">
+                      <h4 className="text-xs font-semibold tracking-tight mb-1">Response Guarantee</h4>
+                      <p className="text-[10px] text-slate-400/90 font-medium">All submissions are monitored by real account handlers. Standard response times are within 15 minutes flat.</p>
                     </div>
                   </div>
                 </div>
@@ -1763,9 +2044,9 @@ export function BuilderRenderer({
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-xl mx-auto overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.07] p-8 text-center shadow-[0_24px_80px_rgba(0,0,0,0.14)] sm:p-10"
+                  className="max-w-xl mx-auto overflow-hidden rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.07] p-10 @md:p-12 @md:p-16 text-center shadow-[0_24px_80px_rgba(0,0,0,0.14)] @sm:p-10"
                 >
-                  <span className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                  <span className="mx-auto mb-5 grid size-14 place-items-center rounded-3xl bg-emerald-500 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] shadow-emerald-500/20">
                     <CheckCircle2 size={26} />
                   </span>
                   <h3 className="text-2xl font-black tracking-tight">
@@ -1777,7 +2058,7 @@ export function BuilderRenderer({
                       : 'Your request has been received. The team will get back to you shortly.')}
                   </p>
                   {block.variant === 'appointment' && bookingDate && bookingTime && (
-                    <div className="mx-auto mt-6 flex max-w-sm items-center justify-center gap-3 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.06] px-4 py-3 text-sm font-bold">
+                    <div className="mx-auto mt-6 flex max-w-sm items-center justify-center gap-3 rounded-3xl border border-emerald-500/15 bg-emerald-500/[0.06] px-4 py-3 text-sm font-semibold tracking-tight">
                       <Calendar size={16} className="text-emerald-500" />
                       {new Intl.DateTimeFormat('en-IN', {
                         weekday: 'short',
@@ -1799,7 +2080,7 @@ export function BuilderRenderer({
                       setBookingDate('');
                       setBookingTime('');
                     }}
-                    className="mt-7 rounded-xl border border-current/15 px-4 py-2.5 text-xs font-extrabold transition hover:bg-current/[0.06]"
+                    className="mt-7 rounded-3xl border border-current/15 px-4 py-2.5 text-xs font-bold tracking-tight transition hover:bg-current/[0.06]"
                   >
                     {block.variant === 'appointment' ? 'Book another slot' : 'Submit another response'}
                   </button>
@@ -1828,10 +2109,10 @@ export function BuilderRenderer({
                         }
                         setFormSubmitted(true);
                       }}
-                      className="p-1 flex items-center gap-2 bg-slate-500/5 border border-slate-500/20 rounded-2xl w-full"
+                      className="p-1 flex items-center gap-2 bg-slate-500/5 border border-slate-500/20 rounded-3xl w-full"
                     >
                       <input required name="email" type="email" placeholder="kabir@designco.com" className="flex-1 bg-transparent px-4 py-3 text-xs outline-none text-white placeholder-slate-500" />
-                      <button type="submit" className="px-6 py-3 font-bold text-xs whitespace-nowrap cursor-pointer transition" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                      <button type="submit" className="px-6 py-3 font-semibold tracking-tight text-xs whitespace-nowrap cursor-pointer transition" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
                         {block.btnText || 'Join List'}
                       </button>
                     </form>
@@ -1860,28 +2141,28 @@ export function BuilderRenderer({
                         }
                         setFormSubmitted(true);
                       }}
-                      className="p-8 text-left space-y-4"
+                      className="p-10 @md:p-12 @md:p-16 text-left space-y-4"
                       style={{ backgroundColor: styles.cardBgColor, borderRadius: `${styles.cardBorderRadius}px` }}
                     >
                       <div>
-                        <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">FULL NAME</label>
-                        <input required name="name" type="text" placeholder="Kabir Sharma" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                        <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">FULL NAME</label>
+                        <input required name="name" type="text" placeholder="Kabir Sharma" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-16">
                         <div>
-                          <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">EMAIL</label>
-                          <input required name="email" type="email" placeholder="kabir@mail.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                          <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">EMAIL</label>
+                          <input required name="email" type="email" placeholder="kabir@mail.com" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none" />
                         </div>
                         <div>
-                          <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">PHONE</label>
-                          <input name="phone" type="tel" placeholder="+91 98765 43210" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none" />
+                          <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">PHONE</label>
+                          <input name="phone" type="tel" placeholder="+91 98765 43210" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none" />
                         </div>
                       </div>
                       <div>
-                        <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 block mb-1.5">MESSAGE</label>
-                        <textarea name="message" rows={3} placeholder="How can we help you?" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-xl focus:ring-1 focus:ring-blue-500 outline-none resize-none" />
+                        <label className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-400/90 font-medium block mb-1.5">MESSAGE</label>
+                        <textarea name="message" rows={3} placeholder="How can we help you?" className="w-full bg-slate-500/10 border border-slate-500/20 p-3 text-xs rounded-3xl focus:ring-1 focus:ring-blue-500 outline-none resize-none" />
                       </div>
-                      <button type="submit" className="w-full py-4 mt-2 font-bold text-xs cursor-pointer" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
+                      <button type="submit" className="w-full py-4 mt-2 font-semibold tracking-tight text-xs cursor-pointer" style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor, borderRadius: `${styles.buttonBorderRadius}px` }}>
                         {block.btnText || 'Send Message'}
                       </button>
                     </form>
@@ -1931,13 +2212,13 @@ export function BuilderRenderer({
                       }}
                     >
                       <div
-                        className="flex flex-col gap-4 border-b px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7"
+                        className="flex flex-col gap-16 border-b px-5 py-5 @sm:flex-row @sm:items-center @sm:justify-between @sm:px-7"
                         style={{ borderColor: `${styles.textColor}12` }}
                       >
                         <div>
                           <div className="flex items-center gap-2 text-xs font-black">
                             <span
-                              className="grid size-7 place-items-center rounded-lg"
+                              className="grid size-7 place-items-center rounded-xl"
                               style={{
                                 backgroundColor: `${styles.accentColor}18`,
                                 color: styles.accentColor,
@@ -1951,19 +2232,19 @@ export function BuilderRenderer({
                             Times shown in India Standard Time
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-55">
+                        <div className="flex items-center gap-2 text-[10px] font-bold tracking-tight uppercase tracking-[0.12em] opacity-55">
                           <span className="size-1.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.12)]" />
                           Live availability
                         </div>
                       </div>
 
-                      <div className="space-y-7 p-5 sm:p-7">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-7 p-5 @sm:p-7">
+                        <div className="grid grid-cols-1 gap-16 @sm:grid-cols-2">
                           <label className="group block">
-                            <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                            <span className="mb-2 block text-[10px] font-bold tracking-tight uppercase tracking-[0.12em] opacity-50">
                               Full name
                             </span>
-                            <span className="flex h-12 items-center gap-3 rounded-xl border px-3.5 transition focus-within:ring-4"
+                            <span className="flex h-12 items-center gap-3 rounded-3xl border px-3.5 transition focus-within:ring-4"
                               style={{
                                 borderColor: `${styles.textColor}18`,
                                 backgroundColor: `${styles.textColor}08`,
@@ -1983,10 +2264,10 @@ export function BuilderRenderer({
                           </label>
 
                           <label className="group block">
-                            <span className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                            <span className="mb-2 block text-[10px] font-bold tracking-tight uppercase tracking-[0.12em] opacity-50">
                               WhatsApp number
                             </span>
-                            <span className="flex h-12 items-center gap-2 rounded-xl border px-3.5 transition focus-within:ring-4"
+                            <span className="flex h-12 items-center gap-2 rounded-3xl border px-3.5 transition focus-within:ring-4"
                               style={{
                                 borderColor: `${styles.textColor}18`,
                                 backgroundColor: `${styles.textColor}08`,
@@ -1994,7 +2275,7 @@ export function BuilderRenderer({
                               }}
                             >
                               <MessageCircle size={16} className="shrink-0 text-emerald-500" />
-                              <span className="border-r pr-2 text-xs font-bold opacity-50" style={{ borderColor: `${styles.textColor}18` }}>+91</span>
+                              <span className="border-r pr-2 text-xs font-semibold tracking-tight opacity-50" style={{ borderColor: `${styles.textColor}18` }}>+91</span>
                               <input
                                 required
                                 autoComplete="tel"
@@ -2017,14 +2298,14 @@ export function BuilderRenderer({
                         <div>
                           <div className="mb-3 flex items-end justify-between">
                             <div>
-                              <span className="block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                              <span className="block text-[10px] font-bold tracking-tight uppercase tracking-[0.12em] opacity-50">
                                 Choose a date
                               </span>
                               <span className="mt-1 block text-xs font-semibold opacity-75">
                                 Next available appointments
                               </span>
                             </div>
-                            <span className="hidden text-[10px] font-bold opacity-40 sm:block">8 days</span>
+                            <span className="hidden text-[10px] font-semibold tracking-tight opacity-40 @sm:block">8 days</span>
                           </div>
                           <input type="hidden" name="date" value={bookingDate} />
                           <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -2041,7 +2322,7 @@ export function BuilderRenderer({
                                     setBookingDate(date.value);
                                   }}
                                   aria-pressed={selected}
-                                  className="min-w-[72px] snap-start rounded-2xl border px-3 py-3 text-center transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15"
+                                  className="min-w-[72px] snap-start rounded-3xl border px-3 py-3 text-center transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15"
                                   style={{
                                     borderColor: selected ? styles.accentColor : `${styles.textColor}16`,
                                     backgroundColor: selected ? styles.accentColor : `${styles.textColor}06`,
@@ -2053,7 +2334,7 @@ export function BuilderRenderer({
                                     {date.weekday}
                                   </span>
                                   <span className="mt-1 block text-xl font-black leading-none">{date.day}</span>
-                                  <span className="mt-1 block text-[9px] font-bold uppercase opacity-55">{date.month}</span>
+                                  <span className="mt-1 block text-[9px] font-semibold tracking-tight uppercase opacity-55">{date.month}</span>
                                 </button>
                               );
                             })}
@@ -2062,17 +2343,17 @@ export function BuilderRenderer({
 
                         <div>
                           <div className="mb-3 flex items-center gap-2">
-                            <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-50">
+                            <span className="text-[10px] font-bold tracking-tight uppercase tracking-[0.12em] opacity-50">
                               Choose a time
                             </span>
                             {!bookingDate && (
-                              <span className="rounded-full px-2 py-1 text-[9px] font-bold opacity-45" style={{ backgroundColor: `${styles.textColor}08` }}>
+                              <span className="rounded-full px-2 py-1 text-[9px] font-semibold tracking-tight opacity-45" style={{ backgroundColor: `${styles.textColor}08` }}>
                                 Select a date first
                               </span>
                             )}
                           </div>
                           <input type="hidden" name="time" value={bookingTime} />
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          <div className="grid grid-cols-2 gap-2 @sm:grid-cols-4">
                             {bookingTimes.map((time) => {
                               const selected = bookingTime === time;
                               const label = new Intl.DateTimeFormat('en-IN', {
@@ -2087,7 +2368,7 @@ export function BuilderRenderer({
                                   disabled={!bookingDate}
                                   onClick={() => setBookingTime(time)}
                                   aria-pressed={selected}
-                                  className="rounded-xl border px-3 py-3 text-xs font-extrabold transition duration-200 enabled:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15 disabled:cursor-not-allowed disabled:opacity-30"
+                                  className="rounded-3xl border px-3 py-3 text-xs font-bold tracking-tight transition duration-200 enabled:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/15 disabled:cursor-not-allowed disabled:opacity-30"
                                   style={{
                                     borderColor: selected ? styles.accentColor : `${styles.textColor}16`,
                                     backgroundColor: selected ? `${styles.accentColor}18` : `${styles.textColor}05`,
@@ -2101,11 +2382,11 @@ export function BuilderRenderer({
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-4 border-t pt-5 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: `${styles.textColor}12` }}>
+                        <div className="flex flex-col gap-16 border-t pt-5 @sm:flex-row @sm:items-center @sm:justify-between" style={{ borderColor: `${styles.textColor}12` }}>
                           <div className="min-h-10">
                             {bookingDate && bookingTime ? (
                               <>
-                                <span className="block text-[10px] font-extrabold uppercase tracking-[0.12em] opacity-45">Your appointment</span>
+                                <span className="block text-[10px] font-bold tracking-tight uppercase tracking-[0.12em] opacity-45">Your appointment</span>
                                 <span className="mt-1 block text-xs font-black">
                                   {new Intl.DateTimeFormat('en-IN', {
                                     weekday: 'short',
@@ -2131,7 +2412,7 @@ export function BuilderRenderer({
                             <button
                               type="submit"
                               disabled={!bookingDate || !bookingTime}
-                              className="group flex min-h-12 items-center justify-center gap-2 px-6 text-xs font-black transition duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-52"
+                              className="group flex min-h-12 items-center justify-center gap-2 px-6 text-xs font-black transition duration-200 enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-40 @sm:min-w-52"
                               style={{
                                 backgroundColor: styles.buttonBgColor,
                                 color: styles.buttonTextColor,
@@ -2174,7 +2455,7 @@ export function BuilderRenderer({
                     <span className="font-black text-sm uppercase tracking-widest" style={{ color: styles.accentColor }}>{block.title || 'OnlyPage'}</span>
                   )}
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <SelectableElement elementId="subtitle" className="hidden @md:flex items-center gap-16 text-[11px] font-semibold tracking-tight text-slate-400/90 font-medium uppercase tracking-wider">
                   {navigationLinks.slice(0, 5).map((link) => (
                     <button
                       key={link.id}
@@ -2191,31 +2472,31 @@ export function BuilderRenderer({
                   ))}
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="font-extrabold cursor-pointer transition" style={{ ...buttonStyle, padding: '9px 18px', fontSize: '11px' }}>{block.btnText || 'Sign In'}</button>
+                  <button className="font-bold tracking-tight cursor-pointer transition" style={{ ...buttonStyle, padding: '9px 18px', fontSize: '11px' }}>{block.btnText || 'Sign In'}</button>
                 </SelectableElement>
               </div>
             )}
 
             {/* nav-glass */}
             {block.variant === 'nav-glass' && (
-              <div className="flex items-center justify-between p-3 px-6 backdrop-blur-xl bg-slate-900/40 border border-slate-100/10 shadow-2xl rounded-full">
+              <div className="flex items-center justify-between p-3 px-6 backdrop-blur-xl bg-slate-900/95 backdrop-blur-3xl/40 border border-slate-100/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] rounded-full">
                 <SelectableElement elementId="title" className="flex items-center gap-1.5">
                   {block.imageUrl ? (
                     <img src={block.imageUrl} className="h-5 max-w-[150px] object-contain" alt="Brand Logo" referrerPolicy="no-referrer" />
                   ) : (
                     <>
-                      <span className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-[10px] text-blue-400 font-bold">O</span>
+                      <span className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-[10px] text-blue-400 font-semibold tracking-tight">O</span>
                       <span className="font-black text-xs tracking-tight text-white">{block.title || 'Glass.io'}</span>
                     </>
                   )}
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-6 text-xs text-slate-300 font-medium">
+                <SelectableElement elementId="subtitle" className="hidden @md:flex items-center gap-16 text-xs text-slate-300 font-medium">
                   <span className="hover:text-blue-400 cursor-pointer transition">Platform</span>
                   <span className="hover:text-blue-400 cursor-pointer transition">Pricing</span>
                   <span className="hover:text-blue-400 cursor-pointer transition">Company</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-1.5 bg-white text-slate-950 font-bold rounded-full text-[10px] hover:bg-slate-100 transition shadow">{block.btnText || 'Launch Console'}</button>
+                  <button className="px-4 py-1.5 bg-white text-slate-950 font-semibold tracking-tight rounded-full text-[10px] hover:bg-slate-100 transition shadow">{block.btnText || 'Launch Console'}</button>
                 </SelectableElement>
               </div>
             )}
@@ -2223,7 +2504,7 @@ export function BuilderRenderer({
             {/* nav-centered-logo */}
             {block.variant === 'nav-centered-logo' && (
               <div className="grid grid-cols-3 items-center p-4" style={{ backgroundColor: styles.cardBgColor, borderBottom: `1.5px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
-                <SelectableElement elementId="subtitle" className="flex gap-4 text-xs font-semibold text-slate-400">
+                <SelectableElement elementId="subtitle" className="flex gap-16 text-xs font-semibold text-slate-400/90 font-medium">
                   <span className="hover:text-white cursor-pointer">Product</span>
                   <span className="hover:text-white cursor-pointer">Blog</span>
                 </SelectableElement>
@@ -2232,7 +2513,7 @@ export function BuilderRenderer({
                 </SelectableElement>
                 <div className="flex justify-end">
                   <SelectableElement elementId="button">
-                    <button className="text-xs font-bold hover:underline" style={{ color: styles.accentColor }}>{block.btnText || 'Join Today'}</button>
+                    <button className="text-xs font-semibold tracking-tight hover:underline" style={{ color: styles.accentColor }}>{block.btnText || 'Join Today'}</button>
                   </SelectableElement>
                 </div>
               </div>
@@ -2242,11 +2523,11 @@ export function BuilderRenderer({
             {block.variant === 'nav-sidebar-toggle' && (
               <div className="flex items-center justify-between p-4" style={{ backgroundColor: styles.cardBgColor }}>
                 <SelectableElement elementId="title">
-                  <span className="font-extrabold text-sm" style={{ color: styles.textColor }}>{block.title || 'Minimalist'}</span>
+                  <span className="font-bold tracking-tight text-sm" style={{ color: styles.textColor }}>{block.title || 'Minimalist'}</span>
                 </SelectableElement>
-                <div className="flex items-center gap-4">
-                  <span className="text-[10px] font-bold tracking-widest text-slate-500">SYSTEM DECK ACTIVE</span>
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-slate-700 transition">
+                <div className="flex items-center gap-16">
+                  <span className="text-[10px] font-semibold tracking-tight tracking-widest text-slate-500/80 font-medium">SYSTEM DECK ACTIVE</span>
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex flex-col justify-center items-center gap-1 cursor-pointer hover:bg-slate-700 transition">
                     <span className="w-4 h-0.5 bg-white" />
                     <span className="w-4 h-0.5 bg-white" />
                     <span className="w-4 h-0.5 bg-white" />
@@ -2257,21 +2538,21 @@ export function BuilderRenderer({
 
             {/* nav-mega-menu */}
             {block.variant === 'nav-mega-menu' && (
-              <div className="flex items-center justify-between p-4 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl">
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm text-white">{block.title || 'ApexSaaS'}</span>
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-6 text-xs text-slate-400 font-bold">
+                <SelectableElement elementId="subtitle" className="hidden @md:flex items-center gap-16 text-xs text-slate-400/90 font-medium font-semibold tracking-tight">
                   <div className="group/mega relative py-2 cursor-pointer hover:text-white flex items-center gap-1">
                     <span>Products</span> <ChevronDown size={12} />
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover/mega:opacity-100 group-hover/mega:translate-y-0 group-hover/mega:pointer-events-auto transition-all duration-300 z-50 text-left grid grid-cols-2 gap-3">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 bg-slate-900/95 backdrop-blur-3xl border border-white/10 p-4 rounded-3xl shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] opacity-0 translate-y-2 pointer-events-none group-hover/mega:opacity-100 group-hover/mega:translate-y-0 group-hover/mega:pointer-events-auto transition-all duration-300 z-50 text-left grid grid-cols-2 gap-3">
                       <div>
-                        <h5 className="font-extrabold text-[10px] text-blue-500 tracking-wider">ENGINE</h5>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Real-time DB synchronization.</p>
+                        <h5 className="font-bold tracking-tight text-[10px] text-blue-500 tracking-wider">ENGINE</h5>
+                        <p className="text-[10px] text-slate-400/90 font-medium mt-1 leading-relaxed">Real-time DB synchronization.</p>
                       </div>
                       <div>
-                        <h5 className="font-extrabold text-[10px] text-emerald-500 tracking-wider">DEPLOY</h5>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">Instant serverless CDN endpoints.</p>
+                        <h5 className="font-bold tracking-tight text-[10px] text-emerald-500 tracking-wider">DEPLOY</h5>
+                        <p className="text-[10px] text-slate-400/90 font-medium mt-1 leading-relaxed">Instant serverless CDN endpoints.</p>
                       </div>
                     </div>
                   </div>
@@ -2279,23 +2560,23 @@ export function BuilderRenderer({
                   <span className="hover:text-white cursor-pointer transition">Docs</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="font-extrabold text-xs px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition">{block.btnText || 'Start Free Trial'}</button>
+                  <button className="font-bold tracking-tight text-xs px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition">{block.btnText || 'Start Free Trial'}</button>
                 </SelectableElement>
               </div>
             )}
 
             {/* nav-search-bar */}
             {block.variant === 'nav-search-bar' && (
-              <div className="flex items-center justify-between p-3.5 gap-4" style={{ backgroundColor: styles.cardBgColor, borderBottom: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
+              <div className="flex items-center justify-between p-3.5 gap-16" style={{ backgroundColor: styles.cardBgColor, borderBottom: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm" style={{ color: styles.textColor }}>{block.title || 'Lookup'}</span>
                 </SelectableElement>
-                <div className="flex-1 max-w-sm hidden sm:flex items-center gap-2 bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg">
-                  <Search size={14} className="text-slate-500" />
+                <div className="flex-1 max-w-sm hidden @sm:flex items-center gap-2 bg-slate-950/95 backdrop-blur-3xl border border-white/10 px-3 py-1.5 rounded-xl">
+                  <Search size={14} className="text-slate-500/80 font-medium" />
                   <input disabled type="text" placeholder="Search templates, components or CSS..." className="bg-transparent text-[11px] outline-none text-slate-300 w-full" />
                 </div>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-1.5 text-xs font-bold rounded bg-slate-800 text-white hover:bg-slate-700 transition">{block.btnText || 'Console'}</button>
+                  <button className="px-4 py-1.5 text-xs font-semibold tracking-tight rounded bg-slate-800 text-white hover:bg-slate-700 transition">{block.btnText || 'Console'}</button>
                 </SelectableElement>
               </div>
             )}
@@ -2304,22 +2585,22 @@ export function BuilderRenderer({
             {block.variant === 'nav-social-icons' && (
               <div className="flex items-center justify-between p-4" style={{ backgroundColor: styles.cardBgColor }}>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Twitter size={14} /></div>
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Instagram size={14} /></div>
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Github size={14} /></div>
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400/90 font-medium hover:text-white hover:bg-slate-700 cursor-pointer transition"><Twitter size={14} /></div>
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400/90 font-medium hover:text-white hover:bg-slate-700 cursor-pointer transition"><Instagram size={14} /></div>
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400/90 font-medium hover:text-white hover:bg-slate-700 cursor-pointer transition"><Github size={14} /></div>
                 </div>
                 <SelectableElement elementId="title">
-                  <span className="font-extrabold text-xs uppercase tracking-widest text-slate-500">{block.title || 'SOCIAL.CORP'}</span>
+                  <span className="font-bold tracking-tight text-xs uppercase tracking-widest text-slate-500/80 font-medium">{block.title || 'SOCIAL.CORP'}</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-3 py-1.5 border border-slate-700 rounded-md font-bold text-[10px] text-slate-300 hover:text-white transition">{block.btnText || 'Contact Us'}</button>
+                  <button className="px-3 py-1.5 border border-white/15 rounded-md font-semibold tracking-tight text-[10px] text-slate-300 hover:text-white transition">{block.btnText || 'Contact Us'}</button>
                 </SelectableElement>
               </div>
             )}
 
             {/* nav-double-header */}
             {block.variant === 'nav-double-header' && (
-              <div className="w-full flex flex-col border-b border-slate-800">
+              <div className="w-full flex flex-col border-b border-white/10">
                 {isActive && (
                   <div className="bg-blue-600 text-white text-[10px] font-black tracking-wider uppercase py-2 px-3 text-center flex items-center justify-center gap-1.5">
                     <Rocket size={11} />
@@ -2327,11 +2608,11 @@ export function BuilderRenderer({
                     <span className="underline hover:opacity-85 cursor-pointer ml-1 flex items-center gap-0.5">EXPLORE BUNDLES <ArrowRight size={10} /></span>
                   </div>
                 )}
-                <div className="flex items-center justify-between p-4 bg-slate-950">
+                <div className="flex items-center justify-between p-4 bg-slate-950/95 backdrop-blur-3xl">
                   <SelectableElement elementId="title">
-                    <span className="font-extrabold text-sm">{block.title || 'DoubleDeck'}</span>
+                    <span className="font-bold tracking-tight text-sm">{block.title || 'DoubleDeck'}</span>
                   </SelectableElement>
-                  <SelectableElement elementId="subtitle" className="flex items-center gap-5 text-xs text-slate-400">
+                  <SelectableElement elementId="subtitle" className="flex items-center gap-5 text-xs text-slate-400/90 font-medium">
                     <span className="hover:text-white cursor-pointer">Enterprise</span>
                     <span className="hover:text-white cursor-pointer">Pricing</span>
                     <span className="hover:text-white cursor-pointer">Blueprint</span>
@@ -2346,24 +2627,24 @@ export function BuilderRenderer({
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm uppercase tracking-tight">[ {block.title || 'BRUTAL_MONO'} ]</span>
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-4 text-xs font-bold uppercase">
+                <SelectableElement elementId="subtitle" className="hidden @md:flex items-center gap-16 text-xs font-semibold tracking-tight uppercase">
                   <span className="hover:underline cursor-pointer">_GRID</span>
                   <span className="hover:underline cursor-pointer">_CORE</span>
                   <span className="hover:underline cursor-pointer">_STAT</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-2 border-2 border-black font-bold text-xs bg-[#ffff00] active:translate-y-0.5 transition shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{block.btnText || 'GO_LIVE'}</button>
+                  <button className="px-4 py-2 border-2 border-black font-semibold tracking-tight text-xs bg-[#ffff00] active:translate-y-0.5 transition shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{block.btnText || 'GO_LIVE'}</button>
                 </SelectableElement>
               </div>
             )}
 
             {/* nav-pill-shaped */}
             {block.variant === 'nav-pill-shaped' && (
-              <div className="max-w-md mx-auto p-2 bg-slate-950/80 border border-slate-800 rounded-full shadow-2xl flex items-center justify-between px-4">
+              <div className="max-w-md mx-auto p-2 bg-slate-950/95 backdrop-blur-3xl/80 border border-white/10 rounded-full shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] flex items-center justify-between px-4">
                 <SelectableElement elementId="title">
-                  <span className="font-bold text-[10px] tracking-widest text-slate-300 uppercase">{block.title || 'Capsule'}</span>
+                  <span className="font-semibold tracking-tight text-[10px] tracking-widest text-slate-300 uppercase">{block.title || 'Capsule'}</span>
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="flex gap-3 text-[10px] text-slate-400 font-semibold">
+                <SelectableElement elementId="subtitle" className="flex gap-3 text-[10px] text-slate-400/90 font-medium font-semibold">
                   <span className="hover:text-white cursor-pointer">Home</span>
                   <span className="hover:text-white cursor-pointer">Works</span>
                 </SelectableElement>
@@ -2375,59 +2656,59 @@ export function BuilderRenderer({
 
             {/* nav-blur-reveal */}
             {block.variant === 'nav-blur-reveal' && (
-              <div className="flex items-center justify-between p-4 rounded-xl border border-blue-500/10 bg-slate-950/80 shadow-[0_0_25px_-5px_rgba(59,130,246,0.15)]">
+              <div className="flex items-center justify-between p-4 rounded-3xl border border-blue-500/10 bg-slate-950/95 backdrop-blur-3xl/80 shadow-[0_0_25px_-5px_rgba(59,130,246,0.15)]">
                 <SelectableElement elementId="title">
-                  <span className="font-extrabold text-sm flex items-center gap-1.5">
+                  <span className="font-bold tracking-tight text-sm flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping" />
                     <span>{block.title || 'NovaGlow'}</span>
                   </span>
                 </SelectableElement>
-                <SelectableElement elementId="subtitle" className="hidden md:flex items-center gap-5 text-xs text-slate-300">
+                <SelectableElement elementId="subtitle" className="hidden @md:flex items-center gap-5 text-xs text-slate-300">
                   <span className="hover:text-blue-400 cursor-pointer transition">Solutions</span>
                   <span className="hover:text-blue-400 cursor-pointer transition">Pricing</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-2 bg-slate-900 border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 font-bold text-xs rounded-lg transition">{block.btnText || 'Enter Space'}</button>
+                  <button className="px-4 py-2 bg-slate-900/95 backdrop-blur-3xl border border-blue-500/40 text-blue-400 hover:bg-blue-500/10 font-semibold tracking-tight text-xs rounded-xl transition">{block.btnText || 'Enter Space'}</button>
                 </SelectableElement>
               </div>
             )}
 
             {/* nav-with-avatar */}
             {block.variant === 'nav-with-avatar' && (
-              <div className="flex items-center justify-between p-3.5 bg-slate-950 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between p-3.5 bg-slate-950/95 backdrop-blur-3xl rounded-3xl border border-white/10">
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm tracking-tight text-white">{block.title || 'OnlyAdmin'}</span>
                 </SelectableElement>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">DEV MODE</span>
+                  <span className="text-[10px] font-mono text-slate-400/90 font-medium bg-slate-900/95 backdrop-blur-3xl border border-white/10 px-2 py-0.5 rounded">DEV MODE</span>
                   <div className="h-4 w-px bg-slate-800" />
-                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" className="w-8 h-8 rounded-full border border-slate-700 object-cover" alt="User" />
+                  <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" className="w-8 h-8 rounded-full border border-white/15 object-cover" alt="User" />
                 </div>
               </div>
             )}
 
             {/* nav-dark-neon */}
             {block.variant === 'nav-dark-neon' && (
-              <div className="flex items-center justify-between p-4 bg-slate-950 border border-violet-500/20 shadow-[0_0_30px_-10px_rgba(139,92,246,0.3)] rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-slate-950/95 backdrop-blur-3xl border border-violet-500/20 shadow-[0_0_30px_-10px_rgba(139,92,246,0.3)] rounded-3xl">
                 <SelectableElement elementId="title">
                   <span className="font-black text-xs tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400 uppercase">{block.title || 'Cosmos'}</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-extrabold text-xs rounded-lg transition shadow-[0_0_15px_rgba(139,92,246,0.4)]">{block.btnText || 'Sync Cosmos'}</button>
+                  <button className="px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold tracking-tight text-xs rounded-xl transition shadow-[0_0_15px_rgba(139,92,246,0.4)]">{block.btnText || 'Sync Cosmos'}</button>
                 </SelectableElement>
               </div>
             )}
 
             {/* nav-badge-alert */}
             {block.variant === 'nav-badge-alert' && (
-              <div className="flex items-center justify-between p-4 bg-slate-900 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl">
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm text-slate-200">{block.title || 'Storefront'}</span>
                 </SelectableElement>
                 <div className="flex items-center gap-3">
                   <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-2 py-0.5 rounded-full text-[8px] font-black tracking-widest animate-pulse">HOT SALE</span>
                   <SelectableElement elementId="button">
-                    <button className="px-3.5 py-1.5 bg-blue-600 text-white font-bold text-xs rounded hover:bg-blue-500 transition">{block.btnText || 'Buy Now'}</button>
+                    <button className="px-3.5 py-1.5 bg-blue-600 text-white font-semibold tracking-tight text-xs rounded hover:bg-blue-500 transition">{block.btnText || 'Buy Now'}</button>
                   </SelectableElement>
                 </div>
               </div>
@@ -2437,7 +2718,7 @@ export function BuilderRenderer({
             {block.variant === 'nav-burger-only' && (
               <div className="flex items-center justify-between p-4" style={{ backgroundColor: styles.cardBgColor }}>
                 <SelectableElement elementId="title">
-                  <span className="font-extrabold text-xs tracking-wider opacity-70 uppercase">{block.title || 'MenuOnly'}</span>
+                  <span className="font-bold tracking-tight text-xs tracking-wider opacity-70 uppercase">{block.title || 'MenuOnly'}</span>
                 </SelectableElement>
                 <div className="flex flex-col gap-1 w-6 cursor-pointer group">
                   <span className="h-0.5 w-full bg-slate-300 group-hover:bg-blue-500 transition-all duration-300" />
@@ -2454,7 +2735,7 @@ export function BuilderRenderer({
                   <span className="font-black text-sm">{block.title || 'CallClinic'}</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition">
+                  <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold tracking-tight text-xs rounded-3xl flex items-center gap-1.5 transition">
                     <Phone size={12} fill="currentColor" /> {block.btnText || '+91 98840 12003'}
                   </button>
                 </SelectableElement>
@@ -2465,11 +2746,11 @@ export function BuilderRenderer({
             {block.variant === 'nav-gradient-border' && (
               <div className="w-full relative flex flex-col">
                 <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 w-full" />
-                <div className="flex items-center justify-between p-4 bg-slate-950">
+                <div className="flex items-center justify-between p-4 bg-slate-950/95 backdrop-blur-3xl">
                   <SelectableElement elementId="title">
-                    <span className="font-extrabold text-sm">{block.title || 'BorderGlow'}</span>
+                    <span className="font-bold tracking-tight text-sm">{block.title || 'BorderGlow'}</span>
                   </SelectableElement>
-                  <SelectableElement elementId="subtitle" className="flex gap-4 text-xs font-bold text-slate-300">
+                  <SelectableElement elementId="subtitle" className="flex gap-16 text-xs font-semibold tracking-tight text-slate-300">
                     <span className="border-b-2 border-blue-500 pb-0.5">Explore</span>
                     <span className="hover:text-blue-500 cursor-pointer">Solutions</span>
                   </SelectableElement>
@@ -2479,13 +2760,13 @@ export function BuilderRenderer({
 
             {/* nav-language-picker */}
             {block.variant === 'nav-language-picker' && (
-              <div className="flex items-center justify-between p-4 bg-slate-900 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl">
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm">{block.title || 'GlobalHQ'}</span>
                 </SelectableElement>
-                <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 px-2 py-1 rounded">
-                  <Globe size={12} className="text-slate-400" />
-                  <select className="bg-transparent text-[10px] text-slate-300 font-extrabold outline-none cursor-pointer">
+                <div className="flex items-center gap-2 bg-slate-950/95 backdrop-blur-3xl border border-white/10 px-2 py-1 rounded">
+                  <Globe size={12} className="text-slate-400/90 font-medium" />
+                  <select className="bg-transparent text-[10px] text-slate-300 font-bold tracking-tight outline-none cursor-pointer">
                     <option value="en">ENGLISH (US)</option>
                     <option value="hi">HINDI (IN)</option>
                     <option value="ka">KANNADA (KA)</option>
@@ -2500,15 +2781,15 @@ export function BuilderRenderer({
                 <SelectableElement elementId="title">
                   <span className="font-black text-sm">{block.title || 'ShopKart'}</span>
                 </SelectableElement>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-16">
                   <div className="relative cursor-pointer text-slate-300 hover:text-white transition">
-                    <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                    <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-semibold tracking-tight flex items-center justify-center">
                       3
                     </div>
                     <ShoppingCart size={20} />
                   </div>
                   <SelectableElement elementId="button">
-                    <button className="px-3.5 py-1.5 bg-slate-800 text-white font-extrabold text-[11px] rounded">{block.btnText || 'Checkout'}</button>
+                    <button className="px-3.5 py-1.5 bg-slate-800 text-white font-bold tracking-tight text-[11px] rounded">{block.btnText || 'Checkout'}</button>
                   </SelectableElement>
                 </div>
               </div>
@@ -2516,15 +2797,15 @@ export function BuilderRenderer({
 
             {/* nav-command-k */}
             {block.variant === 'nav-command-k' && (
-              <div className="flex items-center justify-between p-3 px-5 bg-slate-950 border border-slate-800 rounded-2xl max-w-xl mx-auto">
+              <div className="flex items-center justify-between p-3 px-5 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl max-w-xl mx-auto">
                 <SelectableElement elementId="title">
-                  <span className="font-bold text-xs tracking-wider uppercase text-blue-500">{block.title || 'OnlySearch'}</span>
+                  <span className="font-semibold tracking-tight text-xs tracking-wider uppercase text-blue-500">{block.title || 'OnlySearch'}</span>
                 </SelectableElement>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1 rounded-md font-mono">
+                <div className="flex items-center gap-2 text-[10px] text-slate-500/80 font-medium bg-slate-900/95 backdrop-blur-3xl border border-white/10 px-3 py-1 rounded-md font-mono">
                   <span>Press</span>
-                  <span className="bg-slate-950 border border-slate-700 px-1 rounded text-slate-300">Cmd</span>
+                  <span className="bg-slate-950/95 backdrop-blur-3xl border border-white/15 px-1 rounded text-slate-300">Cmd</span>
                   <span>+</span>
-                  <span className="bg-slate-950 border border-slate-700 px-1.5 rounded text-slate-300">K</span>
+                  <span className="bg-slate-950/95 backdrop-blur-3xl border border-white/15 px-1.5 rounded text-slate-300">K</span>
                   <span>to query...</span>
                 </div>
               </div>
@@ -2532,15 +2813,75 @@ export function BuilderRenderer({
 
             {/* nav-glowing-glow */}
             {block.variant === 'nav-glowing-glow' && (
-              <div className="flex items-center justify-between p-4 bg-slate-950 border-b-2 border-cyan-500/40 shadow-[0_4px_30px_rgba(6,182,212,0.1)]">
+              <div className="flex items-center justify-between p-4 bg-slate-950/95 backdrop-blur-3xl border-b-2 border-cyan-500/40 shadow-[0_4px_30px_rgba(6,182,212,0.1)]">
                 <SelectableElement elementId="title">
                   <span className="font-mono text-xs font-black tracking-widest text-cyan-400 uppercase">{block.title || 'CYBER.NET'}</span>
                 </SelectableElement>
                 <SelectableElement elementId="button">
-                  <button className="px-4 py-2 bg-transparent border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold text-xs rounded transition uppercase tracking-widest font-mono">{block.btnText || 'CONNECT_DECK'}</button>
+                  <button className="px-4 py-2 bg-transparent border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-semibold tracking-tight text-xs rounded transition uppercase tracking-widest font-mono">{block.btnText || 'CONNECT_DECK'}</button>
                 </SelectableElement>
               </div>
             )}
+
+            {/* UNIVERSAL MOBILE HAMBURGER BUTTON */}
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex @lg:hidden z-40">
+              <button 
+                type="button" 
+                onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(true); }}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-900/95 backdrop-blur-3xl/50 backdrop-blur border border-white/10 text-white hover:bg-slate-800 transition"
+              >
+                <Menu size={18} />
+              </button>
+            </div>
+
+            {/* UNIVERSAL MOBILE MENU OVERLAY */}
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="absolute inset-x-0 top-0 bg-slate-950/95 backdrop-blur-3xl/95 backdrop-blur-xl border-b border-white/10 p-10 @md:p-12 @md:p-16 z-50 flex flex-col shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)]"
+                >
+                  <div className="flex justify-between items-center mb-8">
+                    <span className="font-black text-white text-lg">{resolve(block.title) || site?.business_name || ""}</span>
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); }}
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-16">
+                    {navigationLinks.map(link => (
+                      <button
+                        key={link.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileMenuOpen(false);
+                          handleLinkNav(link.url);
+                        }}
+                        className="text-left py-3 px-4 rounded-3xl text-white font-semibold hover:bg-white/5 transition"
+                      >
+                        {link.label}
+                      </button>
+                    ))}
+                    {block.btnText && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setMobileMenuOpen(false); runBtnAction(); }}
+                        className="mt-4 py-4 rounded-3xl bg-blue-600 text-white font-semibold tracking-tight hover:bg-blue-500 transition"
+                        style={{ backgroundColor: styles.buttonBgColor, color: styles.buttonTextColor }}
+                      >
+                        {block.btnText}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -2551,21 +2892,21 @@ export function BuilderRenderer({
           <div className="w-full relative select-none" style={{ fontFamily: getFontFamilyStyle(styles.fontFamily) }}>
             {/* footer-classic */}
             {block.variant === 'footer-classic' && (
-              <div className="p-8 text-left space-y-12 bg-slate-950 border border-slate-800 rounded-2xl">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                  <div className="space-y-4 col-span-2 md:col-span-1">
+              <div className="p-10 @md:p-12 @md:p-16 text-left space-y-12 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl">
+                <div className="grid grid-cols-1 @sm:grid-cols-2 @md:grid-cols-4 gap-16">
+                  <div className="space-y-4 col-span-2 @md:col-span-1">
                     <SelectableElement elementId="title">
                       <h4 className="font-black text-base text-white">{block.title || 'OnlyPage'}</h4>
                     </SelectableElement>
                     <SelectableElement elementId="subtitle">
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{block.subtitle || 'Build elegant websites, schedule reservation calendars and gather customer feedback easily.'}</p>
+                      <p className="text-[11px] text-slate-400/90 font-medium leading-relaxed">{block.subtitle || 'Build elegant websites, schedule reservation calendars and gather customer feedback easily.'}</p>
                     </SelectableElement>
                   </div>
                   <div className="space-y-3">
-                    <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">Pages</h5>
-                    <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
+                    <h5 className="font-bold tracking-tight text-[10px] text-slate-200 uppercase tracking-widest">Pages</h5>
+                    <ul className="break-words space-y-1.5 text-[11px] text-slate-400/90 font-medium font-semibold">
                       {navigationLinks.slice(0, 5).map((link) => (
-                        <li key={link.id}>
+                        <li className="break-words" key={link.id}>
                           <button type="button" onClick={() => handleLinkNav(link.url)} className="cursor-pointer transition hover:text-blue-400">
                             {link.label}
                           </button>
@@ -2574,24 +2915,24 @@ export function BuilderRenderer({
                     </ul>
                   </div>
                   <div className="space-y-3">
-                    <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">Contact</h5>
-                    <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
-                      <li>{block.contactPhone || site?.theme?.phone || '+91 98765 43210'}</li>
-                      <li>{block.contactEmail || site?.theme?.email || 'hello@onlypage.in'}</li>
-                      <li>{block.contactAddress || site?.theme?.address || 'India'}</li>
+                    <h5 className="font-bold tracking-tight text-[10px] text-slate-200 uppercase tracking-widest">Contact</h5>
+                    <ul className="break-words space-y-1.5 text-[11px] text-slate-400/90 font-medium font-semibold">
+                      <li className="break-words">{block.contactPhone || site?.theme?.phone || '+91 98765 43210'}</li>
+                      <li className="break-words">{block.contactEmail || site?.theme?.email || 'hello@onlypage.in'}</li>
+                      <li className="break-words">{block.contactAddress || site?.theme?.address || 'India'}</li>
                     </ul>
                   </div>
                   <div className="space-y-3">
-                    <h5 className="font-extrabold text-[10px] text-slate-200 uppercase tracking-widest">Legal</h5>
-                    <ul className="space-y-1.5 text-[11px] text-slate-400 font-semibold">
-                      <li><button type="button" onClick={() => handleLinkNav('privacy')} className="transition hover:text-blue-400">Privacy</button></li>
-                      <li><button type="button" onClick={() => handleLinkNav('terms')} className="transition hover:text-blue-400">Terms</button></li>
+                    <h5 className="font-bold tracking-tight text-[10px] text-slate-200 uppercase tracking-widest">Legal</h5>
+                    <ul className="break-words space-y-1.5 text-[11px] text-slate-400/90 font-medium font-semibold">
+                      <li className="break-words"><button type="button" onClick={() => handleLinkNav('privacy')} className="transition hover:text-blue-400">Privacy</button></li>
+                      <li className="break-words"><button type="button" onClick={() => handleLinkNav('terms')} className="transition hover:text-blue-400">Terms</button></li>
                     </ul>
                   </div>
                 </div>
-                <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <div className="border-t border-white/10 pt-6 flex flex-col @md:flex-row items-center justify-between text-[10px] text-slate-500/80 font-medium font-semibold tracking-tight uppercase tracking-wider">
                   <span>{(block as any).copyright || `© ${new Date().getFullYear()} ONLYPAGE IN. ALL RIGHTS RESERVED.`}</span>
-                  <div className="flex gap-4 mt-3 md:mt-0">
+                  <div className="flex gap-16 mt-3 @md:mt-0">
                     {(footerLinks.length > 0 ? footerLinks : [{ id: 'd1', label: 'Privacy' }, { id: 'd2', label: 'Terms' }]).map(link => (
                       <span key={link.id} onClick={() => handleLinkNav(link.url)} className="hover:text-slate-300 cursor-pointer">{link.label}</span>
                     ))}
@@ -2602,31 +2943,31 @@ export function BuilderRenderer({
 
             {/* footer-minimal */}
             {block.variant === 'footer-minimal' && (
-              <div className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ backgroundColor: styles.cardBgColor, borderTop: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
+              <div className="p-4 flex flex-col @sm:flex-row items-center justify-between gap-16" style={{ backgroundColor: styles.cardBgColor, borderTop: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
                 <SelectableElement elementId="title">
-                  <span className="font-extrabold text-xs text-slate-400 uppercase tracking-widest">{block.title || 'MINIMAL.FOOT'}</span>
+                  <span className="font-bold tracking-tight text-xs text-slate-400/90 font-medium uppercase tracking-widest">{block.title || 'MINIMAL.FOOT'}</span>
                 </SelectableElement>
                 <SelectableElement elementId="subtitle">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">© {new Date().getFullYear()} REVOLUTIONARY CODEBASE</span>
+                  <span className="text-[10px] text-slate-500/80 font-medium font-semibold tracking-tight uppercase tracking-wider">© {new Date().getFullYear()} REVOLUTIONARY CODEBASE</span>
                 </SelectableElement>
                 <div className="flex gap-2">
-                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Twitter size={13} /></div>
-                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer transition"><Github size={13} /></div>
+                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400/90 font-medium hover:text-white hover:bg-slate-700 cursor-pointer transition"><Twitter size={13} /></div>
+                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400/90 font-medium hover:text-white hover:bg-slate-700 cursor-pointer transition"><Github size={13} /></div>
                 </div>
               </div>
             )}
 
             {/* footer-brand-huge */}
             {block.variant === 'footer-brand-huge' && (
-              <div className="p-10 text-left bg-slate-950 border border-slate-900 rounded-3xl space-y-12">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="p-10 text-left bg-slate-950/95 backdrop-blur-3xl border border-slate-900 rounded-3xl space-y-12">
+                <div className="grid grid-cols-1 @sm:grid-cols-2 @md:grid-cols-3 gap-16">
                   {['Modules', 'Sitemap', 'Company'].map((col, cIdx) => (
                     <div key={cIdx} className="space-y-3">
-                      <h5 className="font-extrabold text-[10px] text-blue-500 tracking-wider uppercase">{col}</h5>
-                      <ul className="space-y-1 text-xs text-slate-400">
-                        <li className="hover:text-white cursor-pointer">Lego Sandbox</li>
-                        <li className="hover:text-white cursor-pointer">Theme Customization</li>
-                        <li className="hover:text-white cursor-pointer">Figma Exporters</li>
+                      <h5 className="font-bold tracking-tight text-[10px] text-blue-500 tracking-wider uppercase">{col}</h5>
+                      <ul className="break-words space-y-1 text-xs text-slate-400/90 font-medium">
+                        <li className="break-words hover:text-white cursor-pointer">Lego Sandbox</li>
+                        <li className="break-words hover:text-white cursor-pointer">Theme Customization</li>
+                        <li className="break-words hover:text-white cursor-pointer">Figma Exporters</li>
                       </ul>
                     </div>
                   ))}
@@ -2639,23 +2980,23 @@ export function BuilderRenderer({
 
             {/* footer-retro-wire */}
             {block.variant === 'footer-retro-wire' && (
-              <div className="border-4 border-black p-6 bg-white text-black text-left font-mono space-y-6">
+              <div className="border-4 border-black p-10 @md:p-12 @md:p-16 bg-white text-black text-left font-mono space-y-6">
                 <SelectableElement elementId="title">
                   <h4 className="font-black text-base uppercase">_INDEX: {block.title || 'RETRO_WIRE'}</h4>
                 </SelectableElement>
-                <div className="grid grid-cols-2 gap-4 text-xs font-bold uppercase">
+                <div className="grid grid-cols-1 @md:grid-cols-2 gap-16 text-xs font-semibold tracking-tight uppercase">
                   <div>
                     <h5 className="border-b-2 border-black pb-1">_SYSTEMS</h5>
-                    <ul className="mt-2 space-y-1">
-                      <li>{"•"} CDN_STARTER</li>
-                      <li>{"•"} EXPORT_WIDGET</li>
+                    <ul className="break-words mt-2 space-y-1">
+                      <li className="break-words">{"•"} CDN_STARTER</li>
+                      <li className="break-words">{"•"} EXPORT_WIDGET</li>
                     </ul>
                   </div>
                   <div>
                     <h5 className="border-b-2 border-black pb-1">_REPORTS</h5>
-                    <ul className="mt-2 space-y-1">
-                      <li>{"•"} STATUS_OK</li>
-                      <li>{"•"} TELEMETRY_OFF</li>
+                    <ul className="break-words mt-2 space-y-1">
+                      <li className="break-words">{"•"} STATUS_OK</li>
+                      <li className="break-words">{"•"} TELEMETRY_OFF</li>
                     </ul>
                   </div>
                 </div>
@@ -2667,17 +3008,17 @@ export function BuilderRenderer({
 
             {/* footer-newsletter-focus */}
             {block.variant === 'footer-newsletter-focus' && (
-              <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl space-y-6">
+              <div className="p-10 @md:p-12 @md:p-16 text-center bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl space-y-6">
                 <SelectableElement elementId="title">
                   <h3 className="text-lg font-black text-white">{block.title || 'Stay Ahead of the Curve'}</h3>
                 </SelectableElement>
                 <SelectableElement elementId="subtitle" className="max-w-md mx-auto">
-                  <p className="text-xs text-slate-400">{block.subtitle || 'Subscribe to receive clean HTML/CSS snippets, system updates and template drops.'}</p>
+                  <p className="text-xs text-slate-400/90 font-medium">{block.subtitle || 'Subscribe to receive clean HTML/CSS snippets, system updates and template drops.'}</p>
                 </SelectableElement>
                 <div className="max-w-sm mx-auto flex gap-2">
-                  <input required disabled type="email" placeholder="enter email..." className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 outline-none" />
+                  <input required disabled type="email" placeholder="enter email..." className="flex-1 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded px-3 py-1.5 text-xs text-slate-300 outline-none" />
                   <SelectableElement elementId="button">
-                    <button onClick={runBtnAction} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded transition uppercase tracking-wider">{block.btnText || 'Join'}</button>
+                    <button onClick={runBtnAction} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold tracking-tight text-xs rounded transition uppercase tracking-wider">{block.btnText || 'Join'}</button>
                   </SelectableElement>
                 </div>
               </div>
@@ -2685,8 +3026,8 @@ export function BuilderRenderer({
 
             {/* footer-social-wall */}
             {block.variant === 'footer-social-wall' && (
-              <div className="p-6 text-left space-y-6" style={{ backgroundColor: styles.cardBgColor }}>
-                <h5 className="text-[10px] uppercase tracking-widest font-extrabold text-slate-500">DYNAMIC SOCIAL MEDIA WIRE</h5>
+              <div className="p-10 @md:p-12 @md:p-16 text-left space-y-6" style={{ backgroundColor: styles.cardBgColor }}>
+                <h5 className="text-[10px] uppercase tracking-widest font-bold tracking-tight text-slate-500/80 font-medium">DYNAMIC SOCIAL MEDIA WIRE</h5>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=120',
@@ -2694,25 +3035,25 @@ export function BuilderRenderer({
                     'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&q=80&w=120',
                     'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=120'
                   ].map((url, uIdx) => (
-                    <div key={uIdx} className="aspect-square bg-slate-900 overflow-hidden rounded-lg border border-slate-800">
+                    <div key={uIdx} className="aspect-square bg-slate-900/95 backdrop-blur-3xl overflow-hidden rounded-xl border border-white/10">
                       <img src={url} className="w-full h-full object-cover hover:scale-110 transition duration-300" alt="mock social" />
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-slate-500 text-center font-bold tracking-wide">FOLLOW @ONLYPAGE_IN FOR HOURLY INSPIRATIONS</p>
+                <p className="text-[10px] text-slate-500/80 font-medium text-center font-semibold tracking-tight tracking-wide">FOLLOW @ONLYPAGE_IN FOR HOURLY INSPIRATIONS</p>
               </div>
             )}
 
             {/* footer-compact-badge */}
             {block.variant === 'footer-compact-badge' && (
-              <div className="p-6 bg-slate-950 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="p-10 @md:p-12 @md:p-16 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl flex flex-col @sm:flex-row items-center justify-between gap-16">
                 <div className="text-left">
-                  <span className="font-extrabold text-xs text-white">{block.title || 'OnlyPage secured'}</span>
-                  <p className="text-[10px] text-slate-500 mt-1">© {new Date().getFullYear()} Encrypted endpoints routing standard.</p>
+                  <span className="font-bold tracking-tight text-xs text-white">{block.title || 'OnlyPage secured'}</span>
+                  <p className="text-[10px] text-slate-500/80 font-medium mt-1">© {new Date().getFullYear()} Encrypted endpoints routing standard.</p>
                 </div>
                 <div className="flex gap-3">
-                  <span className="px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded font-mono text-[10px] text-emerald-500 font-extrabold tracking-wider flex items-center gap-1.5"><Lock size={11} /> SSL ENCRYPTED</span>
-                  <span className="px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded font-mono text-[10px] text-blue-500 font-extrabold tracking-wider flex items-center gap-1.5"><CreditCard size={11} /> STRIPE DIRECT</span>
+                  <span className="px-2.5 py-1.5 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded font-mono text-[10px] text-emerald-500 font-bold tracking-tight tracking-wider flex items-center gap-1.5"><Lock size={11} /> SSL ENCRYPTED</span>
+                  <span className="px-2.5 py-1.5 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded font-mono text-[10px] text-blue-500 font-bold tracking-tight tracking-wider flex items-center gap-1.5"><CreditCard size={11} /> STRIPE DIRECT</span>
                 </div>
               </div>
             )}
@@ -2720,16 +3061,16 @@ export function BuilderRenderer({
             {/* footer-three-col-cta */}
             {block.variant === 'footer-three-col-cta' && (
               <div className="w-full space-y-8 text-left">
-                <div className="p-6 bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="p-10 @md:p-12 @md:p-16 bg-gradient-to-r from-blue-900 to-indigo-900 rounded-3xl flex flex-col @sm:flex-row items-center justify-between gap-16">
                   <div>
                     <h4 className="font-black text-sm text-white">Create your professional visual space.</h4>
                     <p className="text-[10px] text-slate-300 mt-0.5">Publish your custom domain live in exactly 2 minutes flat.</p>
                   </div>
                   <SelectableElement elementId="button">
-                    <button onClick={runBtnAction} className="px-4 py-2 bg-white text-slate-950 font-bold text-xs rounded-lg shadow-xl hover:opacity-90 transition">{block.btnText || 'Launch Now'}</button>
+                    <button onClick={runBtnAction} className="px-4 py-2 bg-white text-slate-950 font-semibold tracking-tight text-xs rounded-xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] hover:opacity-90 transition">{block.btnText || 'Launch Now'}</button>
                   </SelectableElement>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-[10px] text-slate-400 uppercase tracking-widest font-extrabold border-t border-slate-800 pt-6">
+                <div className="grid grid-cols-3 gap-16 text-[10px] text-slate-400/90 font-medium uppercase tracking-widest font-bold tracking-tight border-t border-white/10 pt-6">
                   <span>© ONLYPAGE IN</span>
                   <span className="text-center">SECURED NETWORKS</span>
                   <span className="text-right">BENGALURU HEADQUARTERS</span>
@@ -2739,26 +3080,26 @@ export function BuilderRenderer({
 
             {/* footer-dark-cosmos */}
             {block.variant === 'footer-dark-cosmos' && (
-              <div className="p-8 text-center bg-slate-950 relative overflow-hidden rounded-2xl border border-violet-500/15 shadow-[0_-10px_40px_rgba(139,92,246,0.1)]">
+              <div className="p-10 @md:p-12 @md:p-16 text-center bg-slate-950/95 backdrop-blur-3xl relative overflow-hidden rounded-3xl border border-violet-500/15 shadow-[0_-10px_40px_rgba(139,92,246,0.1)]">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
                 <SelectableElement elementId="title">
                   <h4 className="font-black text-base text-violet-400 uppercase tracking-wider mb-2">{block.title || 'Cosmic Deck'}</h4>
                 </SelectableElement>
                 <SelectableElement elementId="subtitle">
-                  <p className="text-[10px] text-slate-400 max-w-sm mx-auto mb-6">Designed with precision for developers, designers, and visual layout architects.</p>
+                  <p className="text-[10px] text-slate-400/90 font-medium max-w-sm mx-auto mb-6">Designed with precision for developers, designers, and visual layout architects.</p>
                 </SelectableElement>
                 <div className="h-px bg-gradient-to-r from-transparent via-violet-500/20 to-transparent w-full my-4" />
-                <span className="text-[10px] font-mono text-slate-500">LAUNCHING ORBITS AT COLD SPEEDS DECK V2.5</span>
+                <span className="text-[10px] font-mono text-slate-500/80 font-medium">LAUNCHING ORBITS AT COLD SPEEDS DECK V2.5</span>
               </div>
             )}
 
             {/* footer-accordion */}
             {block.variant === 'footer-accordion' && (
-              <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-2 text-left">
+              <div className="p-4 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl space-y-2 text-left">
                 {['01. MODULE CAPABILITIES', '02. DOCUMENTATION REPO', '03. LEGAL COMPLIANCE'].map((hdr, hIdx) => (
-                  <div key={hIdx} className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex justify-between items-center cursor-pointer hover:border-slate-700">
+                  <div key={hIdx} className="p-3 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-xl flex justify-between items-center cursor-pointer hover:border-white/15">
                     <span className="text-[10px] font-black text-slate-300 tracking-wider uppercase">{hdr}</span>
-                    <ChevronDown size={14} className="text-slate-500" />
+                    <ChevronDown size={14} className="text-slate-500/80 font-medium" />
                   </div>
                 ))}
               </div>
@@ -2766,13 +3107,13 @@ export function BuilderRenderer({
 
             {/* footer-split-legal */}
             {block.variant === 'footer-split-legal' && (
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <div className="flex gap-4">
+              <div className="p-4 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl flex flex-col @md:flex-row items-center justify-between gap-16 text-[10px] font-semibold tracking-tight text-slate-400/90 font-medium uppercase tracking-widest">
+                <div className="flex gap-16">
                   {(footerLinks.length > 0 ? footerLinks : [{ id: 'd1', label: 'Privacy Charter' }, { id: 'd2', label: 'Cookie Settings' }, { id: 'd3', label: 'TOS' }]).map(link => (
                     <span key={link.id} onClick={() => handleLinkNav(link.url)} className="hover:text-white cursor-pointer">{link.label}</span>
                   ))}
                 </div>
-                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-md">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-[9px] text-slate-300 font-mono">ALL SYSTEMS EXECUTING GREEN (100%)</span>
                 </div>
@@ -2781,36 +3122,36 @@ export function BuilderRenderer({
 
             {/* footer-with-map */}
             {block.variant === 'footer-with-map' && (
-              <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                <div className="aspect-video bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center relative overflow-hidden">
+              <div className="p-10 @md:p-12 @md:p-16 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl grid grid-cols-1 @md:grid-cols-1 @md:grid-cols-2 gap-16 text-left">
+                <div className="aspect-video bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl flex items-center justify-center relative overflow-hidden">
                   <MapPin size={32} className="text-slate-600" />
-                  <span className="absolute bottom-3 left-3 bg-slate-950/80 px-2 py-1 rounded text-[10px] font-mono text-slate-300">Bengaluru Workspace, India</span>
+                  <span className="absolute bottom-3 left-3 bg-slate-950/95 backdrop-blur-3xl/80 px-2 py-1 rounded text-[10px] font-mono text-slate-300">Bengaluru Workspace, India</span>
                 </div>
                 <div className="flex flex-col justify-between">
                   <div>
                     <SelectableElement elementId="title">
-                      <h4 className="font-extrabold text-sm text-white">{block.title || 'Location Headquarters'}</h4>
+                      <h4 className="font-bold tracking-tight text-sm text-white">{block.title || 'Location Headquarters'}</h4>
                     </SelectableElement>
-                    <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">Visit our workspace salon or development hub to grab custom visual mockups or consultation packages.</p>
+                    <p className="text-[11px] text-slate-400/90 font-medium mt-2 leading-relaxed">Visit our workspace salon or development hub to grab custom visual mockups or consultation packages.</p>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-4">24/7 RESERVATIONS CORES ACTIVE</span>
+                  <span className="text-[10px] font-mono text-slate-500/80 font-medium uppercase tracking-widest mt-4">24/7 RESERVATIONS CORES ACTIVE</span>
                 </div>
               </div>
             )}
 
             {/* footer-bento-footer */}
             {block.variant === 'footer-bento-footer' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-                <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-xl md:col-span-2 space-y-2">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16 text-left">
+                <div className="p-5 bg-slate-900/95 backdrop-blur-3xl/60 border border-white/10 rounded-3xl @md:col-span-2 space-y-2">
                   <SelectableElement elementId="title">
                     <h4 className="font-black text-sm text-white">{block.title || 'OnlyPage Builder'}</h4>
                   </SelectableElement>
-                  <p className="text-[11px] text-slate-400">Stack lego layout pieces, custom style details with CSS values and publish instantly.</p>
+                  <p className="text-[11px] text-slate-400/90 font-medium">Stack lego layout pieces, custom style details with CSS values and publish instantly.</p>
                 </div>
-                <div className="p-5 bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border border-blue-500/20 rounded-xl flex flex-col justify-between">
+                <div className="p-5 bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border border-blue-500/20 rounded-3xl flex flex-col justify-between">
                   <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">WIDGET</span>
                   <SelectableElement elementId="button">
-                    <button onClick={runBtnAction} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold text-[10px] mt-4 shadow transition">{block.btnText || 'Launch Platform'}</button>
+                    <button onClick={runBtnAction} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold tracking-tight text-[10px] mt-4 shadow transition">{block.btnText || 'Launch Platform'}</button>
                   </SelectableElement>
                 </div>
               </div>
@@ -2818,48 +3159,48 @@ export function BuilderRenderer({
 
             {/* footer-multilingual */}
             {block.variant === 'footer-multilingual' && (
-              <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                <span className="text-[10px] font-bold text-slate-400">© {new Date().getFullYear()} INTERNATIONAL INCORPORATION</span>
-                <div className="bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[10px] font-bold text-slate-300 flex items-center gap-1.5">
-                  <Globe size={12} className="text-slate-400" /> LOCALE SELECT: <span className="text-blue-400 underline cursor-pointer">ENGLISH (US)</span>
+              <div className="p-5 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl flex flex-col @sm:flex-row items-center justify-between gap-16">
+                <span className="text-[10px] font-semibold tracking-tight text-slate-400/90 font-medium">© {new Date().getFullYear()} INTERNATIONAL INCORPORATION</span>
+                <div className="bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded px-2.5 py-1.5 text-[10px] font-semibold tracking-tight text-slate-300 flex items-center gap-1.5">
+                  <Globe size={12} className="text-slate-400/90 font-medium" /> LOCALE SELECT: <span className="text-blue-400 underline cursor-pointer">ENGLISH (US)</span>
                 </div>
               </div>
             )}
 
             {/* footer-quick-booking */}
             {block.variant === 'footer-quick-booking' && (
-              <div className="p-6 bg-slate-950 border border-slate-800 rounded-2xl text-left space-y-4">
+              <div className="p-10 @md:p-12 @md:p-16 bg-slate-950/95 backdrop-blur-3xl border border-white/10 rounded-3xl text-left space-y-4">
                 <SelectableElement elementId="title">
-                  <h4 className="font-extrabold text-xs text-white uppercase tracking-wider">{block.title || 'Instant Schedule Footer'}</h4>
+                  <h4 className="font-bold tracking-tight text-xs text-white uppercase tracking-wider">{block.title || 'Instant Schedule Footer'}</h4>
                 </SelectableElement>
                 <div className="flex gap-2 max-w-sm">
-                  <input required disabled type="date" className="bg-slate-900 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300 outline-none" />
+                  <input required disabled type="date" className="bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded p-1.5 text-[10px] text-slate-300 outline-none" />
                   <SelectableElement elementId="button">
-                    <button onClick={runBtnAction} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded transition">{block.btnText || 'Lock Seat'}</button>
+                    <button onClick={runBtnAction} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold tracking-tight text-[10px] rounded transition">{block.btnText || 'Lock Seat'}</button>
                   </SelectableElement>
                 </div>
-                <p className="text-[10px] text-slate-500 font-bold tracking-wide">RESERVATIONS LOCK SECURELY INTO SYSTEM ACCORDIONS</p>
+                <p className="text-[10px] text-slate-500/80 font-medium font-semibold tracking-tight tracking-wide">RESERVATIONS LOCK SECURELY INTO SYSTEM ACCORDIONS</p>
               </div>
             )}
 
             {/* footer-trustpilot-rating */}
             {block.variant === 'footer-trustpilot-rating' && (
-              <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
+              <div className="p-10 @md:p-12 @md:p-16 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl flex flex-col @sm:flex-row items-center justify-between gap-16 text-left">
                 <div>
                   <h5 className="font-black text-xs text-white">Rated Excellent on Trust Networks</h5>
                   <div className="flex gap-1 mt-1 text-emerald-500 text-xs">
                     {Array.from({ length: 5 }).map((_, rIdx) => <span key={rIdx}>★</span>)}
-                    <span className="text-slate-400 ml-1 text-[10px] font-bold">4.9 / 5.0 SCORE</span>
+                    <span className="text-slate-400/90 font-medium ml-1 text-[10px] font-semibold tracking-tight">4.9 / 5.0 SCORE</span>
                   </div>
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono tracking-wider font-black uppercase">TRUSTED BY 12,500+ SOLOPRENEURS</span>
+                <span className="text-[10px] text-slate-500/80 font-medium font-mono tracking-wider font-black uppercase">TRUSTED BY 12,500+ SOLOPRENEURS</span>
               </div>
             )}
 
             {/* footer-with-backtotop */}
             {block.variant === 'footer-with-backtotop' && (
               <div className="p-4 flex items-center justify-between" style={{ backgroundColor: styles.cardBgColor, borderTop: `1px solid ${styles.cardBorderColor || 'rgba(255,255,255,0.05)'}` }}>
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">© {new Date().getFullYear()} ONLYPAGE AUTO-ANCHORS</span>
+                <span className="text-[10px] text-slate-500/80 font-medium font-semibold tracking-tight uppercase tracking-widest">© {new Date().getFullYear()} ONLYPAGE AUTO-ANCHORS</span>
                 <button className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition">
                   <ArrowUp size={15} />
                 </button>
@@ -2870,19 +3211,19 @@ export function BuilderRenderer({
             {block.variant === 'footer-gradient-glow' && (
               <div className="w-full space-y-4">
                 <div className="h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent w-full" />
-                <div className="p-4 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                <div className="p-4 flex items-center justify-between text-[10px] text-slate-400/90 font-medium font-mono">
                   <span>© SYSTEM_CORE // 2026</span>
-                  <span className="text-cyan-400 tracking-widest font-bold">HORIZON EDGE DETECTED</span>
+                  <span className="text-cyan-400 tracking-widest font-semibold tracking-tight">HORIZON EDGE DETECTED</span>
                 </div>
               </div>
             )}
 
             {/* footer-jobs-hiring */}
             {block.variant === 'footer-jobs-hiring' && (
-              <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 text-left">
+              <div className="p-5 bg-slate-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl flex flex-col @sm:flex-row items-center justify-between gap-16 text-left">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-extrabold text-white">We are actively hiring remote UX designers!</span>
+                  <span className="text-xs font-bold tracking-tight text-white">We are actively hiring remote UX designers!</span>
                 </div>
                 <span className="text-[10px] text-blue-500 font-black underline cursor-pointer">VIEW OPENINGS {"→"}</span>
               </div>
@@ -2890,19 +3231,19 @@ export function BuilderRenderer({
 
             {/* footer-social-pill */}
             {block.variant === 'footer-social-pill' && (
-              <div className="p-6 text-center space-y-4 bg-slate-950 border border-slate-900 rounded-3xl">
+              <div className="p-10 @md:p-12 @md:p-16 text-center space-y-4 bg-slate-950/95 backdrop-blur-3xl border border-slate-900 rounded-3xl">
                 <div className="flex justify-center gap-2 flex-wrap">
                   <span className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black rounded-full cursor-pointer hover:bg-blue-500/20 flex items-center gap-1.5"><Twitter size={11} /> TWITTER</span>
                   <span className="px-3 py-1.5 bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[10px] font-black rounded-full cursor-pointer hover:bg-pink-500/20 flex items-center gap-1.5"><Instagram size={11} /> INSTAGRAM</span>
                   <span className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black rounded-full cursor-pointer hover:bg-indigo-500/20 flex items-center gap-1.5"><MessageCircle size={11} /> DISCORD</span>
                 </div>
-                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">© {new Date().getFullYear()} STACKED CAPSULE SHARING PLATFORMS</p>
+                <p className="text-[10px] text-slate-500/80 font-medium font-semibold uppercase tracking-wider">© {new Date().getFullYear()} STACKED CAPSULE SHARING PLATFORMS</p>
               </div>
             )}
 
             {/* footer-copyright-only */}
             {block.variant === 'footer-copyright-only' && (
-              <div className="p-3 border-t border-slate-800/40 text-center text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+              <div className="p-3 border-t border-white/10/40 text-center text-[10px] text-slate-500/80 font-medium font-semibold tracking-tight uppercase tracking-widest">
                 {(block as any).copyright || `© ${new Date().getFullYear()} ${block.title || 'OnlyPage'}. All rights reserved under local visual licensing.`}
               </div>
             )}
@@ -2929,11 +3270,11 @@ export function BuilderRenderer({
                   return (
                     <div 
                       key={faq.id || index} 
-                      className="p-5 rounded-xl border border-slate-200/10 bg-slate-500/5 cursor-pointer transition"
+                      className="p-5 rounded-3xl border border-black/5/10 bg-slate-500/5 cursor-pointer transition"
                       onClick={() => setFaqOpen({ ...faqOpen, [index]: !isOpen })}
                     >
-                      <div className="flex justify-between items-center gap-4">
-                        <h4 className="text-sm font-bold">{faq.q}</h4>
+                      <div className="flex justify-between items-center gap-16">
+                        <h4 className="text-sm font-semibold tracking-tight">{faq.q}</h4>
                         <ChevronDown size={16} className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                       </div>
                       <AnimatePresence initial={false}>
@@ -2944,7 +3285,7 @@ export function BuilderRenderer({
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden"
                           >
-                            <p className="text-xs text-slate-400 mt-4 leading-relaxed border-t border-slate-500/10 pt-4">
+                            <p className="text-xs text-slate-400/90 font-medium mt-4 leading-relaxed border-t border-slate-500/10 pt-4">
                               {faq.a}
                             </p>
                           </motion.div>
@@ -2956,14 +3297,14 @@ export function BuilderRenderer({
               </div>
             ) : block.variant === 'stats-grid' ? (
               // STATS ANIMATED COUNTERS
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16 max-w-3xl mx-auto">
                 {(block.stats || [
                   { id: 'stat-1', label: 'ACTIVE USERS', val: 12400, suffix: '+' },
                   { id: 'stat-2', label: 'WEBSITES PUBLISHED', val: 9940, suffix: '' },
                   { id: 'stat-3', label: 'CDN COLD STARTS', val: 24, suffix: 'ms' }
                 ]).map((stat, sIdx) => (
-                  <div key={stat.id || sIdx} className="p-6 rounded-2xl bg-slate-500/5 border border-slate-200/10">
-                    <h4 className="text-[10px] uppercase font-extrabold tracking-widest text-slate-400 mb-2">{stat.label}</h4>
+                  <div key={stat.id || sIdx} className="p-10 @md:p-12 @md:p-16 rounded-3xl bg-slate-500/5 border border-black/5/10">
+                    <h4 className="text-[10px] uppercase font-bold tracking-tight tracking-widest text-slate-400/90 font-medium mb-2">{stat.label}</h4>
                     <span className="text-4xl font-black text-blue-500">
                       <NumberCounter value={stat.val} suffix={stat.suffix} />
                     </span>
@@ -2972,15 +3313,15 @@ export function BuilderRenderer({
               </div>
             ) : (
               // ROADMAP STEPS
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-4xl mx-auto">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16 text-left max-w-4xl mx-auto">
                 {(block.steps || [
                   { id: 'step-1', step: '01', title: 'Pick Lego Blocks', desc: 'Browse the categories marketplace to stack premium blocks.' },
                   { id: 'step-2', step: '02', title: 'Tweak CSS Properties', desc: 'Customize padding, typography families, and borders.' },
                   { id: 'step-3', step: '03', title: 'Publish Instantly', desc: 'Click publish to route to live production-grade cloud servers.' }
                 ]).map((step, idx) => (
-                  <div key={step.id || idx} className="p-6 rounded-xl bg-slate-500/5 relative overflow-hidden group">
+                  <div key={step.id || idx} className="p-10 @md:p-12 @md:p-16 rounded-3xl bg-slate-500/5 relative overflow-hidden group">
                     <span className="text-4xl font-black text-blue-500/20 absolute right-4 top-4 group-hover:scale-110 transition duration-300">{step.step}</span>
-                    <h4 className="text-base font-extrabold mb-3 mt-4">{step.title}</h4>
+                    <h4 className="text-base font-bold tracking-tight mb-3 mt-4">{step.title}</h4>
                     <p className="text-xs opacity-80 leading-relaxed">{step.desc}</p>
                   </div>
                 ))}
@@ -2998,8 +3339,8 @@ export function BuilderRenderer({
             <p className="mb-8" style={{ color: styles.subtitleColor, fontSize: `${styles.subtitleSize}px` }}>{block.subtitle || 'Visit our physical workspace or get directions'}</p>
             
             {block.variant === 'map-split' ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-                <div className="md:col-span-2 relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg min-h-[350px]">
+              <div className="grid grid-cols-1 @md:grid-cols-3 gap-16 items-stretch">
+                <div className="@md:col-span-2 relative rounded-3xl overflow-hidden border border-black/5/60 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] min-h-[350px]">
                   <iframe
                     title="Location Map"
                     width="100%"
@@ -3010,19 +3351,19 @@ export function BuilderRenderer({
                     allowFullScreen
                   />
                 </div>
-                <div className="flex flex-col justify-center p-6 bg-slate-50 border border-slate-100 rounded-2xl text-left space-y-4">
+                <div className="flex flex-col justify-center p-10 @md:p-12 @md:p-16 bg-slate-50 border border-slate-100 rounded-3xl text-left space-y-4">
                   <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Physical Address</h4>
+                    <h4 className="text-[10px] font-black text-slate-400/90 font-medium uppercase tracking-wide">Physical Address</h4>
                     <p className="text-xs font-semibold text-slate-700 mt-1">{block.mapAddress || 'Bengaluru'}</p>
                   </div>
                   <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Operation Hours</h4>
+                    <h4 className="text-[10px] font-black text-slate-400/90 font-medium uppercase tracking-wide">Operation Hours</h4>
                     <p className="text-xs font-semibold text-slate-700 mt-1">Mon - Sat: 9:00 AM - 8:00 PM</p>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="w-full relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg" style={{ height: '400px' }}>
+              <div className="w-full relative rounded-3xl overflow-hidden border border-black/5/60 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]" style={{ height: '400px' }}>
                 <iframe
                   title="Location Map"
                   width="100%"
@@ -3044,9 +3385,9 @@ export function BuilderRenderer({
           <div className="w-full text-left space-y-6">
             {block.variant === 'single-product-hero' ? (
               /* Single Product Landing Buy Card Layout */
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-elevation-2 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div className="bg-white border border-black/5 rounded-3xl p-10 @md:p-12 @md:p-16 @md:p-10 @md:p-12 @md:p-16 shadow-elevation-2 max-w-4xl mx-auto grid grid-cols-1 @md:grid-cols-1 @md:grid-cols-2 gap-16 items-center">
                 {/* Product Image Preview */}
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-100 group">
+                <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-100 border border-slate-100 group">
                   <SelectableElement elementId="media">
                     <img 
                       src={(block as any).mediaUrl || ecomProducts?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800'}
@@ -3063,15 +3404,15 @@ export function BuilderRenderer({
                 <div className="space-y-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-1 text-amber-500 text-xs">
-                      ★★★★★ <span className="text-slate-400 text-[10px] font-bold ml-1">(4.9/5 from 120+ reviews)</span>
+                      ★★★★★ <span className="text-slate-400/90 font-medium text-[10px] font-semibold tracking-tight ml-1">(4.9/5 from 120+ reviews)</span>
                     </div>
                     <SelectableElement elementId="title">
-                      <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight" style={titleStyle}>
+                      <h2 className="text-2xl @md:text-3xl font-black text-slate-900 tracking-tight" style={titleStyle}>
                         {resolve(block.title) || ecomProducts?.[0]?.title || 'Signature Wireless Headphones'}
                       </h2>
                     </SelectableElement>
                     <SelectableElement elementId="subtitle">
-                      <p className="text-xs text-slate-500 leading-relaxed" style={subtitleStyle}>
+                      <p className="text-xs text-slate-500/80 font-medium leading-relaxed" style={subtitleStyle}>
                         {resolve(block.subtitle) || ecomProducts?.[0]?.description || 'Premium active noise-canceling headphones engineered for crystal clear audio, 40-hour battery life, and ultra-light memory foam comfort.'}
                       </p>
                     </SelectableElement>
@@ -3081,19 +3422,19 @@ export function BuilderRenderer({
                     <span className="text-3xl font-black text-slate-900 tracking-tight">
                       {ecomProducts?.[0]?.price ? `₹${ecomProducts[0].price}` : '₹2,499'}
                     </span>
-                    <span className="text-sm font-bold text-slate-400 line-through">₹3,999</span>
+                    <span className="text-sm font-semibold tracking-tight text-slate-400/90 font-medium line-through">₹3,999</span>
                     <span className="bg-rose-100 text-rose-700 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
                       37% OFF
                     </span>
                   </div>
 
-                  <ul className="space-y-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
-                    <li className="flex items-center gap-2">
-                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">✓</span>
+                  <ul className="break-words space-y-2 pt-2 border-t border-slate-100 text-xs font-semibold text-slate-600">
+                    <li className="break-words flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-semibold tracking-tight flex items-center justify-center text-[10px]">✓</span>
                       <span>Free Express Shipping across India</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">✓</span>
+                    <li className="break-words flex items-center gap-2">
+                      <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-semibold tracking-tight flex items-center justify-center text-[10px]">✓</span>
                       <span>7-Day Replacement & 1-Year Brand Warranty</span>
                     </li>
                   </ul>
@@ -3102,7 +3443,7 @@ export function BuilderRenderer({
                     <SelectableElement elementId="button">
                       <button 
                         onClick={runBtnAction}
-                        className="w-full button-primary-pill py-3.5 bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full button-primary-pill py-3.5 bg-slate-950/95 backdrop-blur-3xl hover:bg-slate-800 text-white font-bold tracking-tight text-xs rounded-3xl transition-all shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] flex items-center justify-center gap-2 cursor-pointer"
                         style={buttonStyle}
                       >
                         <ShoppingBag size={16} />
@@ -3116,7 +3457,7 @@ export function BuilderRenderer({
                           const phone = String((block as any).contactPhone).replace(/\D/g, '');
                           window.open(`https://wa.me/${phone}?text=${encodeURIComponent('Hi, I want to order this product!')}`, '_blank');
                         }}
-                        className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold tracking-tight text-xs rounded-3xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <MessageCircle size={15} />
                         <span>Order via WhatsApp Chat</span>
@@ -3130,29 +3471,29 @@ export function BuilderRenderer({
               /* Shopify Style Header & Top Announcement Bar */
               <div className="space-y-4">
                 {/* Announcement Bar */}
-                <div className="bg-slate-900 text-white text-[11px] font-bold py-2 px-4 rounded-full flex items-center justify-between select-none">
+                <div className="bg-slate-900/95 backdrop-blur-3xl text-white text-[11px] font-semibold tracking-tight py-2 px-4 rounded-full flex items-center justify-between select-none">
                   <div className="flex items-center gap-2">
                     <span className="bg-emerald-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase">
                       Flash Offer
                     </span>
                     <span>🔥 Festive Sale: Get 20% OFF with code <strong className="text-emerald-400">FESTIVE20</strong></span>
                   </div>
-                  <span className="text-slate-400 text-[10px] hidden sm:inline">Free Shipping on orders above ₹999</span>
+                  <span className="text-slate-400/90 font-medium text-[10px] hidden @sm:inline">Free Shipping on orders above ₹999</span>
                 </div>
 
                 {/* Main Navigation Bar */}
-                <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 flex items-center justify-between shadow-3xs">
+                <div className="bg-white border border-black/5 rounded-3xl px-6 py-4 flex items-center justify-between shadow-3xs">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-slate-950 text-white font-black flex items-center justify-center text-sm shadow-xs">
+                    <div className="w-9 h-9 rounded-3xl bg-slate-950/95 backdrop-blur-3xl text-white font-black flex items-center justify-center text-sm shadow-xs">
                       {site?.business_name ? site.business_name.charAt(0).toUpperCase() : 'S'}
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-sm text-slate-900 tracking-tight">{resolve(block.title) || site?.business_name || 'Store Name'}</h3>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Official Storefront</span>
+                      <h3 className="font-bold tracking-tight text-sm text-slate-900 tracking-tight">{resolve(block.title) || site?.business_name || 'Store Name'}</h3>
+                      <span className="text-[10px] font-semibold tracking-tight text-slate-400/90 font-medium uppercase tracking-widest block">Official Storefront</span>
                     </div>
                   </div>
 
-                  <div className="hidden md:flex items-center gap-6 text-xs font-bold text-slate-600">
+                  <div className="hidden @md:flex items-center gap-16 text-xs font-semibold tracking-tight text-slate-600">
                     <button onClick={() => onNavigatePage && onNavigatePage('home')} className="hover:text-indigo-600 cursor-pointer">Home</button>
                     <button onClick={() => onNavigatePage && onNavigatePage('shop')} className="hover:text-indigo-600 cursor-pointer">Shop All</button>
                     <button onClick={() => onNavigatePage && onNavigatePage('shop')} className="hover:text-indigo-600 cursor-pointer">Categories</button>
@@ -3162,11 +3503,11 @@ export function BuilderRenderer({
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={() => onNavigatePage && onNavigatePage('login')}
-                      className="button-outline-on-light text-xs font-bold px-4 py-2 border rounded-full border-slate-300 hover:bg-slate-50 cursor-pointer"
+                      className="button-outline-on-light text-xs font-semibold tracking-tight px-4 py-2 border rounded-full border-slate-300 hover:bg-slate-50 cursor-pointer"
                     >
                       Sign In
                     </button>
-                    <button className="button-primary-pill text-xs font-bold px-4 py-2 bg-slate-950 text-white rounded-full flex items-center gap-1.5 cursor-pointer shadow-sm">
+                    <button className="button-primary-pill text-xs font-semibold tracking-tight px-4 py-2 bg-slate-950/95 backdrop-blur-3xl text-white rounded-full flex items-center gap-1.5 cursor-pointer shadow-sm">
                       <ShoppingCart size={14} />
                       <span>Cart (2)</span>
                     </button>
@@ -3177,10 +3518,10 @@ export function BuilderRenderer({
             ) : block.variant === 'product-grid-filter' ? (
               /* Filterable Product Catalog Grid — reads from ecomProducts prop */
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                <div className="flex flex-col @md:flex-row @md:items-center justify-between gap-16 border-b border-black/5/80 pb-4">
                   <div>
                     <h2 className="text-2xl font-black text-slate-900 tracking-tight">{resolve(block.title) || 'Product Collection'}</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-1">{resolve(block.subtitle) || 'Browse our curated items'}</p>
+                    <p className="text-xs text-slate-500/80 font-medium font-medium mt-1">{resolve(block.subtitle) || 'Browse our curated items'}</p>
                   </div>
 
                   {/* Dynamic Filter Pills derived from product categories and tags */}
@@ -3194,9 +3535,9 @@ export function BuilderRenderer({
                       return ['All', ...Array.from(cats)].slice(0, 6).map((filterTag) => (
                         <span
                           key={filterTag}
-                          className={`px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full text-xs font-semibold tracking-tight transition-all cursor-pointer ${
                             filterTag === 'All'
-                              ? 'bg-slate-950 text-white'
+                              ? 'bg-slate-950/95 backdrop-blur-3xl text-white'
                               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                           }`}
                         >
@@ -3209,15 +3550,15 @@ export function BuilderRenderer({
 
                 {/* Product Grid */}
                 {ecomProducts.length === 0 ? (
-                  <div className="py-16 text-center">
+                  <div className="py-24 @md:py-32 text-center">
                     <ShoppingCart size={40} className="mx-auto text-slate-300 mb-3" />
-                    <p className="text-sm font-bold text-slate-500">No products added yet</p>
-                    <p className="text-xs text-slate-400 mt-1">Add products in your dashboard Store Manager to see them here.</p>
+                    <p className="text-sm font-semibold tracking-tight text-slate-500/80 font-medium">No products added yet</p>
+                    <p className="text-xs text-slate-400/90 font-medium mt-1">Add products in your dashboard Store Manager to see them here.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 @sm:grid-cols-1 @md:grid-cols-2 @lg:grid-cols-3 gap-16">
                     {ecomProducts.map((prod) => (
-                      <div key={prod.id} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:shadow-lg transition-all group flex flex-col justify-between">
+                      <div key={prod.id} className="bg-white border border-black/5/80 rounded-3xl overflow-hidden hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] transition-all group flex flex-col justify-between">
                         <div className="relative aspect-4/3 bg-slate-100 overflow-hidden">
                           {prod.image ? (
                             <img 
@@ -3237,11 +3578,11 @@ export function BuilderRenderer({
                           )}
                         </div>
                         <div className="p-4 space-y-2 text-left">
-                          <h4 className="font-extrabold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">{prod.title}</h4>
+                          <h4 className="font-bold tracking-tight text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">{prod.title}</h4>
                           <div className="flex items-center justify-between">
                             <div className="flex items-baseline gap-2">
                               <span className="text-base font-black text-slate-900">₹{prod.price}</span>
-                              {prod.compare_at && <span className="text-xs font-bold text-slate-400 line-through">₹{prod.compare_at}</span>}
+                              {prod.compare_at && <span className="text-xs font-semibold tracking-tight text-slate-400/90 font-medium line-through">₹{prod.compare_at}</span>}
                             </div>
                             <button 
                               onClick={(e) => {
@@ -3251,7 +3592,7 @@ export function BuilderRenderer({
                                 localStorage.setItem(cartKey, JSON.stringify([...currentCart, prod]));
                                 alert(`Added "${prod.title}" to cart!`);
                               }}
-                              className="button-primary-pill text-xs px-3.5 py-1.5 bg-slate-950 text-white rounded-full hover:bg-indigo-600 transition-colors font-bold cursor-pointer"
+                              className="button-primary-pill text-xs px-3.5 py-1.5 bg-slate-950/95 backdrop-blur-3xl text-white rounded-full hover:bg-indigo-600 transition-colors font-semibold tracking-tight cursor-pointer"
                             >
                               Add to Cart
                             </button>
@@ -3265,45 +3606,45 @@ export function BuilderRenderer({
 
             ) : block.variant === 'offer-gallery' ? (
               /* Featured Offers & Sales Gallery */
-              <div className="bg-slate-950 text-white rounded-3xl p-8 space-y-6 relative overflow-hidden">
-                <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-slate-950/95 backdrop-blur-3xl text-white rounded-3xl p-10 @md:p-12 @md:p-16 space-y-6 relative overflow-hidden">
+                <div className="relative flex flex-col @md:flex-row @md:items-center justify-between gap-16">
                   <div>
                     <span className="bg-emerald-400 text-slate-950 font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-wider">
                       Special Offer Gallery
                     </span>
                     <h2 className="text-3xl font-black tracking-tight mt-3">{resolve(block.title) || 'Featured Flash Sales'}</h2>
-                    <p className="text-xs text-slate-400 max-w-md mt-1">{resolve(block.subtitle) || 'Limited time discounted items tagged OnSale'}</p>
+                    <p className="text-xs text-slate-400/90 font-medium max-w-md mt-1">{resolve(block.subtitle) || 'Limited time discounted items tagged OnSale'}</p>
                   </div>
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl">
-                    <span className="text-xs font-bold text-slate-300">Offer Ends In:</span>
+                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/10 px-4 py-2 rounded-3xl">
+                    <span className="text-xs font-semibold tracking-tight text-slate-300">Offer Ends In:</span>
                     <span className="font-mono font-black text-emerald-400 text-sm">04h : 22m : 15s</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 @md:grid-cols-1 @md:grid-cols-2 gap-16">
                   {(() => {
                     const offerItems = ecomProducts.filter(p => p.offer_badge || p.compare_at);
                     if (offerItems.length === 0) {
                       return (
-                        <div className="col-span-2 py-8 text-center">
-                          <p className="text-sm font-bold text-slate-400">No offer items yet</p>
-                          <p className="text-xs text-slate-500 mt-1">Products with an offer badge or compare-at price will show here.</p>
+                        <div className="col-span-2 py-12 @md:py-24 @md:py-32 text-center">
+                          <p className="text-sm font-semibold tracking-tight text-slate-400/90 font-medium">No offer items yet</p>
+                          <p className="text-xs text-slate-500/80 font-medium mt-1">Products with an offer badge or compare-at price will show here.</p>
                         </div>
                       );
                     }
                     return offerItems.slice(0, 4).map((offer, oIdx) => (
-                    <div key={oIdx} className="bg-white/5 border border-white/10 p-4 rounded-2xl flex gap-4 items-center">
+                    <div key={oIdx} className="bg-white/5 border border-white/10 p-4 rounded-3xl flex gap-16 items-center">
                       {offer.image ? (
-                        <img src={offer.image} alt={offer.title} className="w-20 h-20 rounded-xl object-cover" />
+                        <img src={offer.image} alt={offer.title} className="w-20 h-20 rounded-3xl object-cover" />
                       ) : (
-                        <div className="w-20 h-20 rounded-xl bg-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-slate-500" /></div>
+                        <div className="w-20 h-20 rounded-3xl bg-white/10 flex items-center justify-center"><ShoppingCart size={20} className="text-slate-500/80 font-medium" /></div>
                       )}
                       <div className="flex-1 space-y-1">
                         <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{offer.offer_badge || offer.category || 'Sale'}</span>
-                        <h4 className="text-sm font-bold text-white">{offer.title}</h4>
+                        <h4 className="text-sm font-semibold tracking-tight text-white">{offer.title}</h4>
                         <div className="flex items-center gap-2 pt-1">
                           <span className="text-sm font-black text-emerald-300">₹{offer.price}</span>
-                          {offer.compare_at && <span className="text-xs text-slate-500 line-through">₹{offer.compare_at}</span>}
+                          {offer.compare_at && <span className="text-xs text-slate-500/80 font-medium line-through">₹{offer.compare_at}</span>}
                         </div>
                       </div>
                     </div>
@@ -3315,13 +3656,13 @@ export function BuilderRenderer({
             ) : block.variant === 'interactive-feature' ? (
               /* Mouse Glow Card & Motion Component Canvas */
               <div className="space-y-6">
-                <MouseGlowCard className="p-8 bg-white border border-slate-200 rounded-3xl shadow-elevation-3 relative overflow-hidden">
+                <MouseGlowCard className="p-10 @md:p-12 @md:p-16 bg-white border border-black/5 rounded-3xl shadow-elevation-3 relative overflow-hidden">
                   <div className="max-w-xl space-y-3">
                     <span className="bg-indigo-100 text-indigo-800 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                       Framer Motion Canvas
                     </span>
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight">{resolve(block.title) || 'Interactive Shopping Experience'}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed">
+                    <p className="text-xs text-slate-500/80 font-medium leading-relaxed">
                       {resolve(block.subtitle) || 'Hover over this card to experience mouse-tracking spotlight overlays and dynamic React animations.'}
                     </p>
                   </div>
@@ -3330,23 +3671,23 @@ export function BuilderRenderer({
                 <InfiniteMarquee
                   speed="slow"
                   items={[
-                    <span key="1" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ Free Pan-India Delivery</span>,
-                    <span key="2" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ 100% Authentic Products</span>,
-                    <span key="3" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ Easy 7-Day Returns</span>,
-                    <span key="4" className="text-xs font-bold uppercase tracking-widest text-slate-400">✦ Instant WhatsApp Support</span>
+                    <span key="1" className="text-xs font-semibold tracking-tight uppercase tracking-widest text-slate-400/90 font-medium">✦ Free Pan-India Delivery</span>,
+                    <span key="2" className="text-xs font-semibold tracking-tight uppercase tracking-widest text-slate-400/90 font-medium">✦ 100% Authentic Products</span>,
+                    <span key="3" className="text-xs font-semibold tracking-tight uppercase tracking-widest text-slate-400/90 font-medium">✦ Easy 7-Day Returns</span>,
+                    <span key="4" className="text-xs font-semibold tracking-tight uppercase tracking-widest text-slate-400/90 font-medium">✦ Instant WhatsApp Support</span>
                   ]}
                 />
               </div>
 
             ) : block.variant === 'whatsapp-widget' ? (
               /* Floating WhatsApp Action Button */
-              <div className="bg-emerald-50 border border-emerald-200/80 p-6 rounded-3xl flex items-center justify-between">
+              <div className="bg-emerald-50 border border-emerald-200/80 p-10 @md:p-12 @md:p-16 rounded-3xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)]">
                     <MessageSquare size={24} />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-sm text-slate-900">Need Help Placing an Order?</h4>
+                    <h4 className="font-bold tracking-tight text-sm text-slate-900">Need Help Placing an Order?</h4>
                     <p className="text-xs text-slate-600 mt-0.5">Chat directly with our sales team on WhatsApp</p>
                   </div>
                 </div>
@@ -3354,7 +3695,7 @@ export function BuilderRenderer({
                   href={`https://wa.me/${block.contactPhone || '919876543210'}?text=${encodeURIComponent('Hi! I have a question about products on your store.')}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-full shadow-sm flex items-center gap-2 cursor-pointer transition-all"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold tracking-tight text-xs rounded-full shadow-sm flex items-center gap-2 cursor-pointer transition-all"
                 >
                   <MessageSquare size={14} />
                   <span>Chat on WhatsApp</span>
@@ -3363,13 +3704,13 @@ export function BuilderRenderer({
 
             ) : block.variant === 'customer-auth' ? (
               /* Shopify Canvas Light / Cream Customer Login & Signup Form */
-              <div className="max-w-md mx-auto bg-fbfbf5 border border-slate-200 p-8 rounded-3xl space-y-6 shadow-elevation-3 text-left">
+              <div className="max-w-md mx-auto bg-fbfbf5 border border-black/5 p-10 @md:p-12 @md:p-16 rounded-3xl space-y-6 shadow-elevation-3 text-left">
                 <div className="text-center space-y-2">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-950 text-white font-black flex items-center justify-center text-sm mx-auto">
+                  <div className="w-10 h-10 rounded-3xl bg-slate-950/95 backdrop-blur-3xl text-white font-black flex items-center justify-center text-sm mx-auto">
                     {site?.business_name ? site.business_name.charAt(0).toUpperCase() : 'S'}
                   </div>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">Sign In to Your Account</h3>
-                  <p className="text-xs text-slate-500 font-medium">Access your order history and saved cart items</p>
+                  <p className="text-xs text-slate-500/80 font-medium font-medium">Access your order history and saved cart items</p>
                 </div>
 
                 <form 
@@ -3380,33 +3721,33 @@ export function BuilderRenderer({
                   className="space-y-4"
                 >
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Email Address</label>
+                    <label className="text-[11px] font-semibold tracking-tight text-slate-700 block mb-1">Email Address</label>
                     <input 
                       type="email"
                       required
                       placeholder="you@example.com"
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-slate-900"
+                      className="w-full px-4 py-2.5 bg-white border border-black/5 rounded-3xl text-xs font-semibold focus:outline-none focus:border-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Password</label>
+                    <label className="text-[11px] font-semibold tracking-tight text-slate-700 block mb-1">Password</label>
                     <input 
                       type="password"
                       required
                       placeholder="••••••••"
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-slate-900"
+                      className="w-full px-4 py-2.5 bg-white border border-black/5 rounded-3xl text-xs font-semibold focus:outline-none focus:border-slate-900"
                     />
                   </div>
 
                   {formSubmitted && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold">
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-3xl text-emerald-800 text-xs font-semibold tracking-tight">
                       ✓ Welcome! Verification email dispatched with store coupon.
                     </div>
                   )}
 
                   <button 
                     type="submit"
-                    className="w-full button-primary-pill py-3 bg-slate-950 hover:bg-slate-800 text-white font-extrabold text-xs rounded-full transition-all cursor-pointer"
+                    className="w-full button-primary-pill py-3 bg-slate-950/95 backdrop-blur-3xl hover:bg-slate-800 text-white font-bold tracking-tight text-xs rounded-full transition-all cursor-pointer"
                   >
                     Sign In to Store
                   </button>
@@ -3415,17 +3756,17 @@ export function BuilderRenderer({
 
             ) : (
               /* Store Legal & Policy Layout */
-              <div className="bg-white border border-slate-200 p-8 rounded-3xl space-y-6 text-left max-w-3xl mx-auto shadow-3xs">
+              <div className="bg-white border border-black/5 p-10 @md:p-12 @md:p-16 rounded-3xl space-y-6 text-left max-w-3xl mx-auto shadow-3xs">
                 <div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legal Document</span>
+                  <span className="text-[10px] font-black text-slate-400/90 font-medium uppercase tracking-widest">Legal Document</span>
                   <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1">{resolve(block.title) || 'Terms of Service & Return Policy'}</h2>
-                  <p className="text-xs text-slate-400 mt-1">Last updated: July 2026</p>
+                  <p className="text-xs text-slate-400/90 font-medium mt-1">Last updated: July 2026</p>
                 </div>
                 <div className="space-y-4 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-6">
-                  <h4 className="font-extrabold text-slate-900 text-sm">1. Ordering & Shipping Policy</h4>
+                  <h4 className="font-bold tracking-tight text-slate-900 text-sm">1. Ordering & Shipping Policy</h4>
                   <p>All orders placed on {site?.business_name || 'this store'} are processed within 24-48 hours. Shipping confirmation with live tracking will be emailed to you.</p>
 
-                  <h4 className="font-extrabold text-slate-900 text-sm">2. 7-Day Refund & Replacement Guarantee</h4>
+                  <h4 className="font-bold tracking-tight text-slate-900 text-sm">2. 7-Day Refund & Replacement Guarantee</h4>
                   <p>If you receive a damaged product, notify our support team within 7 days of delivery for a 100% refund or replacement.</p>
                 </div>
               </div>

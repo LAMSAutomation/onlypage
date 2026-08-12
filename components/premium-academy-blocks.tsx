@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import type { WebBlock } from "./website-builder-editor";
+import type { WebBlock } from './builder-types';
 
 const ACADEMY_VARIANTS = new Set([
   "academy-cinematic",
@@ -106,7 +106,10 @@ export function PremiumAcademyBlock({
     children: React.ReactNode;
     className?: string;
   }) => {
-    if (!isActive) return <>{children}</>;
+    // Keep layout classes on the live site too (matches the editor DOM).
+    if (!isActive) {
+      return className ? <div className={className}>{children}</div> : <>{children}</>;
+    }
     const selected = selectedSubElement === id;
     return (
       <div
@@ -116,8 +119,8 @@ export function PremiumAcademyBlock({
         }}
         className={`relative cursor-pointer rounded-sm transition ${className} ${
           selected
-            ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
-            : "hover:outline hover:outline-1 hover:outline-dashed hover:outline-blue-400"
+            ? "ring-2 ring-lime-500 ring-offset-2 ring-offset-transparent"
+            : "hover:outline hover:outline-1 hover:outline-dashed hover:outline-lime-400"
         }`}
       >
         {children}

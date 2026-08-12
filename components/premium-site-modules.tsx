@@ -12,11 +12,12 @@ import {
   Quote,
   Send,
   ShieldCheck,
+  Sparkles,
   Star,
   X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import type { WebBlock } from "./website-builder-editor";
+import type { WebBlock } from './builder-types';
 
 const PREMIUM_SITE_MODULES = new Set([
   "premium-proof-rail",
@@ -29,6 +30,9 @@ const PREMIUM_SITE_MODULES = new Set([
   "premium-gallery-lightbox",
   "premium-faq",
   "premium-contact-panel",
+  "signature-editorial",
+  "signature-store",
+  "signature-map",
 ]);
 
 export const isPremiumSiteModuleVariant = (variant?: string) =>
@@ -43,6 +47,7 @@ type PremiumSiteModuleProps = {
   onNavigatePage?: (slug: string) => void;
   site?: any;
   siteId?: string;
+  ecomProducts?: any[];
 };
 
 const cleanSlug = (value = "") => value.replace(/^\/+|\/+$/g, "");
@@ -56,6 +61,7 @@ export function PremiumSiteModule({
   onNavigatePage,
   site,
   siteId,
+  ecomProducts = [],
 }: PremiumSiteModuleProps) {
   const [activeStory, setActiveStory] = useState(0);
   const [annualBilling, setAnnualBilling] = useState(true);
@@ -76,7 +82,12 @@ export function PremiumSiteModule({
     children: React.ReactNode;
     className?: string;
   }) => {
-    if (!isActive) return <>{children}</>;
+    // Keep layout classes (e.g. @lg:col-span-*) on the live site too — the
+    // editor wraps children in a div, so published pages must match or the
+    // grid layout collapses.
+    if (!isActive) {
+      return className ? <div className={className}>{children}</div> : <>{children}</>;
+    }
     return (
       <div
         onClick={(event) => {
@@ -85,8 +96,8 @@ export function PremiumSiteModule({
         }}
         className={`relative cursor-pointer rounded-sm transition ${className} ${
           selectedSubElement === id
-            ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
-            : "hover:outline hover:outline-1 hover:outline-dashed hover:outline-blue-400"
+            ? "ring-2 ring-lime-500 ring-offset-2 ring-offset-transparent"
+            : "hover:outline hover:outline-1 hover:outline-dashed hover:outline-lime-400"
         }`}
       >
         {children}
@@ -174,6 +185,63 @@ export function PremiumSiteModule({
   const sectionClass = "relative overflow-hidden text-white";
   const contentClass = "relative z-10 mx-auto w-full max-w-[1240px] px-6 @lg:px-8";
 
+  if (block.variant === "signature-editorial") {
+    const paragraphs = String(block.subtitle || "")
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+    return (
+      <section className={sectionClass} style={{ backgroundColor: surface }} onClick={onSelect}>
+        <div className={`${contentClass} grid gap-12 py-20 @lg:grid-cols-[.72fr_1.28fr] @lg:py-28`}>
+          <div className="@lg:sticky @lg:top-24 @lg:self-start">
+            {block.badge && <Editable id="badge"><p className="text-[10px] font-black uppercase tracking-[0.28em]" style={{ color: accent }}>{block.badge}</p></Editable>}
+            <p className="mt-8 font-['Poppins'] text-7xl font-bold tracking-[-0.08em] text-white/[0.07]">01</p>
+            <div className="mt-8 h-px w-16" style={{ backgroundColor: accent }} />
+            <p className="mt-5 max-w-xs text-[10px] font-bold uppercase leading-5 tracking-[0.14em] text-white/32">A premium editorial block for point of view, founder notes, principles, and long-form brand stories.</p>
+          </div>
+          <div>
+            <Editable id="title"><h2 className="text-balance font-['Poppins'] text-[clamp(2.8rem,6cqw,6.5rem)] font-bold leading-[0.93] tracking-[-0.07em]">{block.title}</h2></Editable>
+            <Editable id="subtitle" className="mt-10"><div className="space-y-6 border-t border-white/[0.09] pt-8">{(paragraphs.length ? paragraphs : ["Add your story in the editor."]).map((paragraph, index) => <p key={index} className={`max-w-3xl leading-8 text-white/52 ${index === 0 ? "text-lg font-medium @md:text-2xl @md:leading-10" : "text-sm"}`}>{paragraph}</p>)}</div></Editable>
+            {block.btnText && <Editable id="button" className="mt-9 inline-block"><Action label={block.btnText} type={block.btnActionType} value={block.btnActionValue} secondary /></Editable>}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (block.variant === "signature-store") {
+    const products = ecomProducts.slice(0, 6);
+    const phone = String(block.contactPhone || site?.theme?.phone || "").replace(/\D/g, "");
+    return (
+      <section className={sectionClass} style={{ backgroundColor: surface }} onClick={onSelect}>
+        <div className={`${contentClass} py-20 @lg:py-28`}>
+          <div className="flex flex-col gap-8 @lg:flex-row @lg:items-end @lg:justify-between"><Heading /><Editable id="button" className="w-fit"><Action label={block.btnText} type={block.btnActionType} value={block.btnActionValue} secondary /></Editable></div>
+          {products.length ? (
+            <div className="mt-12 grid gap-4 @md:grid-cols-2 @lg:grid-cols-3">
+              {products.map((product, index) => {
+                const orderUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(`Hi, I would like to order ${product.title}.`)}` : `mailto:${block.contactEmail || "hello@example.com"}?subject=${encodeURIComponent(`Product enquiry: ${product.title}`)}`;
+                return <Editable key={product.id} id={`card:${index}`}><article className="group flex h-full min-h-[480px] flex-col overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]"><div className="relative aspect-[4/3] overflow-hidden bg-white/[0.04]">{product.image ? <img src={product.image} alt={product.title} className="size-full object-cover transition duration-700 group-hover:scale-105" /> : <div className="grid size-full place-items-center text-white/15"><Sparkles size={40} /></div>}{product.offer_badge && <span className="absolute left-4 top-4 rounded-full px-3 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-black" style={{ backgroundColor: accent }}>{product.offer_badge}</span>}</div><div className="flex flex-1 flex-col p-6"><p className="text-[9px] font-black uppercase tracking-[0.16em] text-white/32">{product.category || "Featured product"}</p><h3 className="mt-3 text-xl font-black tracking-[-0.035em]">{product.title}</h3><p className="mt-3 line-clamp-3 text-xs leading-6 text-white/42">{product.description}</p><div className="mt-auto flex items-end justify-between gap-4 pt-8"><div><strong className="text-2xl font-black">₹{product.price}</strong>{product.compare_at && <span className="ml-2 text-xs text-white/30 line-through">₹{product.compare_at}</span>}<p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-emerald-400">{Number(product.stock || 0) > 0 ? `${product.stock} available` : "Enquire for availability"}</p></div><a href={orderUrl} target="_blank" rel="noreferrer" onClick={(event) => { if (isActive) event.preventDefault(); }} className="grid size-11 place-items-center rounded-full text-black transition hover:scale-105" style={{ backgroundColor: accent }} aria-label={`Order ${product.title}`}><ArrowRight size={16} /></a></div></div></article></Editable>;
+              })}
+            </div>
+          ) : <div className="mt-12 grid min-h-72 place-items-center rounded-3xl border border-dashed border-white/12 bg-white/[0.02] text-center"><div><Sparkles className="mx-auto text-white/20" size={32} /><p className="mt-4 text-sm font-black">Your Signature product edit is ready</p><p className="mt-2 text-xs text-white/35">Add products in Store &amp; Products to publish this shelf.</p></div></div>}
+        </div>
+      </section>
+    );
+  }
+
+  if (block.variant === "signature-map") {
+    const address = block.mapAddress || block.contactAddress || "Bengaluru, India";
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    return (
+      <section className={sectionClass} style={{ backgroundColor: surface }} onClick={onSelect}>
+        <div className={`${contentClass} grid gap-8 py-20 @lg:grid-cols-[.72fr_1.28fr] @lg:py-28`}>
+          <div className="flex flex-col rounded-3xl border border-white/[0.08] bg-white/[0.03] p-7 @lg:p-10"><Heading /><div className="mt-10 space-y-4 border-t border-white/[0.09] pt-7 text-xs text-white/48"><p className="flex items-start gap-3 leading-6"><MapPin size={16} className="mt-1 shrink-0" style={{ color: accent }} />{address}</p>{block.contactPhone && <a href={`tel:${block.contactPhone}`} className="flex items-center gap-3 hover:text-white"><Phone size={15} style={{ color: accent }} />{block.contactPhone}</a>}{block.contactEmail && <a href={`mailto:${block.contactEmail}`} className="flex items-center gap-3 hover:text-white"><Mail size={15} style={{ color: accent }} />{block.contactEmail}</a>}</div><a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-auto inline-flex items-center gap-2 pt-10 text-xs font-black" style={{ color: accent }}>Open directions <ExternalLink size={13} /></a></div>
+          <Editable id="media"><div className="relative min-h-[520px] overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]"><iframe title="Business location" src={`https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=14&ie=UTF8&iwloc=&output=embed`} className="absolute inset-0 size-full grayscale-[.85] contrast-125 invert-[.92]" loading="lazy" referrerPolicy="no-referrer-when-downgrade" /><div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/5" /></div></Editable>
+        </div>
+      </section>
+    );
+  }
+
   if (block.variant === "premium-proof-rail") {
     const stats = block.stats || [];
     return (
@@ -204,9 +272,9 @@ export function PremiumSiteModule({
                 <a href={actionHref(item.linkActionType, item.linkActionValue)} onClick={(event) => runAction(event, item.linkActionType, item.linkActionValue)} className="group relative flex min-h-[340px] overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.035] p-7 @lg:p-9">
                   {item.imageUrl && <img src={item.imageUrl} alt="" className="absolute inset-0 size-full object-cover opacity-45 transition duration-700 group-hover:scale-105 group-hover:opacity-55" />}
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
-                  <div className="relative mt-auto max-w-xl">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: accent }}>{item.eyebrow || `Capability ${index + 1}`}</p>
-                    <h3 className="mt-3 text-2xl font-black tracking-[-0.04em] @lg:text-3xl">{item.title}</h3>
+            <div className="relative mt-auto max-w-xl min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: accent }}>{item.eyebrow || `Capability ${index + 1}`}</p>
+              <h3 className="mt-3 text-2xl font-black tracking-[-0.04em] @lg:text-3xl">{item.title}</h3>
                     <p className="mt-3 max-w-lg text-xs leading-6 text-white/55">{item.desc}</p>
                     <span className="mt-6 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em]" style={{ color: accent }}>{item.linkText || "Explore"}<ExternalLink size={12} /></span>
                   </div>
@@ -301,7 +369,7 @@ export function PremiumSiteModule({
         <div className={`${contentClass} py-20 @lg:py-28`}>
           <Heading />
           <div className="mt-12 grid auto-rows-[190px] gap-3 @md:grid-cols-2 @lg:grid-cols-4">
-            {images.map((image, index) => <div key={image.id} className={index === 0 ? "@md:row-span-2 @lg:col-span-2" : index === 3 ? "@lg:col-span-2" : ""}><button type="button" onClick={(event) => { event.stopPropagation(); if (isActive) onSelectSubElement?.(`card:${index}`); else setLightboxIndex(index); }} className={`group relative size-full overflow-hidden rounded-2xl border border-white/[0.07] text-left ${isActive && selectedSubElement === `card:${index}` ? "ring-2 ring-blue-500" : ""}`}><img src={image.url} alt={image.title} className="size-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" /><div className="absolute bottom-0 p-5"><h3 className="text-sm font-black">{image.title}</h3><p className="mt-1 text-[10px] text-white/48">{image.subtitle}</p></div></button></div>)}
+            {images.map((image, index) => <div key={image.id} className={index === 0 ? "@md:row-span-2 @lg:col-span-2" : index === 3 ? "@lg:col-span-2" : ""}><button type="button" onClick={(event) => { event.stopPropagation(); if (isActive) onSelectSubElement?.(`card:${index}`); else setLightboxIndex(index); }} className={`group relative size-full overflow-hidden rounded-2xl border border-white/[0.07] text-left ${isActive && selectedSubElement === `card:${index}` ? "ring-2 ring-lime-500" : ""}`}><img src={image.url} alt={image.title} className="size-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" /><div className="absolute bottom-0 p-5"><h3 className="text-sm font-black">{image.title}</h3><p className="mt-1 text-[10px] text-white/48">{image.subtitle}</p></div></button></div>)}
           </div>
         </div>
         {lightboxIndex !== null && images[lightboxIndex] && <div role="dialog" aria-modal="true" aria-label="Image preview" onClick={() => setLightboxIndex(null)} className="fixed inset-0 z-[200] grid place-items-center bg-black/90 p-5 backdrop-blur-xl"><button type="button" aria-label="Close image preview" onClick={() => setLightboxIndex(null)} className="absolute right-5 top-5 grid size-11 place-items-center rounded-full border border-white/15 text-white"><X size={18} /></button><div className="max-w-5xl" onClick={(event) => event.stopPropagation()}><img src={images[lightboxIndex].url} alt={images[lightboxIndex].title} className="max-h-[78vh] w-auto rounded-2xl object-contain" /><div className="mt-4 flex items-center justify-between"><div><h3 className="font-black">{images[lightboxIndex].title}</h3><p className="mt-1 text-xs text-white/45">{images[lightboxIndex].subtitle}</p></div><span className="text-xs text-white/35">{lightboxIndex + 1} / {images.length}</span></div></div></div>}

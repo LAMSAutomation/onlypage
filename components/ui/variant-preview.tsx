@@ -41,29 +41,48 @@ function getPalette(variantId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Hero
+// Hero Preview
 // ---------------------------------------------------------------------------
 function HeroPreview({ variantId, size }: { variantId: string; size: string }) {
   const p = getPalette(variantId);
   const isDark = p.bg === '#09090b' || p.bg === '#18181b' || p.bg === '#0f172a';
-  const isSplit = ['split', 'saas-modern', 'video-simulate'].includes(variantId);
+  const isSplit = ['split', 'saas-modern', 'video-simulate', 'tailgrids-hero-split', 'untitled-hero-split'].some(v => variantId.includes(v));
+  const isUiverse = variantId.includes('uiverse');
+  const isMui = variantId.includes('mui');
   const isPoster = p.bg === '#facc15';
+
   return (
-    <div className={`${size} rounded-md overflow-hidden relative`} style={{ backgroundColor: p.bg }}>
-      {/* Background gradient overlay for aurora/glass */}
-      {(variantId.includes('aurora') || variantId.includes('glass')) && (
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
+    <div className={`${size} rounded-md overflow-hidden relative shadow-xs`} style={{ backgroundColor: p.bg }}>
+      {/* Glow backgrounds */}
+      {isUiverse && (
+        <>
+          <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-fuchsia-500/40 blur-xs" />
+          <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-cyan-400/40 blur-xs" />
+        </>
       )}
-      <div className={`relative h-full flex ${isSplit ? 'flex-row' : 'flex-col'} items-center justify-center p-1.5 gap-1`}>
+      {(variantId.includes('aurora') || variantId.includes('glass')) && (
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-pink-500/20" />
+      )}
+      <div className={`relative h-full flex ${isSplit ? 'flex-row' : 'flex-col'} items-center justify-center p-1 gap-1`}>
         {isSplit && (
-          <div className="w-1/2 h-full rounded-sm flex items-center justify-center" style={{ backgroundColor: isDark ? '#ffffff15' : '#e2e8f0' }}>
-            <span className="text-[6px]">{variantId === 'video-simulate' ? '▶' : '🖼'}</span>
+          <div className="w-1/2 h-full rounded-xs flex items-center justify-center p-0.5" style={{ backgroundColor: isDark ? '#ffffff15' : '#e2e8f0' }}>
+            <div className="w-full h-full rounded-xs bg-indigo-500/30 flex items-center justify-center text-[5px]">
+              {variantId.includes('video') ? '▶' : '📊'}
+            </div>
           </div>
         )}
-        <div className={`${isSplit ? 'w-1/2' : 'w-full'} flex flex-col gap-0.5 items-${isDark ? 'center' : 'center'} ${isPoster ? 'text-left items-start' : ''}`}>
-          <div className="h-1 w-3/4 rounded-sm" style={{ backgroundColor: isPoster ? p.text : isDark ? '#ffffffcc' : p.text }} />
-          <div className="h-0.5 w-1/2 rounded-sm" style={{ backgroundColor: isDark ? '#ffffff66' : p.muted }} />
-          <div className="h-1 w-1/3 rounded-sm mt-0.5" style={{ backgroundColor: isPoster ? p.text : p.accent }} />
+        <div className={`${isSplit ? 'w-1/2' : 'w-full'} flex flex-col gap-0.5 items-center text-center ${isPoster ? 'items-start text-left' : ''}`}>
+          {/* Badge */}
+          <div className="h-0.5 w-1/3 rounded-full" style={{ backgroundColor: isUiverse ? '#e879f9' : isMui ? '#3b82f6' : p.accent }} />
+          {/* Title */}
+          <div className="h-1 w-5/6 rounded-xs" style={{ backgroundColor: isPoster ? p.text : isDark ? '#ffffff' : p.text }} />
+          {/* Subtitle */}
+          <div className="h-0.5 w-2/3 rounded-xs" style={{ backgroundColor: isDark ? '#ffffff77' : p.muted }} />
+          {/* CTA Buttons */}
+          <div className="flex gap-0.5 mt-0.5">
+            <div className="h-1 w-3.5 rounded-xs" style={{ backgroundColor: isPoster ? p.text : p.accent }} />
+            <div className="h-1 w-2.5 rounded-xs border" style={{ borderColor: isDark ? '#ffffff44' : '#cbd5e1' }} />
+          </div>
         </div>
       </div>
     </div>
@@ -71,24 +90,33 @@ function HeroPreview({ variantId, size }: { variantId: string; size: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Features / Business
+// Features / Business Preview
 // ---------------------------------------------------------------------------
 function FeaturesPreview({ variantId, size }: { variantId: string; size: string }) {
   const p = getPalette(variantId);
-  const isBento = variantId === 'bento-box';
+  const isBento = variantId.includes('bento');
   const isAlt = variantId === 'alternating';
   const isComparison = variantId === 'comparison';
   const isDark = p.bg === '#09090b' || p.bg === '#18181b' || p.bg === '#0f172a';
+  const isUiverse = variantId.includes('uiverse');
+
   return (
-    <div className={`${size} rounded-md overflow-hidden`} style={{ backgroundColor: p.bg || '#ffffff' }}>
-      <div className={`h-full p-1 flex ${isAlt ? 'flex-col' : 'flex-row'} gap-0.5`}>
+    <div className={`${size} rounded-md overflow-hidden p-0.5 relative`} style={{ backgroundColor: p.bg || '#ffffff' }}>
+      <div className={`h-full flex ${isAlt ? 'flex-col' : 'flex-row'} gap-0.5`}>
         {[0, 1, 2].map(i => (
-          <div key={i} className={`${isBento && i === 1 ? 'flex-[2]' : 'flex-1'} flex flex-col gap-0.5 p-0.5 ${isComparison ? 'border-r border-slate-200 last:border-r-0' : ''} ${isAlt ? 'flex-row items-center' : ''}`}
-            style={{ backgroundColor: isDark ? '#ffffff08' : 'transparent', borderRadius: isBento ? 3 : 0 }}
+          <div 
+            key={i} 
+            className={`${isBento && i === 1 ? 'flex-[1.5]' : 'flex-1'} flex flex-col gap-0.5 p-0.5 ${isComparison ? 'border-r border-slate-200 last:border-r-0' : ''}`}
+            style={{ 
+              backgroundColor: isUiverse ? '#ffffff0d' : isDark ? '#ffffff08' : '#f8fafc',
+              borderRadius: isBento ? 3 : 2,
+              border: isUiverse ? '1px solid #ffffff15' : '1px solid #e2e8f010'
+            }}
           >
-            <div className={`${isAlt ? 'w-2 h-2 rounded-full shrink-0' : 'w-full h-1 rounded-sm'}`} style={{ backgroundColor: p.accent }} />
-            <div className="h-0.5 w-2/3 rounded-sm" style={{ backgroundColor: isDark ? '#ffffff33' : '#e2e8f0' }} />
-            <div className="h-0.5 w-1/2 rounded-sm" style={{ backgroundColor: isDark ? '#ffffff22' : '#f1f5f9' }} />
+            {/* Icon box */}
+            <div className="w-1.5 h-1.5 rounded-xs shrink-0" style={{ backgroundColor: i === 1 ? p.accent : '#94a3b8' }} />
+            <div className="h-0.5 w-full rounded-xs" style={{ backgroundColor: isDark ? '#ffffffaa' : '#334155' }} />
+            <div className="h-0.5 w-2/3 rounded-xs" style={{ backgroundColor: isDark ? '#ffffff44' : '#cbd5e1' }} />
           </div>
         ))}
       </div>
@@ -97,53 +125,68 @@ function FeaturesPreview({ variantId, size }: { variantId: string; size: string 
 }
 
 // ---------------------------------------------------------------------------
-// CTA
+// CTA Preview
 // ---------------------------------------------------------------------------
 function CTAPreview({ variantId, size }: { variantId: string; size: string }) {
   const p = getPalette(variantId);
   const isGradient = variantId.includes('gradient') || variantId === 'soft-gradient';
-  const isImage = variantId.includes('image-bg');
+  const isUiverse = variantId.includes('uiverse');
+  const isMui = variantId.includes('mui');
+
   return (
-    <div className={`${size} rounded-md overflow-hidden flex items-center justify-center`}
+    <div className={`${size} rounded-md overflow-hidden flex items-center justify-center p-1 relative`}
       style={{
-        background: isGradient ? `linear-gradient(135deg, ${p.bg}, ${p.accent}88)` : p.accent,
+        background: isUiverse 
+          ? 'linear-gradient(135deg, #09090b, #3b0764)' 
+          : isMui 
+          ? '#2563eb' 
+          : isGradient 
+          ? `linear-gradient(135deg, ${p.bg}, ${p.accent}aa)` 
+          : p.accent,
       }}
     >
-      <div className="flex flex-col items-center gap-0.5">
-        <div className="h-1 w-3/4 rounded-sm" style={{ backgroundColor: '#ffffff' }} />
-        <div className="h-0.5 w-1/3 rounded-sm mt-0.5" style={{ backgroundColor: '#ffffff88' }} />
-        <div className="h-0.5 w-1/4 rounded-sm mt-0.5" style={{ backgroundColor: '#ffffff' }} />
+      <div className="flex flex-col items-center gap-0.5 text-center w-full">
+        <div className="h-0.5 w-1/3 rounded-full bg-white/60" />
+        <div className="h-1 w-3/4 rounded-xs bg-white" />
+        <div className="h-0.5 w-1/2 rounded-xs bg-white/70" />
+        <div className="h-1 w-1/3 rounded-xs mt-0.5 bg-white shadow-xs" style={{ color: p.accent }} />
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Pricing
+// Pricing Preview
 // ---------------------------------------------------------------------------
 function PricingPreview({ variantId, size }: { variantId: string; size: string }) {
   const p = getPalette(variantId);
-  const isMatrix = variantId.includes('matrix') || variantId === 'mono-grid';
-  const isGlass = variantId.includes('glass');
-  const isDark = p.bg === '#09090b' || p.bg === '#18181b' || p.bg === '#0f172a';
+  const isGlass = variantId.includes('glass') || variantId.includes('uiverse');
+  const isDark = p.bg === '#09090b' || p.bg === '#18181b' || p.bg === '#0f172a' || isGlass;
+
   return (
-    <div className={`${size} rounded-md overflow-hidden p-1 flex items-end gap-0.5`}
-      style={{ backgroundColor: isGlass || isDark ? p.bg : '#ffffff', border: isGlass ? '1px solid #ffffff22' : '1px solid #e2e8f0' }}
+    <div className={`${size} rounded-md overflow-hidden p-0.5 flex items-end gap-0.5`}
+      style={{ backgroundColor: isDark ? p.bg : '#ffffff' }}
     >
       {[0, 1, 2].map(i => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-0.5" style={{ height: i === 1 ? '100%' : '75%' }}>
-          {/* Price bar */}
-          <div className="w-full rounded-sm" style={{
-            height: i === 1 ? '45%' : '35%',
-            backgroundColor: i === 1 ? p.accent : isDark ? '#ffffff33' : '#e2e8f0',
-            opacity: i === 1 ? 1 : 0.6,
-          }} />
-          {/* Feature dots */}
-          {[0, 1, 2].map(j => (
-            <div key={j} className="w-2/3 h-0.5 rounded-sm" style={{ backgroundColor: isDark ? '#ffffff22' : '#f1f5f9' }} />
+        <div 
+          key={i} 
+          className="flex-1 flex flex-col items-center gap-0.5 p-0.5 rounded-xs" 
+          style={{ 
+            height: i === 1 ? '100%' : '80%',
+            backgroundColor: i === 1 ? (isDark ? '#ffffff18' : '#f1f5f9') : (isDark ? '#ffffff08' : '#f8fafc'),
+            border: i === 1 ? `1px solid ${p.accent}` : '1px solid #cbd5e130'
+          }}
+        >
+          {/* Badge */}
+          {i === 1 && <div className="h-0.5 w-2/3 rounded-xs" style={{ backgroundColor: p.accent }} />}
+          {/* Price header */}
+          <div className="w-full h-1 rounded-xs" style={{ backgroundColor: i === 1 ? p.accent : isDark ? '#ffffff44' : '#64748b' }} />
+          {/* Check lines */}
+          {[0, 1].map(j => (
+            <div key={j} className="w-3/4 h-0.5 rounded-xs" style={{ backgroundColor: isDark ? '#ffffff22' : '#e2e8f0' }} />
           ))}
-          {/* CTA */}
-          <div className="w-full h-0.5 rounded-sm mt-0.5" style={{ backgroundColor: i === 1 ? p.accent : isDark ? '#ffffff44' : '#e2e8f0' }} />
+          {/* Button */}
+          <div className="w-full h-1 rounded-xs mt-auto" style={{ backgroundColor: i === 1 ? p.accent : isDark ? '#ffffff33' : '#cbd5e1' }} />
         </div>
       ))}
     </div>

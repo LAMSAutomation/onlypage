@@ -4,6 +4,7 @@ export interface BlockVariant {
   description: string;
   tags: string[];
   imageUrl?: string;
+  library?: 'Untitled UI' | 'Tailgrids' | 'Horizon UI' | 'UIverse' | 'MUI' | 'Built-in';
 }
 
 export interface BlockCategory {
@@ -32,96 +33,66 @@ export const BLOCK_CATEGORIES: BlockCategory[] = [
 
 export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
   Text: [
-    { id: 'article-body', name: 'Rich Article Paragraph', description: 'Clean readable text block with custom subheaders and leading', tags: ['Article', 'Paragraph', 'Minimal'] },
-    { id: 'quote-callout', name: 'Editorial Quote Callout', description: 'Highlighted quote box with accent border and author subtext', tags: ['Quote', 'Callout', 'Editorial'] },
-    { id: 'heading-minimal', name: 'Centered Heading & Subtext', description: 'Standalone headline with subtext and alignment controls', tags: ['Heading', 'Text', 'Clean'] },
+    { id: 'signature-editorial', name: 'Signature Editorial Story', description: 'Oversized editorial typography, numbered annotation, and premium long-form reading rhythm', tags: ['Signature', 'Premium', 'Editorial', 'Story'], library: 'Built-in' },
+    { id: 'article-body', name: 'Rich Article Paragraph', description: 'Clean readable text block with custom subheaders and leading', tags: ['Article', 'Paragraph', 'Minimal'], library: 'Built-in' },
+    { id: 'quote-callout', name: 'Editorial Quote Callout', description: 'Highlighted quote box with accent border and author subtext', tags: ['Quote', 'Callout', 'Editorial'], library: 'Built-in' },
+    { id: 'heading-minimal', name: 'Centered Heading & Subtext', description: 'Standalone headline with subtext and alignment controls', tags: ['Heading', 'Text', 'Clean'], library: 'Built-in' },
   ],
   Hero: [
-    { id: 'academy-cinematic', name: 'Cinematic Academy', description: 'Full-bleed editorial hero with dual actions, atmospheric media, and premium education positioning', tags: ['Academy', 'Cinematic', 'Premium', 'Dual CTA'] },
-    { id: 'minimal', name: 'Simple Minimalist', description: 'Clean layout centering typography & call-to-actions', tags: ['Minimal', 'Light', 'Corporate'] },
-    { id: 'shopify-growth', name: 'Shopify Growth Showcase', description: 'World-class e-commerce landing page layout with floating app mockups, mint backgrounds, and social tag overlays', tags: ['Shopify', 'ECom', 'High-Convert', 'Mint'] },
-    { id: 'split', name: 'Interactive Image Split', description: 'Side-by-side text & responsive image preview layout', tags: ['Split', 'SaaS', 'Startup'] },
-    { id: 'gradient-glow', name: 'Cosmic Gradient Glow', description: 'Immersive dark design with glowing radial spotlight gradients', tags: ['Dark', 'Futuristic', 'Neon'] },
-    { id: 'saas-modern', name: 'Premium SaaS Modern', description: 'Bento-like headers with live preview mockup layouts', tags: ['Premium', 'SaaS', 'High-Convert'] },
-    { id: '3d-mesh', name: 'Interactive 3D Grid Grid', description: 'Aceternity style dot-grid background with tilting elements', tags: ['3D', 'Dot-Background', 'Animation'] },
-    { id: 'aurora-sky', name: 'Ambient Aurora Sky', description: 'Dynamic shifting backdrops with elegant text reveal filters', tags: ['Aurora', 'Warm', 'Luxury'] },
-    { id: 'video-simulate', name: 'Simulated Dark Video', description: 'Cinematic layout with a rich overlay video player mock', tags: ['Video', 'Immersive', 'Product'] },
-    { id: 'editorial-stack', name: 'Editorial Stack', description: 'Magazine-inspired typography with generous whitespace and a refined hierarchy', tags: ['Editorial', 'Premium', 'Type'] },
     { id: 'local-conversion', name: 'Local Conversion', description: 'Action-first direction for calls, WhatsApp enquiries, and appointment bookings', tags: ['Local', 'WhatsApp', 'Conversion'] },
     { id: 'quiet-luxury', name: 'Quiet Luxury', description: 'Warm neutral palette, restrained accents, and high-end service positioning', tags: ['Luxury', 'Neutral', 'Elegant'] },
     { id: 'bold-poster', name: 'Bold Poster', description: 'Oversized display type and sharp contrast for energetic launches', tags: ['Bold', 'Launch', 'Display'] },
     { id: 'soft-gradient', name: 'Soft Gradient', description: 'Airy pastel gradients with calm spacing and approachable calls to action', tags: ['Gradient', 'Soft', 'Modern'] },
     { id: 'mono-grid', name: 'Monochrome Grid', description: 'Structured black-and-white visual system with precise editorial rhythm', tags: ['Mono', 'Grid', 'Swiss'] },
     { id: 'warm-studio', name: 'Warm Studio', description: 'Earthy colors and rounded shapes for human, craft-led businesses', tags: ['Warm', 'Organic', 'Friendly'] },
-    { id: 'glass-panel', name: 'Glass Panel', description: 'Layered translucent surfaces with subtle borders and atmospheric depth', tags: ['Glass', 'Layered', 'Tech'] }
+    { id: 'glass-panel', name: 'Glass Panel', description: 'Layered translucent surfaces with subtle borders and atmospheric depth', tags: ['Glass', 'Layered', 'Tech'] },
+    { id: 'uiverse-hero-glow', name: 'UIverse Glassmorphism Hero', description: 'Ambient gradient orbs, frosted glass chips, and a glowing gradient CTA', tags: ['UIverse', 'Glass', 'Gradient', 'Hero'], library: 'UIverse' },
+    { id: 'mui-hero', name: 'MUI Material Hero', description: 'Light Material hero with elevation surface mock, stat strip, and contained buttons', tags: ['MUI', 'Material', 'Elevation', 'Hero'], library: 'MUI' }
   ],
   Features: [
+    { id: 'signature-bento', name: 'Signature Capability Bento', description: 'Cohesive Signature-system bento cards with imagery, outcomes, and linked actions', tags: ['Signature', 'Premium', 'Bento', 'Media'] },
     { id: 'premium-bento-grid', name: 'Premium Outcome Bento', description: 'Art-directed asymmetric feature cards with imagery, outcome copy, and connected actions', tags: ['Premium', 'Bento', 'Interactive', 'Media'] },
-    { id: 'academy-courses', name: 'Editorial Course Grid', description: 'Image-led two-column curriculum cards with strong hierarchy and art-directed overlays', tags: ['Academy', 'Courses', 'Editorial', 'Media'] },
-    { id: 'feature-grid', name: 'Classic Icon Grid', description: 'Fully responsive grid layout with custom hover scale effects', tags: ['Grid', 'Modern', 'Symmetric'] },
-    { id: 'bento-box', name: 'Premium Bento Grid', description: 'Asymmetric grid layout inspired by Apple and Vercel', tags: ['Bento', 'Premium', 'Minimalist'] },
-    { id: 'alternating', name: 'Alternating Timelines', description: 'Alternating rows detailing a story or a timeline', tags: ['Story', 'Alternating', 'Creative'] },
-    { id: 'icon-cards', name: 'Glowing Accent Cards', description: 'Figma-style custom card containers with hover borders', tags: ['Glow', 'Modern', 'Card'] },
-    { id: 'comparison', name: 'Feature Comparisons', description: 'Compare specs directly across plans side-by-side', tags: ['Table', 'SaaS', 'Data'] },
-    { id: 'editorial-stack', name: 'Editorial Feature Story', description: 'A typography-led feature section with a polished magazine rhythm', tags: ['Editorial', 'Story', 'Premium'] },
-    { id: 'local-conversion', name: 'Outcome-Focused Services', description: 'Presents services around enquiries, bookings, and customer outcomes', tags: ['Local', 'Services', 'Conversion'] },
-    { id: 'quiet-luxury', name: 'Quiet Luxury Features', description: 'Understated service highlights with refined neutral styling', tags: ['Luxury', 'Elegant', 'Service'] },
-    { id: 'bold-poster', name: 'Bold Benefit Poster', description: 'High-impact benefits with oversized typography and vivid contrast', tags: ['Bold', 'Benefits', 'Display'] },
-    { id: 'soft-gradient', name: 'Soft Gradient Cards', description: 'Friendly feature cards on a calm gradient surface', tags: ['Gradient', 'Cards', 'Friendly'] },
-    { id: 'mono-grid', name: 'Monochrome Capability Grid', description: 'Crisp black-and-white capability grid for modern professional brands', tags: ['Mono', 'Grid', 'Professional'] }
+    { id: 'untitled-feature-grid', name: 'Untitled UI Feature Grid', description: 'Clean 6-card feature matrix with icons and subtle hover scaling', tags: ['Untitled UI', 'Tailwind', 'Grid', 'Icons'], library: 'Untitled UI' },
+    { id: 'tailgrids-feature-grid', name: 'Tailgrids Capability Grid', description: 'Modern 3-column feature cards with badges and hover glow', tags: ['Tailgrids', 'Feature', 'Capabilities'], library: 'Tailgrids' },
+    { id: 'signature-bento', name: 'Signature Capability Bento', description: 'Cohesive Signature-system bento cards with imagery, outcomes, and linked actions', tags: ['Signature', 'Premium', 'Bento', 'Media'], library: 'Built-in' },
+    { id: 'premium-bento-grid', name: 'Premium Outcome Bento', description: 'Art-directed asymmetric feature cards with imagery, outcome copy, and connected actions', tags: ['Premium', 'Bento', 'Interactive', 'Media'], library: 'Built-in' },
+    { id: 'academy-courses', name: 'Editorial Course Grid', description: 'Image-led two-column curriculum cards with strong hierarchy and art-directed overlays', tags: ['Academy', 'Courses', 'Editorial', 'Media'], library: 'Built-in' },
+    { id: 'feature-grid', name: 'Classic Icon Grid', description: 'Fully responsive grid layout with custom hover scale effects', tags: ['Grid', 'Modern', 'Symmetric'], library: 'Built-in' },
+    { id: 'bento-box', name: 'Premium Bento Grid', description: 'Asymmetric grid layout inspired by Apple and Vercel', tags: ['Bento', 'Premium', 'Minimalist'], library: 'Built-in' },
+    { id: 'uiverse-feature-grid', name: 'UIverse Glass Feature Grid', description: 'Frosted glass cards with gradient icon tiles and hover glow', tags: ['UIverse', 'Glass', 'Features'], library: 'UIverse' },
+    { id: 'mui-feature-grid', name: 'MUI Material Feature Grid', description: 'Six Material surface cards with tinted icon avatars and elevation hover', tags: ['MUI', 'Material', 'Features'], library: 'MUI' },
   ],
   CTA: [
-    { id: 'academy-spotlight', name: 'Academy Spotlight CTA', description: 'Restrained conversion stage with cinematic depth and a focused enrollment action', tags: ['Academy', 'Enrollment', 'Premium'] },
-    { id: 'simple-cta', name: 'Minimal Conversion Panel', description: 'High-contrast banner directing focus to a primary CTA', tags: ['Minimal', 'Fast'] },
-    { id: 'gradient-cta', name: 'High-Contrast Gradient Block', description: 'Glow-tinted canvas displaying high-energy newsletter setups', tags: ['Gradient', 'Modern', 'Immersive'] },
-    { id: 'image-bg-cta', name: 'Immersive Dark Backdrop', description: 'Elegant overlays with full-bleed media backgrounds', tags: ['Overlay', 'Premium', 'Media'] },
-    { id: 'app-download', name: 'App Store Download Grid', description: 'Dual buttons targeted for iOS and Android downloads', tags: ['App', 'Mobile', 'Stores'] },
-    { id: 'local-conversion', name: 'WhatsApp Conversion CTA', description: 'Direct, reassuring action panel optimized for local customer enquiries', tags: ['WhatsApp', 'Local', 'Conversion'] },
-    { id: 'quiet-luxury', name: 'Concierge CTA', description: 'Elegant low-pressure action area for premium services and consultations', tags: ['Luxury', 'Service', 'Elegant'] },
-    { id: 'bold-poster', name: 'Launch Poster CTA', description: 'Oversized message and bold button treatment for product launches', tags: ['Bold', 'Launch', 'Poster'] },
-    { id: 'soft-gradient', name: 'Friendly Gradient CTA', description: 'Soft color transitions and approachable conversion copy', tags: ['Gradient', 'Friendly', 'Modern'] },
-    { id: 'mono-grid', name: 'Monochrome Action Rail', description: 'Precise high-contrast call-to-action for confident brands', tags: ['Mono', 'Sharp', 'Professional'] },
-    { id: 'glass-panel', name: 'Glass Action Panel', description: 'Layered translucent CTA with a premium technology feel', tags: ['Glass', 'Tech', 'Layered'] }
+    { id: 'tailgrids-cta-banner', name: 'Tailgrids Gradient CTA', description: 'High-conversion newsletter CTA banner with email input and backdrop blur', tags: ['Tailgrids', 'CTA', 'Gradient', 'Newsletter'], library: 'Tailgrids' },
+    { id: 'signature-cta', name: 'Signature Conversion Stage', description: 'Large restrained conversion moment with premium depth and a focused next action', tags: ['Signature', 'Premium', 'CTA', 'Conversion'], library: 'Built-in' },
+    { id: 'simple-cta', name: 'Minimal Conversion Panel', description: 'High-contrast banner directing focus to a primary CTA', tags: ['Minimal', 'Fast'], library: 'Built-in' },
+    { id: 'gradient-cta', name: 'High-Contrast Gradient Block', description: 'Glow-tinted canvas displaying high-energy newsletter setups', tags: ['Gradient', 'Modern', 'Immersive'], library: 'Built-in' },
+    { id: 'uiverse-cta', name: 'UIverse Glass CTA', description: 'Translucent frosted panel with gradient border and pulsing glow', tags: ['UIverse', 'Glass', 'CTA'], library: 'UIverse' },
+    { id: 'mui-cta', name: 'MUI Material CTA Band', description: 'Primary color band with decorative circles and white contained CTA', tags: ['MUI', 'Material', 'CTA'], library: 'MUI' },
+    { id: 'untitled-cta', name: 'Untitled UI Dark CTA', description: 'Near-black centered conversion stage with feature chip and dual CTAs', tags: ['Untitled UI', 'Dark', 'CTA'], library: 'Untitled UI' },
   ],
   Gallery: [
-    { id: 'premium-gallery-lightbox', name: 'Premium Editorial Lightbox', description: 'Art-directed image mosaic with captions and a working fullscreen gallery viewer', tags: ['Premium', 'Gallery', 'Lightbox', 'Interactive'] },
-    { id: 'masonry', name: 'Staggered Masonry Grid', description: 'Pinterest-style fluid layouts resizing columns gracefully', tags: ['Artistic', 'Masonry', 'Media'] },
-    { id: 'slider', name: 'Before-After Comparer', description: 'Click-toggle to compare a project before and after styling', tags: ['Interactive', 'Slider', 'Design'] },
-    { id: 'marquee-logos', name: 'Infinite Logo Marquee', description: 'Endless horizontal scrolling of enterprise client logos', tags: ['Marquee', 'Enterprise', 'Social-Proof'] },
-    { id: 'grid-hover', name: 'Visual Portfolio Showcase', description: 'Responsive tiles with title reveal on mouse overlay', tags: ['Portfolio', 'Hover-Glow', 'Art'] },
-    { id: 'editorial-stack', name: 'Editorial Lookbook', description: 'Art-directed image presentation with a magazine-style atmosphere', tags: ['Editorial', 'Lookbook', 'Art'] },
-    { id: 'quiet-luxury', name: 'Luxury Portfolio', description: 'Restrained gallery styling for premium spaces, products, and services', tags: ['Luxury', 'Portfolio', 'Elegant'] },
-    { id: 'bold-poster', name: 'Poster Wall', description: 'High-contrast visual wall for campaigns and creative work', tags: ['Bold', 'Poster', 'Creative'] },
-    { id: 'soft-gradient', name: 'Soft Gallery Cloud', description: 'Approachable gallery direction with subtle color and rounded surfaces', tags: ['Gradient', 'Soft', 'Media'] },
-    { id: 'mono-grid', name: 'Monochrome Archive', description: 'Structured visual archive for architecture, fashion, and case studies', tags: ['Mono', 'Archive', 'Grid'] },
-    { id: 'warm-studio', name: 'Warm Studio Journal', description: 'Organic gallery direction for makers, food, hospitality, and wellness', tags: ['Warm', 'Journal', 'Organic'] }
+    { id: 'horizon-nft-card', name: 'Horizon NFT & Media Card', description: 'Modern dark NFT showcase card with live bid status and media preview', tags: ['Horizon UI', 'NFT', 'Media', 'Card'], library: 'Horizon UI' },
+    { id: 'signature-gallery', name: 'Signature Visual Archive', description: 'Cohesive Signature-system gallery with editorial mosaic and fullscreen lightbox', tags: ['Signature', 'Premium', 'Gallery', 'Lightbox'], library: 'Built-in' },
+    { id: 'masonry', name: 'Staggered Masonry Grid', description: 'Pinterest-style fluid layouts resizing columns gracefully', tags: ['Artistic', 'Masonry', 'Media'], library: 'Built-in' },
   ],
   Business: [
-    { id: 'premium-story-split', name: 'Premium Case Study Split', description: 'Large editorial image, proof points, measurable outcomes, and a connected next action', tags: ['Premium', 'Case Study', 'Story', 'Media'] },
-    { id: 'academy-session', name: 'Live Session Case Study', description: 'Large media case study with supporting copy, proof metrics, and a course action', tags: ['Academy', 'Case Study', 'Stats', 'Media'] },
-    { id: 'treatment-list', name: 'Luxury Treatment Menu', description: 'Fine-detailed lists displaying treatments, times, and costs', tags: ['Salon', 'Luxury', 'Treatments'] },
-    { id: 'packages', name: 'Service Packages Bento', description: 'Pre-bundled bundles featuring tick lists and accents', tags: ['Packages', 'Bespoke', 'Doctor'] },
-    { id: 'offers', name: 'Dynamic Active Offers', description: 'Flash offer tickers styled with urgency countdown elements', tags: ['Offers', 'Sales', 'Urgent'] },
-    { id: 'local-conversion', name: 'Local Service Menu', description: 'Action-first service list with clear enquiry and booking paths', tags: ['Local', 'Services', 'Booking'] },
-    { id: 'quiet-luxury', name: 'Private Client Services', description: 'Premium service presentation for clinics, salons, and consultants', tags: ['Luxury', 'Consultation', 'Service'] },
-    { id: 'bold-poster', name: 'High-Impact Offers', description: 'Vivid campaign styling for seasonal offers and urgent promotions', tags: ['Bold', 'Offers', 'Campaign'] },
-    { id: 'soft-gradient', name: 'Friendly Service Cards', description: 'Rounded, approachable service presentation for growing businesses', tags: ['Soft', 'Services', 'Friendly'] },
-    { id: 'mono-grid', name: 'Professional Service Index', description: 'Structured service catalog with crisp hierarchy and pricing clarity', tags: ['Mono', 'Professional', 'Catalog'] },
-    { id: 'warm-studio', name: 'Artisan Service Menu', description: 'Human, tactile visual direction for studios and independent professionals', tags: ['Warm', 'Artisan', 'Organic'] }
+    { id: 'horizon-metric-card', name: 'Horizon Dashboard Metrics', description: 'Clean admin stat card with growth badges, icon boxes, and subtitles', tags: ['Horizon UI', 'Metrics', 'Stats', 'Admin'], library: 'Horizon UI' },
+    { id: 'untitled-stat-cards', name: 'Untitled UI Stat Cards', description: 'Minimalist stat cards with positive/negative growth badges', tags: ['Untitled UI', 'Stats', 'Badges'], library: 'Untitled UI' },
+    { id: 'treatment-list', name: 'Luxury Treatment Menu', description: 'Fine-detailed lists displaying treatments, times, and costs', tags: ['Salon', 'Luxury', 'Treatments'], library: 'Built-in' },
+    { id: 'packages', name: 'Service Packages Bento', description: 'Pre-bundled bundles featuring tick lists and accents', tags: ['Packages', 'Bespoke', 'Doctor'], library: 'Built-in' },
+    { id: 'horizon-profile-card', name: 'Horizon Profile Card', description: 'Dark gradient-cover team profile with stats and quick actions', tags: ['Horizon UI', 'Profile', 'Team'], library: 'Horizon UI' },
   ],
   Pricing: [
-    { id: 'premium-pricing-toggle', name: 'Premium Pricing Switcher', description: 'Polished plan comparison with a working monthly/annual billing control and highlighted recommendation', tags: ['Premium', 'Pricing', 'Interactive', 'Conversion'] },
-    { id: 'saas-pricing', name: 'Standard SaaS 3-Tiers', description: 'Standard billing tiers highlighting a recommended choice', tags: ['SaaS', 'Tiers', 'Checklist'] },
-    { id: 'service-tier', name: 'Simple Service Pricer', description: 'Local business packages with individual CTA buttons', tags: ['Service', 'Minimal', 'Compact'] },
-    { id: 'comparison-pricing', name: 'Full Matrix Pricing', description: 'A highly structured pricing spreadsheet layout', tags: ['Enterprise', 'Matrix', 'Compare'] },
-    { id: 'local-conversion', name: 'Local Business Pricing', description: 'Clear rupee-first packages with direct enquiry and booking actions', tags: ['India', 'Local', 'Conversion'] },
-    { id: 'quiet-luxury', name: 'Premium Service Pricing', description: 'Refined packages for high-value consultations and services', tags: ['Luxury', 'Service', 'Premium'] },
-    { id: 'bold-poster', name: 'Launch Offer Pricing', description: 'Confident high-contrast pricing built for limited-time campaigns', tags: ['Bold', 'Offer', 'Launch'] },
-    { id: 'soft-gradient', name: 'Friendly Plan Cards', description: 'Approachable pricing with gentle colors and clear decisions', tags: ['Gradient', 'Plans', 'Friendly'] },
-    { id: 'mono-grid', name: 'Transparent Rate Card', description: 'Precise monochrome pricing for agencies and professional services', tags: ['Mono', 'Rates', 'Agency'] },
-    { id: 'glass-panel', name: 'Glass Subscription Plans', description: 'Layered futuristic plan cards for software and digital products', tags: ['Glass', 'SaaS', 'Tech'] }
+    { id: 'untitled-pricing-tiers', name: 'Untitled UI Pricing Matrix', description: 'Structured 3-tier pricing table with recommended badges and feature checklists', tags: ['Untitled UI', 'Pricing', 'Checklist'], library: 'Untitled UI' },
+    { id: 'tailgrids-pricing-table', name: 'Tailgrids Pricing Switcher', description: '3-Tier pricing table with interactive monthly/yearly billing toggle', tags: ['Tailgrids', 'Pricing', 'Toggle'], library: 'Tailgrids' },
+    { id: 'signature-pricing', name: 'Signature Pricing System', description: 'Cohesive Signature-system plan comparison with working billing control', tags: ['Signature', 'Premium', 'Pricing', 'Interactive'], library: 'Built-in' },
+    { id: 'saas-pricing', name: 'Standard SaaS 3-Tiers', description: 'Standard billing tiers highlighting a recommended choice', tags: ['SaaS', 'Tiers', 'Checklist'], library: 'Built-in' },
+    { id: 'uiverse-pricing', name: 'UIverse Glass Pricing', description: 'Glass tiers with gradient popular plan and glowing checkmarks', tags: ['UIverse', 'Glass', 'Pricing'], library: 'UIverse' },
+    { id: 'mui-pricing', name: 'MUI Material Pricing', description: 'Three Material tiers with a dark elevated recommended plan', tags: ['MUI', 'Material', 'Pricing'], library: 'MUI' },
   ],
   Testimonials: [
+    { id: 'signature-stories', name: 'Signature Customer Story', description: 'Cohesive Signature-system testimonial carousel with focused story presentation', tags: ['Signature', 'Premium', 'Stories', 'Carousel'] },
     { id: 'premium-testimonial-carousel', name: 'Premium Story Carousel', description: 'Large focused customer story with working previous/next controls, avatars, and ratings', tags: ['Premium', 'Carousel', 'Stories', 'Interactive'] },
     { id: 'academy-stories', name: 'Academy Student Stories', description: 'Dark editorial testimonial grid with understated proof and participant details', tags: ['Academy', 'Students', 'Editorial', 'Trust'] },
     { id: 'review-cards', name: 'Classic Review Tiles', description: 'Polished client statement blocks with dynamic star ratings', tags: ['Clean', 'Grid'] },
@@ -131,9 +102,14 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'local-conversion', name: 'Local Trust Stories', description: 'Trust-focused review direction for neighbourhood businesses', tags: ['Local', 'Trust', 'Conversion'] },
     { id: 'quiet-luxury', name: 'Private Client Notes', description: 'Understated testimonials for premium and confidential services', tags: ['Luxury', 'Elegant', 'Service'] },
     { id: 'soft-gradient', name: 'Friendly Review Cloud', description: 'Warm approachable reviews with soft color and rounded surfaces', tags: ['Soft', 'Reviews', 'Friendly'] },
-    { id: 'mono-grid', name: 'Case Study Quotes', description: 'Crisp testimonial system for agencies, studios, and B2B teams', tags: ['Mono', 'Case Study', 'B2B'] }
+    { id: 'mono-grid', name: 'Case Study Quotes', description: 'Crisp testimonial system for agencies, studios, and B2B teams', tags: ['Mono', 'Case Study', 'B2B'] },
+    { id: 'uiverse-testimonials', name: 'UIverse Glass Testimonials', description: 'Frosted glass review cards with gradient avatars and star ratings', tags: ['UIverse', 'Glass', 'Reviews'], library: 'UIverse' },
+    { id: 'mui-testimonials', name: 'MUI Material Testimonials', description: 'Material review cards with tinted initial avatars and elevation', tags: ['MUI', 'Material', 'Reviews'], library: 'MUI' },
+    { id: 'untitled-testimonials', name: 'Untitled UI Testimonial Grid', description: 'Clean bordered review cards with indigo initial avatars', tags: ['Untitled UI', 'Reviews'], library: 'Untitled UI' },
+    { id: 'tailgrids-testimonials', name: 'Tailgrids Review Cards', description: 'Soft-shadowed testimonial tiles with quote watermark and blue avatars', tags: ['Tailgrids', 'Reviews'], library: 'Tailgrids' }
   ],
   Forms: [
+    { id: 'signature-form', name: 'Signature Lead Workspace', description: 'Cohesive Signature-system form with configurable fields, contact channels, and lead routing', tags: ['Signature', 'Premium', 'Lead', 'Configurable'] },
     { id: 'premium-contact-panel', name: 'Premium Contact Workspace', description: 'Configurable lead form paired with direct contact channels and a real submission workflow', tags: ['Premium', 'Lead', 'Contact', 'Configurable'] },
     { id: 'academy-enquiry', name: 'Academy Course Enquiry', description: 'Premium configurable enquiry form for course interests, dates, and learning goals', tags: ['Academy', 'Lead', 'Configurable'] },
     { id: 'academy-registration', name: 'Course Registration', description: 'Structured enrollment form with course selection, batch date, payment, and notes', tags: ['Academy', 'Enrollment', 'Registration'] },
@@ -145,9 +121,12 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'quiet-luxury', name: 'Private Consultation Form', description: 'Refined intake experience for premium appointments and enquiries', tags: ['Luxury', 'Consultation', 'Form'] },
     { id: 'bold-poster', name: 'Campaign Signup Form', description: 'High-energy lead capture for launches, events, and limited offers', tags: ['Bold', 'Campaign', 'Lead'] },
     { id: 'soft-gradient', name: 'Friendly Enquiry Form', description: 'Approachable rounded form styling that reduces visual friction', tags: ['Soft', 'Friendly', 'Form'] },
-    { id: 'mono-grid', name: 'Professional Brief Form', description: 'Structured intake for agencies, consultants, and B2B services', tags: ['Mono', 'Brief', 'Professional'] }
+    { id: 'mono-grid', name: 'Professional Brief Form', description: 'Structured intake for agencies, consultants, and B2B services', tags: ['Mono', 'Brief', 'Professional'] },
+    { id: 'uiverse-lead-form', name: 'UIverse Glass Lead Form', description: 'Frosted glass capture card with gradient focus rings and glow button', tags: ['UIverse', 'Glass', 'Lead'], library: 'UIverse' },
+    { id: 'mui-lead-form', name: 'MUI Material Lead Form', description: 'Material outlined fields with focused ring states and contained submit', tags: ['MUI', 'Material', 'Lead'], library: 'MUI' }
   ],
   EComStore: [
+    { id: 'signature-store', name: 'Signature Product Edit', description: 'Premium editorial product shelf with featured storytelling, live pricing, stock, and connected checkout actions', tags: ['Signature', 'Premium', 'Store', 'Commerce'] },
     { id: 'single-product-hero', name: 'Single Product Landing Buy Card', description: 'Hero product showcase card with instant Buy Now button for single-item landing pages', tags: ['LandingPage', 'SingleProduct', 'BuyNow'] },
     { id: 'shop-header', name: 'Shopify Style Header & Announcement', description: 'Top announcement bar + brand logo + shop links + search & cart pill', tags: ['Header', 'Shopify', 'Nav'] },
     { id: 'product-grid-filter', name: 'Untitled UI Filterable Product Catalog', description: 'Category pills, tag filters, price range, sorting & SEO alt tags', tags: ['Catalog', 'UntitledUI', 'Shop'] },
@@ -162,6 +141,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'warm-studio', name: 'Maker Market', description: 'Warm organic storefront direction for handmade and independent brands', tags: ['Maker', 'Warm', 'Organic'] }
   ],
   Special: [
+    { id: 'signature-faq', name: 'Signature Information Accordion', description: 'Cohesive Signature-system supporting content with accessible interactive questions', tags: ['Signature', 'Premium', 'FAQ', 'Interactive'] },
     { id: 'premium-proof-rail', name: 'Premium Trust Rail', description: 'Compact high-credibility strip for key numbers, assurances, certifications, or brand proof', tags: ['Premium', 'Trust', 'Metrics', 'Compact'] },
     { id: 'premium-results-metrics', name: 'Premium Results Stage', description: 'Oversized performance numbers with editorial hierarchy and responsive data cards', tags: ['Premium', 'Results', 'Metrics', 'Editorial'] },
     { id: 'premium-roadmap', name: 'Premium Journey Roadmap', description: 'Responsive numbered journey with connected milestones and clear supporting explanations', tags: ['Premium', 'Roadmap', 'Process', 'Timeline'] },
@@ -174,9 +154,13 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'local-conversion', name: 'Local Action Utility', description: 'Practical conversion support for calls, enquiries, and directions', tags: ['Local', 'Action', 'Utility'] },
     { id: 'quiet-luxury', name: 'Luxury Detail Panel', description: 'Understated supporting content for premium brand stories', tags: ['Luxury', 'Detail', 'Elegant'] },
     { id: 'mono-grid', name: 'Monochrome Data Panel', description: 'Structured facts and process content with strong information hierarchy', tags: ['Mono', 'Data', 'Grid'] },
-    { id: 'glass-panel', name: 'Glass Utility Panel', description: 'Atmospheric layered surface for technology and product details', tags: ['Glass', 'Tech', 'Utility'] }
+    { id: 'glass-panel', name: 'Glass Utility Panel', description: 'Atmospheric layered surface for technology and product details', tags: ['Glass', 'Tech', 'Utility'] },
+    { id: 'uiverse-stat-grid', name: 'UIverse Glass Stats', description: 'Frosted stat cards with gradient numbers and divider chips', tags: ['UIverse', 'Glass', 'Stats'], library: 'UIverse' },
+    { id: 'tailgrids-logo-cloud', name: 'Tailgrids Logo Cloud', description: 'Six-box trust strip for brand logos and social proof', tags: ['Tailgrids', 'Logos', 'Trust'], library: 'Tailgrids' },
+    { id: 'horizon-data-table', name: 'Horizon Data Table', description: 'Dark admin check table with status pills and trend amounts', tags: ['Horizon UI', 'Table', 'Admin'], library: 'Horizon UI' }
   ],
   Navigation: [
+    { id: 'nav-signature', name: '00. Signature Editorial Header', description: 'Cohesive Signature-system header with responsive navigation and dual conversion paths', tags: ['Signature', 'Premium', 'Responsive'] },
     { id: 'nav-academy', name: '01. Cinematic Academy Header', description: 'Transparent editorial navigation with dual conversion actions and responsive menu', tags: ['Academy', 'Transparent', 'Premium'] },
     { id: 'nav-minimal', name: '01. Minimal Left Brand', description: 'Simple brand text, centered clean links, and a solid outline action button.', tags: ['Minimal', 'Light'] },
     { id: 'nav-glass', name: '02. Frosted Floating Glass', description: 'Elegant glassmorphic panel floating centrally with a subtle blur effect.', tags: ['Glassmorphism', 'Premium'] },
@@ -201,6 +185,7 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'nav-glowing-glow', name: '21. Futuristic Cyber Rail', description: 'Glowing cyan neon strip with a modern cybertech font styling.', tags: ['Futuristic', 'Cyber'] }
   ],
   Footer: [
+    { id: 'footer-signature', name: '00. Signature Brand Footer', description: 'Cohesive Signature-system footer with story, navigation, contact, social, and risk or legal note', tags: ['Signature', 'Premium', 'Editorial'] },
     { id: 'footer-academy', name: '01. Academy Editorial Footer', description: 'Clean light footer with brand story, page links, contact details, and legal navigation', tags: ['Academy', 'Editorial', 'Contact'] },
     { id: 'footer-classic', name: '01. Corporate 4-Column Index', description: 'Robust directory footer featuring logo, copy, newsletter form, and structured grids.', tags: ['Directory', 'Corporate'] },
     { id: 'footer-minimal', name: '02. Centered Single-Row Ribbon', description: 'Slim horizontal ribbon centering copyright labels and tiny circle social pills.', tags: ['Minimal', 'Clean'] },
@@ -221,9 +206,13 @@ export const BLOCK_VARIANTS_MAP: Record<string, BlockVariant[]> = {
     { id: 'footer-with-backtotop', name: '17. Built-in Back-to-Top Anchor', description: 'Displays an elegant scrolling chevron button to sweep visitors back to the peak.', tags: ['Navigation', 'UX'] },
     { id: 'footer-gradient-glow', name: '18. Shifting Horizon Gradient', description: 'Features an elegant moving neon horizon line separating the footer from the canvas.', tags: ['Gradient', 'Futuristic'] },
     { id: 'footer-jobs-hiring', name: '19. Active Careers Hiring Flag', description: 'Displays a glowing green pulsing "We are Hiring!" dot next to company links.', tags: ['Careers', 'Badge'] },
-    { id: 'footer-copyright-only', name: '21. Super-Minimal Copyright Rail', description: 'Single elegant thin line containing copyright text and absolutely nothing else.', tags: ['Minimalist'] }
+    { id: 'footer-copyright-only', name: '21. Super-Minimal Copyright Rail', description: 'Single elegant thin line containing copyright text and absolutely nothing else.', tags: ['Minimalist'] },
+    { id: 'mui-footer', name: 'MUI Dark Material Footer', description: 'Dark four-column footer with logo, social pills, and legal rail', tags: ['MUI', 'Material', 'Footer'], library: 'MUI' },
+    { id: 'untitled-footer', name: 'Untitled UI Footer', description: 'Light five-column footer with tagline, link columns, and social icons', tags: ['Untitled UI', 'Footer'], library: 'Untitled UI' },
+    { id: 'tailgrids-footer', name: 'Tailgrids Navy Footer', description: 'Navy four-column footer with newsletter-feel link groups and socials', tags: ['Tailgrids', 'Footer'], library: 'Tailgrids' }
   ],
   Map: [
+    { id: 'signature-map', name: 'Signature Location Canvas', description: 'Premium location module with editorial address details, direct actions, and an interactive map', tags: ['Signature', 'Premium', 'Map', 'Contact'] },
     { id: 'map-classic', name: 'Interactive Location Map', description: 'Fully custom Google Map of your business location', tags: ['Location', 'Interactive', 'Google Maps'] },
     { id: 'local-conversion', name: 'Visit & Contact', description: 'Location details paired with direct call, directions, and WhatsApp actions', tags: ['Local', 'Directions', 'WhatsApp'] },
     { id: 'quiet-luxury', name: 'Destination Address', description: 'Refined location presentation for hotels, clinics, and premium studios', tags: ['Luxury', 'Address', 'Elegant'] },

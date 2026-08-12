@@ -9,3 +9,13 @@ coverage/
 
 # Supabase CLI local metadata
 supabase/.temp/
+
+# Scratch / experimental projects (not part of the app)
+/webstudio-repo/
+/webstudio-poc/
+
+# Editor UI reference screenshots
+/signature-*.png
+
+# Accidental empty file
+/both

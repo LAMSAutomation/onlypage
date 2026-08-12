@@ -10,6 +10,86 @@
   --font-size-fluid-h2: clamp(1.75rem, 3vw + 1rem, 3.25rem);
   --font-size-fluid-h3: clamp(1.5rem, 2vw + 0.75rem, 2.25rem);
   --font-size-fluid-h4: clamp(1.25rem, 1.5vw + 0.5rem, 1.75rem);
+
+  /* ==========================================
+     EDITOR DESIGN SYSTEM TOKENS
+     Semantic, not raw slate. All text colors
+     meet WCAG AA on white backgrounds.
+     ========================================== */
+  /* Editor chrome */
+  --color-editor-canvas: #f3f5f4;
+  --color-editor-surface: #ffffff;
+  --color-editor-panel: #0f172a; /* left tree */
+  --color-editor-ink: #1c2521; /* brand dark */
+  --color-editor-ink-hover: #354139;
+  --color-editor-accent: #65a30d; /* lime-600 */
+
+  /* Text — all AA-compliant on white */
+  --color-editor-text: #0f172a; /* 16.8:1 */
+  --color-editor-text-muted: #475569; /* 7.5:1 — replaces slate-400 */
+  --color-editor-text-subtle: #64748b; /* 4.8:1 — floor for AA */
+
+  /* Radius — 3 tiers, not 6 */
+  --radius-control: 0.5rem; /* buttons, inputs, chips */
+  --radius-panel: 0.75rem; /* cards, sections */
+  --radius-modal: 1rem; /* dialogs, sheets */
+
+  /* Motion */
+  --ease-editor: cubic-bezier(0.2, 0, 0, 1);
+  --duration-editor: 180ms;
+}
+
+/* Reduced motion: kill animations/transitions for users who ask */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  /* Affordance + motion for clickable controls (plain CSS: Tailwind v4
+     has no --duration-* theme namespace, so no @apply with custom tokens) */
+  .editor-interactive {
+    cursor: pointer;
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
+    transition-duration: var(--duration-editor);
+    transition-timing-function: var(--ease-editor);
+  }
+}
+
+/* ==========================================
+   EDITOR SURFACE — scoped to .editor-surface
+   Every control gets a pointer cursor, a
+   visible keyboard focus ring, and motion.
+   ========================================== */
+.editor-surface button:not(:disabled),
+.editor-surface [role="button"]:not(:disabled),
+.editor-surface summary:not(:disabled) {
+  cursor: pointer;
+}
+
+.editor-surface button:focus-visible,
+.editor-surface input:focus-visible,
+.editor-surface select:focus-visible,
+.editor-surface textarea:focus-visible,
+.editor-surface summary:focus-visible,
+.editor-surface [role="button"]:focus-visible,
+.editor-surface [tabindex]:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-editor-accent), 0 0 0 4px rgba(101, 163, 13, 0.25);
+}
+
+.editor-surface button:not(:disabled),
+.editor-surface select:not(:disabled),
+.editor-surface input:not(:disabled),
+.editor-surface textarea:not(:disabled) {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity, transform;
+  transition-duration: var(--duration-editor);
+  transition-timing-function: var(--ease-editor);
 }
 
 @layer utilities {

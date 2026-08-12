@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { fetchPublicProducts } from "@/lib/ecom-queries";
 import { BuilderRenderer } from "@/components/builder-renderer";
 import { ArrowRight, Globe, Loader2, Sparkles } from "lucide-react";
-import type { WebBlock } from "@/components/website-builder-editor";
+import type { WebBlock } from '@/components/builder-types';
 
 interface PublicSiteViewProps {
   subdomain: string;
@@ -199,7 +199,7 @@ export default function PublicSiteView({ subdomain }: PublicSiteViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-[#bef264] selection:text-[#18201d]">
+    <div className="@container min-h-screen font-sans text-slate-900 selection:bg-[#bef264] selection:text-[#18201d]">
       {globalHeader && (
         <header data-global-part="header">
           <BuilderRenderer block={globalHeader} {...rendererProps} />
